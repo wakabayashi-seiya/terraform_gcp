@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.run import commands
 from googlecloudsdk.command_lib.run import connection_context
 from googlecloudsdk.command_lib.run import flags
@@ -28,6 +29,7 @@ from googlecloudsdk.command_lib.util.concepts import concept_parsers
 from googlecloudsdk.command_lib.util.concepts import presentation_specs
 
 
+@base.ReleaseTracks(base.ReleaseTrack.BETA, base.ReleaseTrack.GA)
 class List(commands.List):
   """List available Routes.
 
@@ -46,27 +48,47 @@ class List(commands.List):
   }
 
   @classmethod
-  def Args(cls, parser):
-    flags.AddRegionArg(parser)
+  def CommonArgs(cls, parser):
+    # Flags specific to connecting to a cluster
+    cluster_group = flags.GetClusterArgGroup(parser)
     namespace_presentation = presentation_specs.ResourcePresentationSpec(
         '--namespace',
         resource_args.GetNamespaceResourceSpec(),
-        'Namespace list routes in.',
+        'Namespace to list routes in.',
         required=True,
         prefixes=False)
-    concept_parsers.ConceptParser([
-        resource_args.CLUSTER_PRESENTATION,
-        namespace_presentation]).AddToParser(parser)
+    concept_parsers.ConceptParser(
+        [namespace_presentation]).AddToParser(cluster_group)
+
     parser.display_info.AddFormat("""table(
     {ready_column},
     metadata.name:label=ROUTE)
     """.format(ready_column=pretty_print.READY_COLUMN))
     parser.display_info.AddUriFunc(cls._GetResourceUri)
 
+  @classmethod
+  def Args(cls, parser):
+    cls.CommonArgs(parser)
+
   def Run(self, args):
     """List available routes."""
-    conn_context = connection_context.GetConnectionContext(args)
+    conn_context = connection_context.GetConnectionContext(
+        args, product=flags.Product.RUN)
     namespace_ref = args.CONCEPTS.namespace.Parse()
     with serverless_operations.Connect(conn_context) as client:
       self.SetCompleteApiEndpoint(conn_context.endpoint)
-      return client.ListRoutes(namespace_ref)
+      return commands.SortByName(client.ListRoutes(namespace_ref))
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class AlphaList(List):
+  """List available Routes.
+
+  Every Route is paired with a Service of the same name.
+  """
+
+  @classmethod
+  def Args(cls, parser):
+    cls.CommonArgs(parser)
+
+AlphaList.__doc__ = List.__doc__

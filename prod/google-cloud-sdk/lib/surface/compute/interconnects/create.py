@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ DETAILED_HELP = {
         """\
         To create an interconnect of type DEDICATED, run:
 
-          $ {command} example-interconnect --customer-name "Example Customer Name" --interconnect-type DEDICATED --link-type LINK_TYPE_ETHERNET_10G_LR --location example-zone1-1 --requested-link-count 1 --noc-contact-email noc@example.com --description "Example interconnect"
+          $ {command} example-interconnect --customer-name="Example Customer Name" --interconnect-type=DEDICATED --link-type=LINK_TYPE_ETHERNET_10G_LR --location=example-zone1-1 --requested-link-count=1 --noc-contact-email=noc@example.com --description="Example interconnect"
         """,
     # pylint: enable=line-too-long
 }

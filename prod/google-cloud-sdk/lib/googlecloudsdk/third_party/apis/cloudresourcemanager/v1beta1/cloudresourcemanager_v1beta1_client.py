@@ -9,6 +9,7 @@ class CloudresourcemanagerV1beta1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://cloudresourcemanager.googleapis.com/'
+  MTLS_BASE_URL = u'https://cloudresourcemanager.mtls.googleapis.com/'
 
   _PACKAGE = u'cloudresourcemanager'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform', u'https://www.googleapis.com/auth/cloud-platform.read-only']
@@ -447,7 +448,11 @@ The following constraints apply when using `setIamPolicy()`:
 + Project does not support `allUsers` and `allAuthenticatedUsers` as
 `members` in a `Binding` of a `Policy`.
 
-+ The owner role can be granted only to `user` and `serviceAccount`.
++ The owner role can be granted to a `user`, `serviceAccount`, or a group
+that is part of an organization. For example,
+group@myownpersonaldomain.com could be added as an owner to a project in
+the myownpersonaldomain.com organization, but not the examplepetstore.com
+organization.
 
 + Service accounts can be made owners of a project directly
 without any restrictions. However, to be added as an owner, a user must be

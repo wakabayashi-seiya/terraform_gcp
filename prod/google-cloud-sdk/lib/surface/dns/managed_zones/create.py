@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ from googlecloudsdk.core import properties
 
 
 def _AddArgsCommon(parser, messages):
+  """Adds the common arguments for all versions."""
   flags.GetDnsZoneArg(
       'The name of the managed-zone to be created.').AddToParser(parser)
   flags.GetManagedZonesDnsNameArg().AddToParser(parser)
@@ -38,6 +39,8 @@ def _AddArgsCommon(parser, messages):
   labels_util.AddCreateLabelsFlags(parser)
   flags.GetManagedZoneNetworksArg().AddToParser(parser)
   flags.GetManagedZoneVisibilityArg().AddToParser(parser)
+  flags.GetForwardingTargetsArg().AddToParser(parser)
+  flags.GetDnsPeeringArgs().AddToParser(parser)
 
 
 def _MakeDnssecConfig(args, messages):
@@ -85,14 +88,14 @@ class Create(base.CreateCommand):
           'If --visibility is set to public (default), setting networks is '
           'not allowed.')
     if args.visibility == 'private' and args.networks is None:
-      raise exceptions.RequiredArgumentException('--networks', ("""\
+      raise exceptions.RequiredArgumentException('--networks', ("""
            If --visibility is set to private, a list of networks must be
            provided.'
          NOTE: You can provide an empty value ("") for private zones that
           have NO network binding.
           """))
 
-    dns = apis.GetClientInstance('dns', 'v1')
+    dns = util.GetApiClient('v1')
     messages = apis.GetMessagesModule('dns', 'v1')
 
     registry = util.GetRegistry('v1')
@@ -126,9 +129,23 @@ class Create(base.CreateCommand):
       visibility_config = messages.ManagedZonePrivateVisibilityConfig(
           networks=network_configs)
 
+    if args.forwarding_targets:
+      forward_config = command_util.ParseManagedZoneForwardingConfig(
+          args.forwarding_targets, messages)
+    else:
+      forward_config = None
+
     dnssec_config = _MakeDnssecConfig(args, messages)
 
     labels = labels_util.ParseCreateArgs(args, messages.ManagedZone.LabelsValue)
+
+    peering_config = None
+    if args.target_project and args.target_network:
+      peering_network = 'https://www.googleapis.com/compute/v1/projects/{}/global/networks/{}'.format(
+          args.target_project, args.target_network)
+      peering_config = messages.ManagedZonePeeringConfig()
+      peering_config.targetNetwork = messages.ManagedZonePeeringConfigTargetNetwork(
+          networkUrl=peering_network)
 
     zone = messages.ManagedZone(
         name=zone_ref.managedZone,
@@ -137,7 +154,9 @@ class Create(base.CreateCommand):
         dnssecConfig=dnssec_config,
         labels=labels,
         visibility=visibility,
-        privateVisibilityConfig=visibility_config)
+        forwardingConfig=forward_config,
+        privateVisibilityConfig=visibility_config,
+        peeringConfig=peering_config)
 
     result = dns.managedZones.Create(
         messages.DnsManagedZonesCreateRequest(managedZone=zone,
@@ -160,8 +179,8 @@ class CreateBeta(base.CreateCommand):
 
   To create a managed-zone with DNSSEC, run:
 
-    $ {command} my_zone_2 --description "Signed Zone" \
-        --dns-name myzone.example \
+    $ {command} my_zone_2 --description "Signed Zone"
+        --dns-name myzone.example
         --dnssec-state=on
   """
 
@@ -170,8 +189,8 @@ class CreateBeta(base.CreateCommand):
     messages = apis.GetMessagesModule('dns', 'v1beta2')
     _AddArgsCommon(parser, messages)
     parser.display_info.AddCacheUpdater(flags.ManagedZoneCompleter)
-    flags.GetForwardingTargetsArg().AddToParser(parser)
-    flags.GetDnsPeeringArgs().AddToParser(parser)
+    flags.GetPrivateForwardingTargetsArg().AddToParser(parser)
+    flags.GetReverseLookupArg().AddToParser(parser)
 
   def Run(self, args):
     # We explicitly want to allow --networks='' as a valid option and we need
@@ -183,17 +202,17 @@ class CreateBeta(base.CreateCommand):
             'If --visibility is set to public (default), setting networks is '
             'not allowed.')
     if args.visibility == 'private' and args.networks is None:
-      raise exceptions.RequiredArgumentException(
-          '--networks', ("""\
+      raise exceptions.RequiredArgumentException('--networks', ("""
            If --visibility is set to private, a list of networks must be
            provided.'
          NOTE: You can provide an empty value ("") for private zones that
           have NO network binding.
           """))
 
-    dns = apis.GetClientInstance('dns', 'v1beta2')
-    messages = apis.GetMessagesModule('dns', 'v1beta2')
-    registry = util.GetRegistry('v1beta2')
+    api_version = util.GetApiFromTrack(self.ReleaseTrack())
+    dns = util.GetApiClient(api_version)
+    messages = apis.GetMessagesModule('dns', api_version)
+    registry = util.GetRegistry(api_version)
 
     zone_ref = registry.Parse(
         args.dns_zone,
@@ -222,11 +241,13 @@ class CreateBeta(base.CreateCommand):
       visibility_config = messages.ManagedZonePrivateVisibilityConfig(
           networks=network_configs)
 
-    if args.forwarding_targets:
-      forward_config = command_util.ParseManagedZoneForwardingConfig(
-          args.forwarding_targets, messages)
+    if args.forwarding_targets or args.private_forwarding_targets:
+      forwarding_config = command_util.ParseManagedZoneForwardingConfigWithForwardingPath(
+          messages=messages,
+          server_list=args.forwarding_targets,
+          private_server_list=args.private_forwarding_targets)
     else:
-      forward_config = None
+      forwarding_config = None
 
     dnssec_config = _MakeDnssecConfig(args, messages)
     labels = labels_util.ParseCreateArgs(args, messages.ManagedZone.LabelsValue)
@@ -239,6 +260,11 @@ class CreateBeta(base.CreateCommand):
       peering_config.targetNetwork = messages.ManagedZonePeeringConfigTargetNetwork(
           networkUrl=peering_network)
 
+    reverse_lookup_config = None
+    if args.IsSpecified(
+        'managed_reverse_lookup') and args.managed_reverse_lookup:
+      reverse_lookup_config = messages.ManagedZoneReverseLookupConfig()
+
     zone = messages.ManagedZone(
         name=zone_ref.managedZone,
         dnsName=util.AppendTrailingDot(args.dns_name),
@@ -246,12 +272,140 @@ class CreateBeta(base.CreateCommand):
         dnssecConfig=dnssec_config,
         labels=labels,
         visibility=visibility,
-        forwardingConfig=forward_config,
+        forwardingConfig=forwarding_config,
         privateVisibilityConfig=visibility_config,
-        peeringConfig=peering_config)
+        peeringConfig=peering_config,
+        reverseLookupConfig=reverse_lookup_config)
 
     result = dns.managedZones.Create(
         messages.DnsManagedZonesCreateRequest(managedZone=zone,
                                               project=zone_ref.project))
+    log.CreatedResource(zone_ref)
+    return [result]
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class CreateAlpha(CreateBeta):
+  r"""Create a Cloud DNS managed-zone.
+
+  This command creates a Cloud DNS managed-zone.
+
+  ## EXAMPLES
+
+  To create a managed-zone, run:
+
+    $ {command} my_zone --dns-name=my.zone.com. --description="My zone!"
+
+  To create a managed-zone with DNSSEC, run:
+
+    $ {command} my_zone_2 --description="Signed Zone" \
+        --dns-name=myzone.example \
+        --dnssec-state=on
+  """
+
+  @staticmethod
+  def Args(parser):
+    messages = apis.GetMessagesModule('dns', 'v1alpha2')
+    _AddArgsCommon(parser, messages)
+    parser.display_info.AddCacheUpdater(flags.ManagedZoneCompleter)
+    flags.GetPrivateForwardingTargetsArg().AddToParser(parser)
+    flags.GetReverseLookupArg().AddToParser(parser)
+    flags.GetServiceDirectoryArg().AddToParser(parser)
+
+  def Run(self, args):
+    # We explicitly want to allow --networks='' as a valid option and we need
+    # to differentiate between that option and not passing --networks at all.
+    if args.visibility == 'public':
+      if args.IsSpecified('networks'):
+        raise exceptions.InvalidArgumentException(
+            '--networks',
+            'If `--visibility` is set to public (default), setting networks is '
+            'not allowed.')
+    if args.visibility == 'private' and args.networks is None:
+      raise exceptions.RequiredArgumentException('--networks', ("""
+           If `--visibility` is set to private, a list of networks must be
+           provided.'
+         NOTE: You can provide an empty value ("") for private zones that
+          have NO network binding.
+          """))
+
+    api_version = util.GetApiFromTrack(self.ReleaseTrack())
+    dns = apis.GetClientInstance('dns', api_version)
+    messages = apis.GetMessagesModule('dns', api_version)
+    registry = util.GetRegistry(api_version)
+
+    zone_ref = registry.Parse(
+        args.dns_zone,
+        params={'project': properties.VALUES.core.project.GetOrFail},
+        collection='dns.managedZones')
+
+    visibility = messages.ManagedZone.VisibilityValueValuesEnum(args.visibility)
+    visibility_config = None
+    if visibility == messages.ManagedZone.VisibilityValueValuesEnum.private:
+      # Handle explicitly empty networks case (--networks='')
+      networks = args.networks if args.networks != [''] else []
+
+      def GetNetworkSelfLink(network):
+        return registry.Parse(
+            network,
+            collection='compute.networks',
+            params={
+                'project': zone_ref.project
+            }).SelfLink()
+
+      network_urls = [GetNetworkSelfLink(n) for n in networks]
+      network_configs = [
+          messages.ManagedZonePrivateVisibilityConfigNetwork(networkUrl=nurl)
+          for nurl in network_urls
+      ]
+      visibility_config = messages.ManagedZonePrivateVisibilityConfig(
+          networks=network_configs)
+
+    if args.forwarding_targets or args.private_forwarding_targets:
+      forwarding_config = command_util.ParseManagedZoneForwardingConfigWithForwardingPath(
+          messages=messages,
+          server_list=args.forwarding_targets,
+          private_server_list=args.private_forwarding_targets)
+    else:
+      forwarding_config = None
+
+    dnssec_config = _MakeDnssecConfig(args, messages)
+    labels = labels_util.ParseCreateArgs(args, messages.ManagedZone.LabelsValue)
+
+    peering_config = None
+    if args.target_project and args.target_network:
+      peering_network = 'https://www.googleapis.com/compute/v1/projects/{}/global/networks/{}'.format(
+          args.target_project, args.target_network)
+      peering_config = messages.ManagedZonePeeringConfig()
+      peering_config.targetNetwork = messages.ManagedZonePeeringConfigTargetNetwork(
+          networkUrl=peering_network)
+
+    reverse_lookup_config = None
+    if args.IsSpecified(
+        'managed_reverse_lookup') and args.managed_reverse_lookup:
+      reverse_lookup_config = messages.ManagedZoneReverseLookupConfig()
+
+    service_directory_config = None
+    if args.service_directory_namespace:
+      service_directory_config = messages.ManagedZoneServiceDirectoryConfig(
+          namespace=messages.ManagedZoneServiceDirectoryConfigNamespace(
+              namespaceUrl=args.service_directory_namespace))
+
+    zone = messages.ManagedZone(
+        name=zone_ref.managedZone,
+        dnsName=util.AppendTrailingDot(args.dns_name),
+        description=args.description,
+        dnssecConfig=dnssec_config,
+        labels=labels,
+        visibility=visibility,
+        forwardingConfig=forwarding_config,
+        privateVisibilityConfig=visibility_config,
+        peeringConfig=peering_config,
+        reverseLookupConfig=reverse_lookup_config,
+        serviceDirectoryConfig=service_directory_config)
+
+    result = dns.managedZones.Create(
+        messages.DnsManagedZonesCreateRequest(
+            managedZone=zone, project=zone_ref.project))
     log.CreatedResource(zone_ref)
     return [result]

@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -161,10 +161,6 @@ SCHEMA = s.Message(
                                                         c.ToJsonString)),
         session_affinity=s.Value()
     ),
-    vpc_access_connector=s.Message(
-        name=s.Value(converter=c.ToJsonString),
-    ),
-    zones=s.RepeatedField(element=s.Value(converter=c.ToJsonString)),
     nobuild_files=s.Value('nobuild_files_regex', converter=c.ToJsonString),
     resources=s.Message(
         memory_gb=s.Value(),
@@ -180,4 +176,5 @@ SCHEMA = s.Message(
     threadsafe=s.Value(),
     version=s.Value('id', converter=c.ToJsonString),
     vm=s.Value(),
-    vm_settings=s.Map('beta_settings'))
+    vm_settings=s.Map('beta_settings'),
+    vpc_access_connector=s.Message(name=s.Value(converter=c.ToJsonString)))

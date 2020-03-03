@@ -9,9 +9,10 @@ class BigquerydatatransferV1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://bigquerydatatransfer.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'bigquerydatatransfer'
-  _SCOPES = [u'https://www.googleapis.com/auth/bigquery', u'https://www.googleapis.com/auth/cloud-platform', u'https://www.googleapis.com/auth/cloud-platform.read-only']
+  _SCOPES = [u'https://www.googleapis.com/auth/bigquery', u'https://www.googleapis.com/auth/bigquery.readonly', u'https://www.googleapis.com/auth/cloud-platform', u'https://www.googleapis.com/auth/cloud-platform.read-only']
   _VERSION = u'v1'
   _CLIENT_ID = '1042881264118.apps.googleusercontent.com'
   _CLIENT_SECRET = 'x_Tw5K8nnjoRAqULM9PFAC2b'
@@ -399,7 +400,7 @@ which can be used for UI rendering.
         method_id=u'bigquerydatatransfer.projects.locations.transferConfigs.create',
         ordered_params=[u'parent'],
         path_params=[u'parent'],
-        query_params=[u'authorizationCode', u'versionInfo'],
+        query_params=[u'authorizationCode', u'serviceAccountName', u'versionInfo'],
         relative_path=u'v1/{+parent}/transferConfigs',
         request_field=u'transferConfig',
         request_type_name=u'BigquerydatatransferProjectsLocationsTransferConfigsCreateRequest',
@@ -509,7 +510,7 @@ All fields must be set, even if they are not updated.
         method_id=u'bigquerydatatransfer.projects.locations.transferConfigs.patch',
         ordered_params=[u'name'],
         path_params=[u'name'],
-        query_params=[u'authorizationCode', u'updateMask', u'versionInfo'],
+        query_params=[u'authorizationCode', u'serviceAccountName', u'updateMask', u'versionInfo'],
         relative_path=u'v1/{+name}',
         request_field=u'transferConfig',
         request_type_name=u'BigquerydatatransferProjectsLocationsTransferConfigsPatchRequest',
@@ -799,7 +800,7 @@ a specific run_time.
         method_id=u'bigquerydatatransfer.projects.transferConfigs.create',
         ordered_params=[u'parent'],
         path_params=[u'parent'],
-        query_params=[u'authorizationCode', u'versionInfo'],
+        query_params=[u'authorizationCode', u'serviceAccountName', u'versionInfo'],
         relative_path=u'v1/{+parent}/transferConfigs',
         request_field=u'transferConfig',
         request_type_name=u'BigquerydatatransferProjectsTransferConfigsCreateRequest',
@@ -909,7 +910,7 @@ All fields must be set, even if they are not updated.
         method_id=u'bigquerydatatransfer.projects.transferConfigs.patch',
         ordered_params=[u'name'],
         path_params=[u'name'],
-        query_params=[u'authorizationCode', u'updateMask', u'versionInfo'],
+        query_params=[u'authorizationCode', u'serviceAccountName', u'updateMask', u'versionInfo'],
         relative_path=u'v1/{+name}',
         request_field=u'transferConfig',
         request_type_name=u'BigquerydatatransferProjectsTransferConfigsPatchRequest',

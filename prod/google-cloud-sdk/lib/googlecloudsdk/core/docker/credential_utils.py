@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ from distutils import version as distutils_version
 from googlecloudsdk.core.docker import client_lib as client_utils
 from googlecloudsdk.core.docker import constants
 from googlecloudsdk.core.util import files
-
+import six
 
 MIN_DOCKER_CONFIG_HELPER_VERSION = distutils_version.LooseVersion('1.13')
 CREDENTIAL_HELPER_KEY = 'credHelpers'
@@ -71,7 +71,7 @@ class Configuration(object):
 
   def DockerVersion(self):
     if not self._version:
-      version_str = str(client_utils.GetDockerVersion())
+      version_str = six.text_type(client_utils.GetDockerVersion())
       self._version = distutils_version.LooseVersion(version_str)
     return self._version
 
@@ -92,8 +92,7 @@ class Configuration(object):
 
     """
     if self.contents and CREDENTIAL_HELPER_KEY in self.contents:
-      return {CREDENTIAL_HELPER_KEY:
-              self.contents[CREDENTIAL_HELPER_KEY]}
+      return {CREDENTIAL_HELPER_KEY: self.contents[CREDENTIAL_HELPER_KEY]}
 
     return {}
 
@@ -104,18 +103,19 @@ class Configuration(object):
     configuration to disk.
 
     Args:
-      mappings_dict: The dict of 'credHelpers' mappings ({registry: handler})
-      to add to the Docker configuration. If not set, use default values from
-      GetOrderedCredentialHelperRegistries()
+      mappings_dict: The dict of 'credHelpers' mappings ({registry: handler}) to
+        add to the Docker configuration. If not set, use the values from
+        BuildOrderedCredentialHelperRegistries(DefaultAuthenticatedRegistries())
 
     Raises:
       ValueError: mappings are not a valid dict.
       DockerConfigUpdateError: Configuration does not support 'credHelpers'.
     """
-    mappings_dict = mappings_dict or GetOrderedCredentialHelperRegistries()
+    mappings_dict = mappings_dict or BuildOrderedCredentialHelperRegistries(
+        DefaultAuthenticatedRegistries())
     if not isinstance(mappings_dict, dict):
-      raise ValueError('Invalid Docker credential helpers mappings {}'.format(
-          mappings_dict))
+      raise ValueError(
+          'Invalid Docker credential helpers mappings {}'.format(mappings_dict))
 
     if not self.SupportsRegistryHelpers():
       raise DockerConfigUpdateError('Credential Helpers not supported for this '
@@ -131,7 +131,7 @@ class Configuration(object):
       files.WriteFileAtomically(self.path, self.ToJson())
     except (TypeError, ValueError, OSError, IOError) as err:
       raise DockerConfigUpdateError('Error writing Docker configuration '
-                                    'to disk: {}'.format(str(err)))
+                                    'to disk: {}'.format(six.text_type(err)))
 
   # Defaulting to new config location since we know minimum version
   # for supporting credential helpers is > 1.7.
@@ -145,7 +145,7 @@ class Configuration(object):
 
     Args:
       path: string, path to look for the Docker config file. If empty will
-      attempt to read from the new config location (default).
+        attempt to read from the new config location (default).
 
     Returns:
       A Configuration object
@@ -160,7 +160,7 @@ class Configuration(object):
     except (ValueError, client_utils.DockerError) as err:
       raise client_utils.InvalidDockerConfigError(
           ('Docker configuration file [{}] could not be read as JSON: {}'
-          ).format(path, str(err)))
+          ).format(path, six.text_type(err)))
 
     return cls(content, path)
 
@@ -175,11 +175,17 @@ def SupportedRegistries():
   return constants.ALL_SUPPORTED_REGISTRIES
 
 
-def GetOrderedCredentialHelperRegistries():
-  """Returns ordered dict of Docker registry to gcloud helper mappings.
+def BuildOrderedCredentialHelperRegistries(registries):
+  """Returns dict of gcloud helper mappings for the supplied repositories.
+
+  Returns ordered dict of Docker registry to gcloud helper mappings for the
+  supplied list of registries.
 
   Ensures that the order in which credential helper registry entries are
-  processed is consistient.
+  processed is consistent.
+
+  Args:
+      registries: list, the registries to create the mappings for.
 
   Returns:
    OrderedDict of Docker registry to gcloud helper mappings.
@@ -187,22 +193,26 @@ def GetOrderedCredentialHelperRegistries():
   # Based on Docker credHelper docs this should work on Windows transparently
   # so we do not need to register .exe files seperately, see
   # https://docs.docker.com/engine/reference/commandline/login/#credential-helpers
-  return collections.OrderedDict(
-      [(registry, 'gcloud') for registry in DefaultAuthenticatedRegistries()])
+  return collections.OrderedDict([
+      (registry, 'gcloud') for registry in registries
+  ])
 
 
-def GetGcloudCredentialHelperConfig():
+def GetGcloudCredentialHelperConfig(registries=None):
   """Gets the credHelpers Docker config entry for gcloud supported registries.
 
   Returns a Docker configuration JSON entry that will register gcloud as the
-  credential helper for all Google supported Docker registries. If mappings_only
-  is True, it will only return the registered credential helper mappings instead
-  of the entire credHelpers entry.
+  credential helper for all Google supported Docker registries.
+
+  Args:
+      registries: list, the registries to create the mappings for. If not
+        supplied, will use DefaultAuthenticatedRegistries().
 
   Returns:
     The config used to register gcloud as the credential helper for all
     supported Docker registries.
   """
-  registered_helpers = GetOrderedCredentialHelperRegistries()
+  registered_helpers = BuildOrderedCredentialHelperRegistries(
+      registries or DefaultAuthenticatedRegistries())
 
   return {CREDENTIAL_HELPER_KEY: registered_helpers}

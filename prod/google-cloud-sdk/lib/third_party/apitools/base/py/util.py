@@ -16,7 +16,6 @@
 
 """Assorted utilities shared between parts of apitools."""
 
-import collections
 import os
 import random
 
@@ -29,6 +28,11 @@ import six.moves.urllib.request as urllib_request
 from apitools.base.protorpclite import messages
 from apitools.base.py import encoding_helper as encoding
 from apitools.base.py import exceptions
+
+if six.PY3:
+    from collections.abc import Iterable
+else:
+    from collections import Iterable
 
 __all__ = [
     'DetectGae',
@@ -76,8 +80,10 @@ def DetectGce():
 def NormalizeScopes(scope_spec):
     """Normalize scope_spec to a set of strings."""
     if isinstance(scope_spec, six.string_types):
+        scope_spec = six.ensure_str(scope_spec)
         return set(scope_spec.split(' '))
-    elif isinstance(scope_spec, collections.Iterable):
+    elif isinstance(scope_spec, Iterable):
+        scope_spec = [six.ensure_str(x) for x in scope_spec]
         return set(scope_spec)
     raise exceptions.TypecheckError(
         'NormalizeScopes expected string or iterable, found %s' % (

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,44 +21,83 @@ from __future__ import unicode_literals
 from googlecloudsdk.api_lib.compute import base_classes
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.compute import flags as compute_flags
+from googlecloudsdk.command_lib.compute import scope as compute_scope
 from googlecloudsdk.command_lib.compute.network_endpoint_groups import flags
 from googlecloudsdk.core import log
 from googlecloudsdk.core.console import console_io
 
+DETAILED_HELP = {
+    'EXAMPLES': """
+To delete a network endpoint group named ``my-neg'':
 
+  $ {command} my-neg --zone=us-central1-a
+""",
+}
+
+
+@base.ReleaseTracks(base.ReleaseTrack.GA)
 class Delete(base.DeleteCommand):
-  r"""Deletes a Google Compute Engine network endpoint group.
+  """Delete a Google Compute Engine network endpoint group."""
 
-  ## EXAMPLES
+  detailed_help = DETAILED_HELP
+  support_global_scope = False
+  support_regional_scope = False
 
-  To delete a network endpoint group:
-
-    $ {command} my-neg --zone=us-central1-a
-  """
-
-  @staticmethod
-  def Args(parser):
-    flags.MakeNetworkEndpointGroupsArg().AddArgument(parser)
+  @classmethod
+  def Args(cls, parser):
+    flags.MakeNetworkEndpointGroupsArg(
+        support_global_scope=cls.support_global_scope,
+        support_regional_scope=cls.support_regional_scope).AddArgument(parser)
 
   def Run(self, args):
     holder = base_classes.ComputeApiHolder(self.ReleaseTrack())
     client = holder.client
 
-    neg_ref = flags.MakeNetworkEndpointGroupsArg().ResolveAsResource(
-        args, holder.resources,
-        scope_lister=compute_flags.GetDefaultScopeLister(holder.client))
+    neg_ref = flags.MakeNetworkEndpointGroupsArg(
+        support_global_scope=self.support_global_scope,
+        support_regional_scope=self.support_regional_scope).ResolveAsResource(
+            args,
+            holder.resources,
+            default_scope=compute_scope.ScopeEnum.ZONE,
+            scope_lister=compute_flags.GetDefaultScopeLister(holder.client))
     console_io.PromptContinue(
         'You are about to delete network endpoint group: [{}]'.format(
             neg_ref.Name()),
         throw_if_unattended=True, cancel_on_no=True)
 
     messages = holder.client.messages
-    request = messages.ComputeNetworkEndpointGroupsDeleteRequest(
-        networkEndpointGroup=neg_ref.Name(),
-        project=neg_ref.project,
-        zone=neg_ref.zone)
 
-    service = holder.client.apitools_client.networkEndpointGroups
+    if hasattr(neg_ref, 'zone'):
+      request = messages.ComputeNetworkEndpointGroupsDeleteRequest(
+          networkEndpointGroup=neg_ref.Name(),
+          project=neg_ref.project,
+          zone=neg_ref.zone)
+      service = holder.client.apitools_client.networkEndpointGroups
+    elif hasattr(neg_ref, 'region'):
+      request = messages.ComputeRegionNetworkEndpointGroupsDeleteRequest(
+          networkEndpointGroup=neg_ref.Name(),
+          project=neg_ref.project,
+          region=neg_ref.region)
+      service = holder.client.apitools_client.regionNetworkEndpointGroups
+    else:
+      request = messages.ComputeGlobalNetworkEndpointGroupsDeleteRequest(
+          networkEndpointGroup=neg_ref.Name(), project=neg_ref.project)
+      service = holder.client.apitools_client.globalNetworkEndpointGroups
+
     result = client.MakeRequests([(service, 'Delete', request)])
     log.DeletedResource(neg_ref.Name(), 'network endpoint group')
     return result
+
+
+@base.ReleaseTracks(base.ReleaseTrack.BETA)
+class DeleteBeta(Delete):
+  """Delete a Google Compute Engine network endpoint group."""
+
+  support_global_scope = True
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class DeleteAlpha(DeleteBeta):
+  """Delete a Google Compute Engine network endpoint group."""
+
+  support_regional_scope = True

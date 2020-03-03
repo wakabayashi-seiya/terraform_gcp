@@ -9,6 +9,7 @@ class RemotebuildexecutionV1alpha(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://admin-remotebuildexecution.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'remotebuildexecution'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform']
@@ -157,7 +158,7 @@ While the long running operation is in progress, any call to
         method_id=u'remotebuildexecution.projects.instances.workerpools.list',
         ordered_params=[u'parent'],
         path_params=[u'parent'],
-        query_params=[],
+        query_params=[u'filter'],
         relative_path=u'v1alpha/{+parent}/workerpools',
         request_field='',
         request_type_name=u'RemotebuildexecutionProjectsInstancesWorkerpoolsListRequest',

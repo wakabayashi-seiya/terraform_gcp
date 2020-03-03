@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,7 @@ import functools
 
 from googlecloudsdk.api_lib.compute import constants
 from googlecloudsdk.api_lib.compute import containers_utils
+from googlecloudsdk.api_lib.compute import csek_utils
 from googlecloudsdk.api_lib.compute import image_utils
 from googlecloudsdk.api_lib.compute import kms_utils
 from googlecloudsdk.api_lib.compute import utils
@@ -42,12 +43,12 @@ import ipaddress
 import six
 
 ZONE_PROPERTY_EXPLANATION = """\
-If not specified, you may be prompted to select a zone. `gcloud` will attempt
-to identify the zone by searching for resources in your project. If the zone
-cannot be determined, you will then be prompted with all Google Cloud
-Platform zones.
+If not specified, the user may be prompted to select a zone. `gcloud` will
+attempt to identify the zone by searching for resources in the user's project.
+If the zone cannot be determined, the user will then be prompted with all Google
+Cloud Platform zones.
 
-To avoid prompting when this flag is omitted, you can set the
+To avoid prompting when this flag is omitted, the user can set the
 ``compute/zone'' property:
 
   $ gcloud config set compute/zone ZONE
@@ -118,11 +119,11 @@ INSTANCES_ARG_FOR_CREATE = compute_flags.ResourceArgument(
 
 INSTANCES_ARG_FOR_IMPORT = compute_flags.ResourceArgument(
     resource_name='instance',
-    name='instance_names',
+    name='instance_name',
     completer=compute_completers.InstancesCompleter,
     zonal_collection='compute.instances',
     zone_explanation=compute_flags.ZONE_PROPERTY_EXPLANATION,
-    plural=True)
+    plural=False)
 
 SSH_INSTANCE_RESOLVER = compute_flags.ResourceResolver.FromMap(
     'instance', {compute_scope.ScopeEnum.ZONE: 'compute.instances'})
@@ -230,6 +231,16 @@ def AddMachineImageArg():
                   'be created from.'))
 
 
+def AddSourceMachineImageEncryptionKey(parser):
+  parser.add_argument(
+      '--source-machine-image-csek-key-file',
+      metavar='FILE',
+      help="""\
+      Path to a Customer-Supplied Encryption Key (CSEK) key file, mapping resources to user managed keys which were used to encrypt the source machine-image.
+      See {csek_help} for more details.
+      """.format(csek_help=csek_utils.CSEK_HELP_URL))
+
+
 def AddImageArgs(parser, enable_snapshots=False):
   """Adds arguments related to images for instances and instance-templates."""
 
@@ -259,11 +270,13 @@ def AddImageArgs(parser, enable_snapshots=False):
   image_group.add_argument(
       '--image-family',
       help="""\
-      The family of the image that the boot disk will be initialized
-      with. When a family is specified instead of an image, the latest
-      non-deprecated image associated with that family is used. It is best
-      practice to use `--image-family` when the latest version of an image is
-      needed.
+      The image family for the operating system that the boot disk will
+      be initialized with. Compute Engine offers multiple Linux
+      distributions, some of which are available as both regular and
+      Shielded VM images.  When a family is specified instead of an image,
+      the latest non-deprecated image associated with that family is
+      used. It is best practice to use `--image-family` when the latest
+      version of an image is needed.
 
       By default, ``{default_image_family}'' is assumed for this flag.
       """.format(default_image_family=constants.DEFAULT_IMAGE_FAMILY))
@@ -275,7 +288,7 @@ def AddImageArgs(parser, enable_snapshots=False):
         will be created from. You can provide this as a full URL
         to the snapshot or just the snapshot name. For example, the following
         are valid values:
-          * https://www.googleapis.com/compute/v1/projects/myproject/global/snapshots/snapshot
+          * https://compute.googleapis.com/compute/v1/projects/myproject/global/snapshots/snapshot
           * snapshot
         """)
 
@@ -409,7 +422,7 @@ def AddDiskArgs(parser, enable_regional_disks=False, enable_kms=False,
       unit of ``KB'' for kilobyte, ``MB'' for megabyte, ``GB'' for gigabyte,
       or ``TB'' for terabyte. For example, ``10GB'' will produce a 10 gigabyte
       disk. The minimum size a boot disk can have is 10 GB. Disk size must be a
-      multiple of 1 GB. Limit your boot disk size to 2TB to account for MBR
+      multiple of 1 GB. Limit boot disk size to 2TB to account for MBR
       partition table limitations.
       """)
 
@@ -484,7 +497,9 @@ def AddDiskArgs(parser, enable_regional_disks=False, enable_kms=False,
 
 
 def AddCreateDiskArgs(parser, enable_kms=False, enable_snapshots=False,
-                      container_mount_enabled=False):
+                      container_mount_enabled=False, resource_policy=False,
+                      source_snapshot_csek=False,
+                      image_csek=False):
   """Adds create-disk argument for instances and instance-templates."""
 
   disk_device_name_help = _GetDiskDeviceNameHelp(
@@ -515,19 +530,23 @@ def AddCreateDiskArgs(parser, enable_kms=False, enable_snapshots=False,
       a specific version of an image is needed. If both image and image-family
       flags are omitted a blank disk will be created.
 
-      *image-family*::: The family of the image that the disk will be
-      initialized with. When a family is specified instead of an image,
+      *image-family*::: The image family for the operating system that the boot
+      disk will be initialized with. Compute Engine offers multiple Linux
+      distributions, some of which are available as both regular and
+      Shielded VM images.  When a family is specified instead of an image,
       the latest non-deprecated image associated with that family is
-      used. It is best practice to use image-family when the latest version
-      of an image is needed.
+      used. It is best practice to use --image-family when the latest
+      version of an image is needed.
 
-      *image-project*::: The project that the image or image family
-      belongs to. It is best practice to define image-project.
+      *image-project*::: The Google Cloud project against which all image and
+      image family references will be resolved. It is best practice to define
+      image-project. A full list of available projects can be generated by
+      running `gcloud projects list`.
           * If specifying one of our public images, image-project must be
             provided.
           * If there are several of the same image-family value in multiple
-            projects, image-project must be specified to clarify the image to
-            be used.
+            projects, image-project must be specified to clarify the image to be
+            used.
           * If not specified and either image or image-family is provided, the
             current default project is used.
 
@@ -606,10 +625,50 @@ def AddCreateDiskArgs(parser, enable_kms=False, enable_snapshots=False,
       create the disk. You can provide this as a full URL
       to the snapshot or just the snapshot name. For example, the following
       are valid values:
-        * https://www.googleapis.com/compute/v1/projects/myproject/global/snapshots/snapshot
+        * https://compute.googleapis.com/compute/v1/projects/myproject/global/snapshots/snapshot
         * snapshot
       """
     spec['source-snapshot'] = str
+
+  if resource_policy:
+    disk_help += """
+      *disk-resource-policy*::: Resource policy that will be applied to created
+      disk. You can provide full or partial URL. For more details see
+        * https://cloud.google.com/sdk/gcloud/reference/beta/compute/resource-policies/
+        * https://cloud.google.com/compute/docs/disks/scheduled-snapshots
+      """
+    spec['disk-resource-policy'] = arg_parsers.ArgList(max_length=1)
+
+  if source_snapshot_csek:
+    disk_help += """
+      *source-snapshot-csek-required*::: The CSK protected source disk snapshot
+      that will be used to create the disk. This can be provided as a full URL
+      to the snapshot or just the snapshot name. For example, the following
+      are valid values:
+       * https://www.googleapis.com/compute/v1/projects/myproject/global/snapshots/snapshot
+       * snapshot
+      Must be specified with `source-snapshot-csek-key-file`.
+
+      *source-snapshot-csek-key-file::: Path to a Customer-Supplied Encryption
+      Key (CSEK) key file for the source snapshot. Must be specified with
+      `source-snapshot-csek-required`.
+      """
+    spec['source-snapshot-csek-key-file'] = str
+
+  if image_csek:
+    disk_help += """
+      *image-csek-required*::: Specifies the name of the CSK protected image
+      that the disk will be initialized with. A new disk will be created based
+      on the given image. To view a list of public images and projects, run
+      `$ gcloud compute images list`. It is best practice to use image when
+      a specific version of an image is needed. If both image and image-family
+      flags are omitted a blank disk will be created. Must be specified with
+      `image-csek-key-file`.
+
+      *image-csek-key-file::: Path to a Customer-Supplied Encryption Key (CSEK)
+      key file for the image. Must be specified with `image-csek-required`.
+    """
+    spec['image-csek-key-file'] = str
 
   parser.add_argument(
       '--create-disk',
@@ -644,6 +703,15 @@ def AddCustomMachineTypeArgs(parser):
       '--custom-extensions',
       action='store_true',
       help='Use the extended custom machine type.')
+  custom_group.add_argument(
+      '--custom-vm-type',
+      help="""
+      Specifies VM type. n1 - VMs with CPU platforms Skylake and older,
+      n2 - VMs with CPU platform Cascade Lake. n2 offers flexible sizing from
+      2 to 80 vCPUs, and 1 to 640GBs of memory.
+      It also features a number of performance enhancements including exposing
+      a more accurate NUMA topology to the guest OS. The default is `n1`.
+      """)
 
 
 def _GetAddress(compute_client, address_ref):
@@ -717,12 +785,17 @@ def GetAddressRef(resources, address, region):
       })
 
 
-def ValidateDiskFlags(args, enable_kms=False, enable_snapshots=False):
+def ValidateDiskFlags(args, enable_kms=False, enable_snapshots=False,
+                      enable_source_snapshot_csek=False,
+                      enable_image_csek=False):
   """Validates the values of all disk-related flags."""
   ValidateDiskCommonFlags(args)
   ValidateDiskAccessModeFlags(args)
   ValidateDiskBootFlags(args, enable_kms=enable_kms)
-  ValidateCreateDiskFlags(args, enable_snapshots=enable_snapshots)
+  ValidateCreateDiskFlags(
+      args, enable_snapshots=enable_snapshots,
+      enable_source_snapshot_csek=enable_source_snapshot_csek,
+      enable_image_csek=enable_image_csek)
 
 
 def ValidateDiskCommonFlags(args):
@@ -829,7 +902,9 @@ def ValidateDiskBootFlags(args, enable_kms=False):
             'boot disk.')
 
 
-def ValidateCreateDiskFlags(args, enable_snapshots=False):
+def ValidateCreateDiskFlags(args, enable_snapshots=False,
+                            enable_source_snapshot_csek=False,
+                            enable_image_csek=False):
   """Validates the values of create-disk related flags."""
   require_csek_key_create = getattr(args, 'require_csek_key_create', None)
   csek_key_file = getattr(args, 'csek_key_file', None)
@@ -854,6 +929,8 @@ def ValidateCreateDiskFlags(args, enable_snapshots=False):
     image_value = disk.get('image')
     image_family_value = disk.get('image-family')
     source_snapshot = disk.get('source-snapshot')
+    image_csek_file = disk.get('image_csek')
+    source_snapshot_csek_file = disk.get('source_snapshot_csek_file')
 
     disk_source = set()
     if image_value:
@@ -862,15 +939,24 @@ def ValidateCreateDiskFlags(args, enable_snapshots=False):
       disk_source.add(image_family_value)
     if source_snapshot:
       disk_source.add(source_snapshot)
+    if image_csek_file:
+      disk_source.add(image_csek_file)
+    if source_snapshot_csek_file:
+      disk_source.add(source_snapshot_csek_file)
 
-    source_error_message = (
-        'Cannot specify [image] and [image-family] for a '
-        '[--create-disk]. The fields are mutually exclusive.')
+    mutex_attributes = ['[image]', '[image-family]']
+    if enable_image_csek:
+      mutex_attributes.append('[image-csek-required]')
     if enable_snapshots:
-      source_error_message = (
-          'Must specify exactly one of [image], [image-family] or '
-          '[source-snapshot] for a [--create-disk]. '
-          'These fields are mutually exclusive.')
+      mutex_attributes.append('[source-snapshot]')
+    if enable_source_snapshot_csek:
+      mutex_attributes.append('[source-snapshot-csek-required]')
+    formatted_attributes = '{}, or {}'.format(', '.join(mutex_attributes[:-1]),
+                                              mutex_attributes[-1])
+    source_error_message = (
+        'Must specify exactly one of {} for a '
+        '[--create-disk]. These fields are mutually exclusive.'.format(
+            formatted_attributes))
     if len(disk_source) > 1:
       raise exceptions.ToolException(source_error_message)
 
@@ -891,8 +977,15 @@ def AddAddressArgs(parser,
   addresses.add_argument(
       '--no-address',
       action='store_true',
-      help=('If provided, the instances will not be assigned external IP '
-            'addresses.'))
+      help="""\
+           If provided, the instances are not assigned external IP
+           addresses. To pull container images, you must configure private
+           Google access if using Container Registry or configure Cloud NAT
+           for instances to access container images directly. For more
+           information, see:
+             * https://cloud.google.com/vpc/docs/configure-private-google-access
+             * https://cloud.google.com/nat/docs/using-nat
+           """)
   if instances:
     address_help = """\
         Assigns the given external address to the instance that is created.
@@ -913,8 +1006,8 @@ def AddAddressArgs(parser,
       'no-address': None,
       'subnet': str,
   }
-  if instances:
-    multiple_network_interface_cards_spec['private-network-ip'] = str
+
+  multiple_network_interface_cards_spec['private-network-ip'] = str
 
   def ValidateNetworkTier(network_tier_input):
     network_tier = network_tier_input.upper()
@@ -953,8 +1046,8 @@ def AddAddressArgs(parser,
         ``NETWORK_TIER'' must be one of: `PREMIUM`, `STANDARD`. The default
         value is `PREMIUM`.
         """
-    if instances:
-      network_interface_help += """
+
+    network_interface_help += """
         *private-network-ip*::: Assigns the given RFC1918 IP address to the
         interface.
         """
@@ -1041,6 +1134,33 @@ def AddMinCpuPlatformArgs(parser, track, required=False):
       You can find more information on-line:
       [](https://cloud.google.com/compute/docs/instances/specify-min-cpu-platform)
       """.format(track.prefix + ' ' if track.prefix else ''))
+
+
+def AddMinNodeCpuArg(parser, is_update=False):
+  parser.add_argument(
+      '--min-node-cpu',
+      help="""\
+      Minimum number of virtual CPUs this instance will consume when running on
+      a sole-tenant node.
+      """)
+  if is_update:
+    parser.add_argument(
+        '--clear-min-node-cpu',
+        action='store_true',
+        help="""\
+        Removes the min-node-cpu field from the instance. If specified, the
+        instance min-node-cpu will be cleared. The instance will not be
+        overcommitted and utilize the full CPU count assigned.
+        """)
+
+
+def AddLocationHintArg(parser):
+  parser.add_argument(
+      '--location-hint',
+      hidden=True,
+      help="""\
+      Used by internal tools to control sub-zone location of the instance.
+      """)
 
 
 def AddPreemptibleVmArgs(parser):
@@ -1300,7 +1420,7 @@ def ValidatePublicDnsFlags(args):
 
   network_interface = getattr(args, 'network_interface', None)
   public_dns = getattr(args, 'public_dns', None)
-  if public_dns is True:
+  if public_dns:
     if (network_interface is not None and
         network_interface != constants.DEFAULT_NETWORK_INTERFACE):
       raise exceptions.ToolException(
@@ -1314,7 +1434,7 @@ def ValidatePublicPtrFlags(args):
 
   network_interface = getattr(args, 'network_interface', None)
   public_ptr = getattr(args, 'public_ptr', None)
-  if public_ptr is True:
+  if public_ptr is True:  # pylint:disable=g-bool-id-comparison
     if (network_interface is not None and
         network_interface != constants.DEFAULT_NETWORK_INTERFACE):
       raise exceptions.ToolException(
@@ -1322,7 +1442,7 @@ def ValidatePublicPtrFlags(args):
           '\'{0}\' rather than \'{1}\'.'.format(
               constants.DEFAULT_NETWORK_INTERFACE, network_interface))
 
-  if args.public_ptr_domain is not None and args.no_public_ptr is True:
+  if args.public_ptr_domain is not None and args.no_public_ptr is True:  # pylint:disable=g-bool-id-comparison
     raise exceptions.ConflictingArgumentsException('--public-ptr-domain',
                                                    '--no-public-ptr')
 
@@ -1417,8 +1537,8 @@ def AddAcceleratorArgs(parser):
       of accelerator to attach to the instances. Use 'gcloud compute
       accelerator-types list' to learn about all available accelerator types.
 
-      *count*::: The number of pieces of the accelerator to attach to the
-      instances. The default value is 1.
+      *count*::: Number of accelerators to attach to each
+      instance. The default value is 1.
       """)
 
 
@@ -1466,10 +1586,10 @@ def AddKonletArgs(parser):
       Each argument must have a separate flag. Arguments are appended in the
       order of flags. Example:
 
-      Assuming the default entry point of your container (or an entry point
+      Assuming the default entry point of the container (or an entry point
       overridden with --container-command flag) is a Bourne shell-compatible
       executable, in order to execute 'ls -l' command in the container,
-      you could use:
+      the user could use:
 
       `--container-arg="-c" --container-arg="ls -l"`
 
@@ -1771,13 +1891,28 @@ def AddShieldedInstanceIntegrityPolicyArgs(parser):
       help=help_text)
 
 
+def AddConfidentialComputeArgs(parser):
+  """Adds flags for confidential compute for instance."""
+  help_text = """\
+  The instance will boot with confidential compute enabled. Confidential
+  Compute is based on Secure Encrypted Virtualization (SEV), an AMD
+  virtualization feature for running confidential instances.
+  """
+  parser.add_argument(
+      '--confidential-compute',
+      dest='confidential_compute',
+      action='store_true',
+      default=None,
+      help=help_text)
+
+
 def AddHostnameArg(parser):
   """Adds flag for overriding hostname for instance."""
   parser.add_argument(
       '--hostname',
       help="""\
       Specify the hostname of the instance to be created. The specified
-      homename must be RFC1035 compliant. If hostname is not specified, the
+      hostname must be RFC1035 compliant. If hostname is not specified, the
       default hostname is [INSTANCE_NAME].c.[PROJECT_ID].internal when using
       the global DNS, and [INSTANCE_NAME].[ZONE].c.[PROJECT_ID].internal
       when using zonal DNS.
@@ -2257,3 +2392,19 @@ def AddUpdateContainerArgs(parser, container_mount_disk_enabled=False):
       parser,
       container_mount_disk_enabled=container_mount_disk_enabled)
   _AddContainerArgs(parser)
+
+
+def AddPostKeyRevocationActionTypeArgs(parser):
+  """Helper to add --post-key-revocation-action-type flag."""
+  parser.add_argument(
+      '--post-key-revocation-action-type',
+      choices=['noop', 'shutdown'],
+      metavar='POLICY',
+      required=False,
+      hidden=True,
+      help="""\
+      The instance will be shut down when the KMS key of one of its disk is
+      revoked, if set to `SHUTDOWN`.
+
+      Default setting is `NOOP`.
+      """)

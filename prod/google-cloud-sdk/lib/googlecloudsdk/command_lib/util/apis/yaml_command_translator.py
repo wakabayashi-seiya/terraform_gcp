@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,12 +25,18 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import json
+import sys
+import textwrap
+
 from apitools.base.protorpclite import messages as apitools_messages
 from apitools.base.py import encoding
+from apitools.base.py import exceptions as apitools_exceptions
 from apitools.base.py.exceptions import HttpBadRequestError
 from googlecloudsdk.api_lib.util import waiter
 from googlecloudsdk.calliope import base
 from googlecloudsdk.calliope import command_loading
+from googlecloudsdk.command_lib.export import util as export_util
 from googlecloudsdk.command_lib.iam import iam_util
 from googlecloudsdk.command_lib.util import completers
 from googlecloudsdk.command_lib.util.apis import arg_marshalling
@@ -38,11 +44,15 @@ from googlecloudsdk.command_lib.util.apis import arg_utils
 from googlecloudsdk.command_lib.util.apis import registry
 from googlecloudsdk.command_lib.util.apis import update
 from googlecloudsdk.command_lib.util.apis import yaml_command_schema
+from googlecloudsdk.command_lib.util.args import labels_util
 from googlecloudsdk.core import exceptions
 from googlecloudsdk.core import log
 from googlecloudsdk.core import resources
 from googlecloudsdk.core.console import console_io
 from googlecloudsdk.core.resource import resource_transform
+from googlecloudsdk.core.util import files
+
+import six
 
 
 class Translator(command_loading.YamlCommandTranslator):
@@ -94,17 +104,20 @@ class CommandBuilder(object):
   def __init__(self, spec, path):
     self.spec = spec
     self.path = path
-    self.method = registry.GetMethod(
-        self.spec.request.collection, self.spec.request.method,
-        self.spec.request.api_version)
+    self.ConfigureCommand()
+
+  def ConfigureCommand(self):
+    """Allows command to be reconfigured if needed."""
+    self.method = registry.GetMethod(self.spec.request.collection,
+                                     self.spec.request.method,
+                                     self.spec.request.api_version,
+                                     self.spec.request.use_google_auth)
     resource_arg = self.spec.arguments.resource
     self.arg_generator = arg_marshalling.DeclarativeArgumentGenerator(
-        self.method,
-        self.spec.arguments.params,
-        resource_arg)
+        self.method, self.spec.arguments.params, resource_arg)
     self.display_resource_type = self.spec.request.display_resource_type
-    if (not self.display_resource_type
-        and resource_arg and not resource_arg.is_parent_resource):
+    if (not self.display_resource_type and resource_arg and
+        not resource_arg.is_parent_resource):
       self.display_resource_type = resource_arg.name if resource_arg else None
 
   def Generate(self):
@@ -141,6 +154,10 @@ class CommandBuilder(object):
       command = self._GenerateRemoveIamPolicyBindingCommand()
     elif self.spec.command_type == yaml_command_schema.CommandType.UPDATE:
       command = self._GenerateUpdateCommand()
+    elif self.spec.command_type == yaml_command_schema.CommandType.IMPORT:
+      command = self._GenerateImportCommand()
+    elif self.spec.command_type == yaml_command_schema.CommandType.EXPORT:
+      command = self._GenerateExportCommand()
     elif self.spec.command_type == yaml_command_schema.CommandType.GENERIC:
       command = self._GenerateGenericCommand()
     else:
@@ -194,6 +211,7 @@ class CommandBuilder(object):
     # pylint: disable=protected-access, The linter gets confused about 'self'
     # and thinks we are accessing something protected.
     class Command(base.ListCommand):
+    # pylint: disable=missing-docstring
 
       @staticmethod
       def Args(parser):
@@ -229,16 +247,17 @@ class CommandBuilder(object):
     # pylint: disable=protected-access, The linter gets confused about 'self'
     # and thinks we are accessing something protected.
     class Command(base.DeleteCommand):
+    # pylint: disable=missing-docstring
 
       @staticmethod
       def Args(parser):
         self._CommonArgs(parser)
-        if self.spec.async:
+        if self.spec.async_:
           base.ASYNC_FLAG.AddToParser(parser)
 
       def Run(self_, args):
         ref, response = self._CommonRun(args)
-        if self.spec.async:
+        if self.spec.async_:
           response = self._HandleAsync(
               args,
               ref,
@@ -246,7 +265,7 @@ class CommandBuilder(object):
               request_string='Delete request issued for: [{{{}}}]'
               .format(yaml_command_schema.NAME_FORMAT_KEY),
               extract_resource_result=False)
-          if args.async:
+          if args.async_:
             return self._HandleResponse(response, args)
 
         response = self._HandleResponse(response, args)
@@ -275,18 +294,21 @@ class CommandBuilder(object):
     # pylint: disable=protected-access, The linter gets confused about 'self'
     # and thinks we are accessing something protected.
     class Command(base.CreateCommand):
+    # pylint: disable=missing-docstring
 
       @staticmethod
       def Args(parser):
         self._CommonArgs(parser)
-        if self.spec.async:
+        if self.spec.async_:
           base.ASYNC_FLAG.AddToParser(parser)
+        if self.spec.arguments.labels:
+          labels_util.AddCreateLabelsFlags(parser)
 
       def Run(self_, args):
         ref, response = self._CommonRun(args)
         is_parent_resource = (self.spec.arguments.resource and
                               self.spec.arguments.resource.is_parent_resource)
-        if self.spec.async:
+        if self.spec.async_:
           if ref is not None and not is_parent_resource:
             request_string = 'Create request issued for: [{{{}}}]'.format(
                 yaml_command_schema.NAME_FORMAT_KEY)
@@ -295,7 +317,7 @@ class CommandBuilder(object):
           response = self._HandleAsync(
               args, ref, response,
               request_string=request_string)
-          if args.async:
+          if args.async_:
             return self._HandleResponse(response, args)
 
         if is_parent_resource:
@@ -335,6 +357,7 @@ class CommandBuilder(object):
     # pylint: disable=protected-access, The linter gets confused about 'self'
     # and thinks we are accessing something protected.
     class Command(base.Command):
+    # pylint: disable=missing-docstring
 
       @staticmethod
       def Args(parser):
@@ -378,6 +401,11 @@ class CommandBuilder(object):
         base.URI_FLAG.RemoveFromParser(parser)
 
       def Run(self_, args):
+        if self.spec.iam and self.spec.iam.policy_version:
+          self.spec.request.static_fields[
+              self.spec.iam
+              .get_iam_policy_version_path] = self.spec.iam.policy_version
+
         _, response = self._CommonRun(args)
         return self._HandleResponse(response, args)
 
@@ -416,8 +444,10 @@ class CommandBuilder(object):
         # Use Policy message and set IAM request field name overrides for API's
         # with non-standard naming (if provided)
         if self.spec.iam:
-          policy_type_name = (self.spec.iam.message_type_overrides['policy'] or
-                              policy_type_name)
+          if 'policy' in self.spec.iam.message_type_overrides:
+            policy_type_name = (self.spec.iam
+                                .message_type_overrides['policy'] or
+                                policy_type_name)
           policy_request_path = (self.spec.iam.set_iam_policy_request_path or
                                  policy_request_path)
 
@@ -428,6 +458,10 @@ class CommandBuilder(object):
               policy_type_name))
         policy, update_mask = iam_util.ParsePolicyFileWithUpdateMask(
             args.policy_file, policy_type)
+
+        # override policy version
+        if self.spec.iam and self.spec.iam.policy_version:
+          policy.version = self.spec.iam.policy_version
 
         self.spec.request.static_fields[policy_field_path] = policy
         self._SetPolicyUpdateMask(update_mask)
@@ -499,6 +533,11 @@ class CommandBuilder(object):
 
         policy = self._GetModifiedIamPolicyAddIamBinding(
             args, add_condition=self._add_condition)
+
+        # override policy version
+        if self.spec.iam and self.spec.iam.policy_version:
+          policy.version = self.spec.iam.policy_version
+
         self.spec.request.static_fields[policy_field_path] = policy
 
         try:
@@ -556,6 +595,11 @@ class CommandBuilder(object):
 
         policy = self._GetModifiedIamPolicyRemoveIamBinding(
             args, add_condition=self._add_condition)
+
+        # override policy version
+        if self.spec.iam and self.spec.iam.policy_version:
+          policy.version = self.spec.iam.policy_version
+
         self.spec.request.static_fields[policy_field_path] = policy
 
         ref, response = self._CommonRun(args)
@@ -586,12 +630,12 @@ class CommandBuilder(object):
       @staticmethod
       def Args(parser):
         self._CommonArgs(parser)
-        if self.spec.async:
+        if self.spec.async_:
           base.ASYNC_FLAG.AddToParser(parser)
 
       def Run(self_, args):
         ref, response = self._CommonRun(args)
-        if self.spec.async:
+        if self.spec.async_:
           request_string = None
           if ref:
             request_string = 'Request issued for: [{{{}}}]'.format(
@@ -599,6 +643,154 @@ class CommandBuilder(object):
           response = self._HandleAsync(
               args, ref, response, request_string=request_string)
         return self._HandleResponse(response, args)
+
+    return Command
+
+  def _GenerateImportCommand(self):
+    """Generates an export command.
+
+    An export command has a single resource argument and an API method to call
+    to get the resource. The result is exported to a local yaml file provided
+    by the `--destination` flag, or to stdout if nothing is provided.
+
+    Returns:
+      calliope.base.Command, The command that implements the spec.
+    """
+
+    # pylint: disable=no-self-argument, The class closure throws off the linter
+    # a bit. We want to use the generator class, not the class being generated.
+    # pylint: disable=protected-access, The linter gets confused about 'self'
+    # and thinks we are accessing something protected.
+    class Command(base.ImportCommand):
+      """Export command enclosure."""
+
+      @staticmethod
+      def Args(parser):
+        self._CommonArgs(parser)
+        if self.spec.async_:
+          base.ASYNC_FLAG.AddToParser(parser)
+        parser.add_argument(
+            '--source',
+            help=textwrap.dedent("""
+            Path to a YAML file containing the configuration export data. The
+            YAML file must not contain any output-only fields. Alternatively, you
+            may omit this flag to read from standard input. A schema describing
+            the export/import format can be found in:
+            $CLOUDSDKROOT/lib/googlecloudsdk/schemas/...
+          """))
+
+      def Run(self_, args):
+        # Determine message to parse resource into from yaml
+        message_type = self.method.GetRequestType()
+        request_field = self.method.request_field
+        resource_message_class = message_type.field_by_name(request_field).type
+
+        # Set up information for export utility.
+        data = console_io.ReadFromFileOrStdin(args.source or '-', binary=False)
+        schema_path = export_util.GetSchemaPath(self.method.collection.api_name,
+                                                self.spec.request.api_version,
+                                                resource_message_class.__name__)
+        # Import resource from yaml.
+        imported_resource = export_util.Import(
+            message_type=resource_message_class,
+            stream=data,
+            schema_path=schema_path)
+
+        # If any special configuration has been made for the import command...
+        existing_resource = None
+        if self.spec.import_:
+          abort_if_equivalent = self.spec.import_.abort_if_equivalent
+          create_if_not_exists = self.spec.import_.create_if_not_exists
+
+          # Try to get the existing resource from the service.
+          try:
+            existing_resource = self._GetExistingResource(args)
+          except apitools_exceptions.HttpError as error:
+            # Raise error if command is configured to not create a new resource
+            # or if error other than "Does Not Exist" occurs.
+            if error.status_code != 404 or not create_if_not_exists:
+              raise error
+            else:
+              # Configure command to use fallback create request configuration.
+              self.spec.request = self.spec.import_.create_request
+
+              # Configure command to use fallback create async configuration.
+              if self.spec.import_.no_create_async:
+                self.spec.async_ = None
+              else:
+                self.spec.async_ = self.spec.import_.create_async
+              # Reset command with updated configuration.
+              self.ConfigureCommand()
+
+          # Abort command early if no changes are detected.
+          if abort_if_equivalent:
+            if imported_resource == existing_resource:
+              return log.status.Print(
+                  'Request not sent for [{}]: No changes detected.'.format(
+                      imported_resource.name))
+
+        ref, response = self._CommonRun(
+            args, existing_message=imported_resource)
+
+        # Handle asynchronous behavior.
+        if self.spec.async_:
+          request_string = None
+          if ref is not None:
+            request_string = 'Request issued for: [{{{}}}]'.format(
+                yaml_command_schema.NAME_FORMAT_KEY)
+          response = self._HandleAsync(args, ref, response, request_string)
+
+        return self._HandleResponse(response, args)
+
+    return Command
+
+  def _GenerateExportCommand(self):
+    """Generates an export command.
+
+    An export command has a single resource argument and an API method to call
+    to get the resource. The result is exported to a local yaml file provided
+    by the `--destination` flag, or to stdout if nothing is provided.
+
+    Returns:
+      calliope.base.Command, The command that implements the spec.
+    """
+
+    # pylint: disable=no-self-argument, The class closure throws off the linter
+    # a bit. We want to use the generator class, not the class being generated.
+    # pylint: disable=protected-access, The linter gets confused about 'self'
+    # and thinks we are accessing something protected.
+    class Command(base.ExportCommand):
+      """Export command enclosure."""
+
+      @staticmethod
+      def Args(parser):
+        self._CommonArgs(parser)
+        parser.add_argument(
+            '--destination',
+            help=textwrap.dedent("""
+            Path to a YAML file where the configuration will be exported.
+            The exported data will not contain any output-only fields.
+            Alternatively, you may omit this flag to write to standard output. A
+            schema describing the export/import format can be found in
+            $CLOUDSDKROOT/lib/googlecloudsdk/schemas/...
+          """))
+
+      def Run(self_, args):
+        unused_ref, response = self._CommonRun(args)
+        schema_path = export_util.GetSchemaPath(self.method.collection.api_name,
+                                                self.spec.request.api_version,
+                                                response.__class__.__name__)
+
+        # Export parsed yaml to selected destination.
+        if args.IsSpecified('destination'):
+          with files.FileWriter(args.destination) as stream:
+            export_util.Export(
+                message=response, stream=stream, schema_path=schema_path)
+          return log.status.Print('Exported [{}] to \'{}\'.'.format(
+              response.name, args.destination))
+        else:
+          export_util.Export(
+              message=response, stream=sys.stdout, schema_path=schema_path)
 
     return Command
 
@@ -626,8 +818,10 @@ class CommandBuilder(object):
       @staticmethod
       def Args(parser):
         self._CommonArgs(parser)
-        if self.spec.async:
+        if self.spec.async_:
           base.ASYNC_FLAG.AddToParser(parser)
+        if self.spec.arguments.labels:
+          labels_util.AddUpdateLabelsFlags(parser)
 
       def Run(self_, args):
         # Check if mask is required for an update request, if required, return
@@ -649,7 +843,7 @@ class CommandBuilder(object):
             existing_message = self._GetExistingResource(args)
 
         ref, response = self._CommonRun(args, existing_message)
-        if self.spec.async:
+        if self.spec.async_:
           request_string = None
           if ref:
             request_string = 'Request issued for: [{{{}}}]'.format(
@@ -680,6 +874,8 @@ class CommandBuilder(object):
         arg.AddToParser(parser)
     if self.spec.output.format:
       parser.display_info.AddFormat(self.spec.output.format)
+    if self.spec.output.flatten:
+      parser.display_info.AddFlatten(self.spec.output.flatten)
 
   def _CommonRun(self, args, existing_message=None):
     """Performs run actions common to all commands.
@@ -722,6 +918,8 @@ class CommandBuilder(object):
           args,
           self.spec.request.static_fields,
           self.spec.request.resource_method_params,
+          self.spec.arguments.labels,
+          self.spec.command_type,
           use_relative_name=self.spec.request.use_relative_name,
           parse_resource_into_request=parse_resource,
           existing_message=existing_message,
@@ -753,8 +951,9 @@ class CommandBuilder(object):
     # for API's with non-standard naming (if provided)
     if self.spec.iam:
       overrides = self.spec.iam.message_type_overrides
-      set_iam_policy_request = (overrides['set_iam_policy_request']
-                                or set_iam_policy_request)
+      if 'set_iam_policy_request' in overrides:
+        set_iam_policy_request = (overrides['set_iam_policy_request']
+                                  or set_iam_policy_request)
       policy_request_path = (self.spec.iam.set_iam_policy_request_path
                              or policy_request_path)
 
@@ -764,6 +963,7 @@ class CommandBuilder(object):
       self.spec.request.static_fields[mask_field_path] = update_mask
 
   def _GetIamPolicy(self, args):
+    """GetIamPolicy helper function for add/remove binding."""
     get_iam_method = registry.GetMethod(self.spec.request.collection,
                                         'getIamPolicy',
                                         self.spec.request.api_version)
@@ -771,6 +971,13 @@ class CommandBuilder(object):
         args,
         use_relative_name=self.spec.request.use_relative_name,
         override_method=get_iam_method)
+
+    if self.spec.iam and self.spec.iam.policy_version:
+      arg_utils.SetFieldInMessage(
+          get_iam_request,
+          self.spec.iam.get_iam_policy_version_path,
+          self.spec.iam.policy_version)
+
     policy = get_iam_method.Call(get_iam_request)
     return policy
 
@@ -847,15 +1054,16 @@ class CommandBuilder(object):
       The response (either the operation or the original resource).
     """
     operation_ref = resources.REGISTRY.Parse(
-        getattr(operation, self.spec.async.response_name_field),
-        collection=self.spec.async.collection)
+        getattr(operation, self.spec.async_.response_name_field),
+        collection=self.spec.async_.collection)
+    request_string = self.spec.async_.request_issued_message or request_string
     if request_string:
       log.status.Print(self._Format(request_string, resource_ref,
                                     self._GetDisplayName(resource_ref, args)))
-    if args.async:
+    if args.async_:
       log.status.Print(self._Format(
           'Check operation [{{{}}}] for status.'
-          .format(yaml_command_schema.NAME_FORMAT_KEY), operation_ref))
+          .format(yaml_command_schema.REL_NAME_FORMAT_KEY), operation_ref))
       return operation
 
     return self._WaitForOperation(
@@ -864,10 +1072,10 @@ class CommandBuilder(object):
   def _WaitForOperation(self, operation_ref, resource_ref,
                         extract_resource_result, args=None):
     poller = AsyncOperationPoller(
-        self.spec, resource_ref if extract_resource_result else None)
+        self.spec, resource_ref if extract_resource_result else None, args)
     progress_string = self._Format(
         'Waiting for operation [{{{}}}] to complete'.format(
-            yaml_command_schema.NAME_FORMAT_KEY),
+            yaml_command_schema.REL_NAME_FORMAT_KEY),
         operation_ref)
     return waiter.WaitFor(
         poller, operation_ref, self._Format(
@@ -901,7 +1109,7 @@ class CommandBuilder(object):
               _GetAttribute(error, self.spec.response.error.message)))
         if messages:
           raise exceptions.Error(' '.join(messages))
-        raise exceptions.Error(str(error))
+        raise exceptions.Error(six.text_type(error))
     if self.spec.response.result_attribute:
       response = _GetAttribute(response, self.spec.response.result_attribute)
     for hook in self.spec.response.modify_response_hooks:
@@ -983,7 +1191,7 @@ class CommandBuilder(object):
     Args:
       command: The command being generated.
     """
-    if self.spec.is_hidden:
+    if self.spec.hidden:
       command = base.Hidden(command)
     if self.spec.release_tracks:
       command = base.ReleaseTracks(*self.spec.release_tracks)(command)
@@ -1010,7 +1218,7 @@ class CommandBuilder(object):
 class AsyncOperationPoller(waiter.OperationPoller):
   """An implementation of a operation poller."""
 
-  def __init__(self, spec, resource_ref):
+  def __init__(self, spec, resource_ref, args):
     """Creates the poller.
 
     Args:
@@ -1020,29 +1228,31 @@ class AsyncOperationPoller(waiter.OperationPoller):
         being operated on (not the operation itself). If None, the operation
         will just be returned when it is done instead of getting the resulting
         resource.
+      args: Namespace, The args namespace.
     """
     self.spec = spec
     self.resource_ref = resource_ref
-    if not self.spec.async.extract_resource_result:
+    if not self.spec.async_.extract_resource_result:
       self.resource_ref = None
     self.method = registry.GetMethod(
-        spec.async.collection, spec.async.method,
-        api_version=spec.async.api_version or spec.request.api_version)
+        spec.async_.collection, spec.async_.method,
+        api_version=spec.async_.api_version or spec.request.api_version)
+    self.args = args
 
   def IsDone(self, operation):
     """Overrides."""
-    result = getattr(operation, self.spec.async.state.field)
+    result = getattr(operation, self.spec.async_.state.field)
     if isinstance(result, apitools_messages.Enum):
       result = result.name
-    if (result in self.spec.async.state.success_values or
-        result in self.spec.async.state.error_values):
+    if (result in self.spec.async_.state.success_values or
+        result in self.spec.async_.state.error_values):
       # We found a value that means it is done.
-      error = getattr(operation, self.spec.async.error.field)
-      if not error and result in self.spec.async.state.error_values:
+      error = getattr(operation, self.spec.async_.error.field)
+      if not error and result in self.spec.async_.state.error_values:
         error = 'The operation failed.'
       # If we succeeded but there is an error, or if an error was detected.
       if error:
-        raise waiter.OperationError(error)
+        raise waiter.OperationError(SerializeError(error))
       return True
 
     return False
@@ -1059,12 +1269,15 @@ class AsyncOperationPoller(waiter.OperationPoller):
     request_type = self.method.GetRequestType()
     relative_name = operation_ref.RelativeName()
     fields = {
-        f.name: getattr(
+        f.name: getattr(  # pylint:disable=g-complex-comprehension
             operation_ref,
-            self.spec.async.operation_get_method_params.get(f.name, f.name),
+            self.spec.async_.operation_get_method_params.get(f.name, f.name),
             relative_name)
         for f in request_type.all_fields()}
-    return self.method.Call(request_type(**fields))
+    request = request_type(**fields)
+    for hook in self.spec.async_.modify_request_hooks:
+      request = hook(operation_ref, self.args, request)
+    return self.method.Call(request)
 
   def GetResult(self, operation):
     """Overrides.
@@ -1081,12 +1294,27 @@ class AsyncOperationPoller(waiter.OperationPoller):
       request = method.GetRequestType()()
       arg_utils.ParseResourceIntoMessage(self.resource_ref, method, request)
       result = method.Call(request)
-    return _GetAttribute(result, self.spec.async.result_attribute)
+    return _GetAttribute(result, self.spec.async_.result_attribute)
 
   def _ResourceGetMethod(self):
     return registry.GetMethod(
-        self.spec.request.collection, self.spec.async.resource_get_method,
+        self.spec.request.collection, self.spec.async_.resource_get_method,
         api_version=self.spec.request.api_version)
+
+
+def SerializeError(error):
+  """Serializes the error message for better format."""
+  if isinstance(error, six.string_types):
+    return error
+  try:
+    return json.dumps(
+        encoding.MessageToDict(error),
+        indent=2,
+        sort_keys=True,
+        separators=(',', ': '))
+  except Exception:  # pylint: disable=broad-except
+    # try the best, fall back to return error
+    return error
 
 
 def _GetAttribute(obj, attr_path):

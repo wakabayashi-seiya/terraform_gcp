@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import base64
 import datetime
 import json
 import time
-import urllib
 
 from apitools.base.py.exceptions import HttpError
 
@@ -45,15 +44,25 @@ It may take several minutes for this operation to complete.
 
 Logs will be made available shortly at:
 gs://{0}/{1}"""
+DETAILED_HELP = {
+    'EXAMPLES':
+        """\
+        To export logs and upload them to a Cloud Storage Bucket, run:
+
+          $ {command} example-instance --zone=us-central1
+        """,
+}
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA, base.ReleaseTrack.BETA)
 class ExportLogs(base_classes.BaseCommand):
   """Triggers instance to gather logs and upload them to a Cloud Storage Bucket.
 
   Gathers logs from a running Compute Engine VM and exports them to a Google
   Cloud Storage Bucket. Outputs a path to the logs within the Bucket.
   """
+
+  detailed_help = DETAILED_HELP
 
   @classmethod
   def Args(cls, parser):
@@ -110,25 +119,17 @@ class ExportLogs(base_classes.BaseCommand):
       A string url that can be used until its expiration to upload a file.
     """
 
-    url_data = str('POST\n\n\n{0}\nx-goog-resumable:start\n/{1}/{2}'.format(
-        expiration, bucket, filepath))
-    signature = self._diagnose_client.SignBlob(service_account, url_data)
-
-    # In python3, string are utf-8 string, so we need to convert to byte string.
-    if isinstance(signature, six.text_type):
-      signature = signature.encode('utf-8')
-
+    url_data = six.ensure_binary(
+        'POST\n\n\n{0}\nx-goog-resumable:start\n/{1}/{2}'.format(
+            expiration, bucket, filepath))
+    signature = six.ensure_binary(
+        self._diagnose_client.SignBlob(service_account, url_data))
     encoded_sig = base64.b64encode(signature)
 
     url = ('https://storage.googleapis.com/'
            '{0}/{1}?GoogleAccessId={2}&Expires={3}&Signature={4}')
 
-    # python3 moves quote_plus to the urllib.parse.quote_plus
-    url_suffix = ''
-    if hasattr(urllib, 'quote_plus'):
-      url_suffix = urllib.quote_plus(encoded_sig)
-    else:
-      url_suffix = urllib.parse.quote_plus(encoded_sig)
+    url_suffix = six.moves.urllib.parse.quote_plus(encoded_sig)
 
     return url.format(bucket, filepath, service_account, expiration, url_suffix)
 
@@ -177,7 +178,7 @@ class ExportLogs(base_classes.BaseCommand):
     """
     expiration = datetime.datetime.now() + datetime.timedelta(hours=hours)
     expiration_seconds = time.mktime(expiration.timetuple())
-    return str(int(expiration_seconds))
+    return six.text_type(int(expiration_seconds))
 
   def _GetLogBucket(self, project_id):
     """Locates or creates the GCS Bucket for logs associated with the project.

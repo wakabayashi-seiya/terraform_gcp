@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ from apitools.base.py import list_pager
 from googlecloudsdk.api_lib.dns import import_util
 from googlecloudsdk.api_lib.dns import transaction_util
 from googlecloudsdk.api_lib.dns import util
-from googlecloudsdk.api_lib.util import apis
 from googlecloudsdk.calliope import base
 from googlecloudsdk.calliope import exceptions as calliope_exceptions
 from googlecloudsdk.command_lib.dns import flags
@@ -45,7 +44,7 @@ class Start(base.Command):
 
   To start a transaction, run:
 
-    $ {command} --zone MANAGED_ZONE
+    $ {command} --zone=MANAGED_ZONE
   """
 
   @staticmethod
@@ -58,12 +57,14 @@ class Start(base.Command):
     # this patter of checking ReleaseTrack. Break this into multiple classes.
     if self.ReleaseTrack() == base.ReleaseTrack.BETA:
       api_version = 'v1beta2'
+    elif self.ReleaseTrack() == base.ReleaseTrack.ALPHA:
+      api_version = 'v1alpha2'
 
     if os.path.isfile(args.transaction_file):
       raise transaction_util.TransactionFileAlreadyExists(
           'Transaction already exists at [{0}]'.format(args.transaction_file))
 
-    dns = apis.GetClientInstance('dns', api_version)
+    dns = util.GetApiClient(api_version)
 
     # Get the managed-zone.
     zone_ref = util.GetRegistry(api_version).Parse(

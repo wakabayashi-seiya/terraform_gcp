@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ from __future__ import division
 from __future__ import unicode_literals
 
 from googlecloudsdk.api_lib.run import global_methods
+from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.run import commands
 from googlecloudsdk.command_lib.run import connection_context
 from googlecloudsdk.command_lib.run import flags
@@ -27,8 +28,10 @@ from googlecloudsdk.command_lib.run import resource_args
 from googlecloudsdk.command_lib.run import serverless_operations
 from googlecloudsdk.command_lib.util.concepts import concept_parsers
 from googlecloudsdk.command_lib.util.concepts import presentation_specs
+from googlecloudsdk.core import log
 
 
+@base.ReleaseTracks(base.ReleaseTrack.BETA, base.ReleaseTrack.GA)
 class List(commands.List):
   """List available services."""
 
@@ -44,38 +47,80 @@ class List(commands.List):
   }
 
   @classmethod
-  def Args(cls, parser):
+  def CommonArgs(cls, parser):
+    # Flags specific to connecting to a cluster
+    cluster_group = flags.GetClusterArgGroup(parser)
     namespace_presentation = presentation_specs.ResourcePresentationSpec(
         '--namespace',
         resource_args.GetNamespaceResourceSpec(),
-        'Namespace list services in.',
+        'Namespace to list services in.',
         required=True,
         prefixes=False)
-    concept_parsers.ConceptParser([
-        resource_args.CLOUD_RUN_LOCATION_PRESENTATION,
-        resource_args.CLUSTER_PRESENTATION,
-        namespace_presentation]).AddToParser(parser)
-    parser.display_info.AddFormat("""table(
-        {ready_column},
-        firstof(id,metadata.name):label=SERVICE,
-        region:label=REGION,
-        latest_created_revision:label="LATEST REVISION",
-        serving_revisions.list():label="SERVING REVISION",
-        last_modifier:label="LAST DEPLOYED BY",
-        last_transition_time:label="LAST DEPLOYED AT")""".format(
-            ready_column=pretty_print.READY_COLUMN))
+    concept_parsers.ConceptParser(
+        [namespace_presentation]).AddToParser(cluster_group)
+
     parser.display_info.AddUriFunc(cls._GetResourceUri)
+
+  @classmethod
+  def Args(cls, parser):
+    cls.CommonArgs(parser)
+
+  def _SetFormat(self, args, show_region=False, show_namespace=False):
+    """Set display format for output.
+
+    Args:
+      args: Namespace, the args namespace
+      show_region: bool, True to show region of listed services
+      show_namespace: bool, True to show namespace of listed services
+    """
+    columns = [
+        pretty_print.READY_COLUMN,
+        'firstof(id,metadata.name):label=SERVICE',
+    ]
+    if show_region:
+      columns.append('region:label=REGION')
+    if show_namespace:
+      columns.append('namespace:label=NAMESPACE')
+    columns.extend([
+        'domain:label=URL',
+        'last_modifier:label="LAST DEPLOYED BY"',
+        'last_transition_time:label="LAST DEPLOYED AT"',
+    ])
+    args.GetDisplayInfo().AddFormat(
+        'table({})'.format(','.join(columns)))
 
   def Run(self, args):
     """List available services."""
-    if not flags.ValidateIsGKE(args) and not getattr(args, 'region', None):
+    is_managed = flags.GetPlatform() == flags.PLATFORM_MANAGED
+    if is_managed and not args.IsSpecified('region'):
+      self._SetFormat(args, show_region=True)
       client = global_methods.GetServerlessClientInstance()
       self.SetPartialApiEndpoint(client.url)
-      locations_ref = args.CONCEPTS.region.Parse()
-      return global_methods.ListServices(client, locations_ref.RelativeName())
+      args.CONCEPTS.namespace.Parse()  # Error if no proj.
+      # Don't consider region property here, we'll default to all regions
+      return commands.SortByName(global_methods.ListServices(client))
     else:
-      conn_context = connection_context.GetConnectionContext(args)
+      conn_context = connection_context.GetConnectionContext(
+          args, product=flags.Product.RUN)
+      self._SetFormat(
+          args, show_region=is_managed, show_namespace=(not is_managed))
       namespace_ref = args.CONCEPTS.namespace.Parse()
       with serverless_operations.Connect(conn_context) as client:
         self.SetCompleteApiEndpoint(conn_context.endpoint)
-        return client.ListServices(namespace_ref)
+        if not is_managed:
+          location_msg = ' in [{}]'.format(conn_context.cluster_location)
+          log.status.Print('For cluster [{cluster}]{zone}:'.format(
+              cluster=conn_context.cluster_name,
+              zone=location_msg if conn_context.cluster_location else ''))
+        return commands.SortByName(client.ListServices(namespace_ref))
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class AlphaList(List):
+  """List available services."""
+
+  @classmethod
+  def Args(cls, parser):
+    cls.CommonArgs(parser)
+
+AlphaList.__doc__ = List.__doc__

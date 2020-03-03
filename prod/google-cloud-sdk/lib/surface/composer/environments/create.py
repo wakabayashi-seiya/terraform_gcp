@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ from googlecloudsdk.command_lib.composer import resource_args
 from googlecloudsdk.command_lib.composer import util as command_util
 from googlecloudsdk.command_lib.util.args import labels_util
 from googlecloudsdk.core import log
+import six
 
 
 PREREQUISITE_OPTION_ERROR_MSG = """\
@@ -211,7 +212,7 @@ class Create(base.Command):
     operation = self.GetOperationMessage(args)
 
     details = 'with operation [{0}]'.format(operation.name)
-    if args.async:
+    if args.async_:
       log.CreatedResource(
           self.env_ref.RelativeName(),
           kind='environment',
@@ -228,7 +229,7 @@ class Create(base.Command):
       except command_util.OperationError as e:
         raise command_util.EnvironmentCreateError(
             'Error creating [{}]: {}'.format(self.env_ref.RelativeName(),
-                                             str(e)))
+                                             six.text_type(e)))
 
   def GetOperationMessage(self, args):
     """Constructs Create message."""
@@ -262,13 +263,22 @@ class CreateBeta(Create):
   """
 
   @staticmethod
-  def Args(parser):
+  def AlphaAndBetaArgs(parser):
     Create.Args(parser)
     flags.AddPrivateIpAndIpAliasEnvironmentFlags(parser)
+
+  @staticmethod
+  def Args(parser):
+    CreateBeta.AlphaAndBetaArgs(parser)
+    web_server_group = parser.add_mutually_exclusive_group()
+    flags.WEB_SERVER_ALLOW_IP.AddToParser(web_server_group)
+    flags.WEB_SERVER_DENY_ALL.AddToParser(web_server_group)
 
   def Run(self, args):
     self.ParseIpAliasConfigOptions(args)
     self.ParsePrivateEnvironmentConfigOptions(args)
+    if self.ReleaseTrack() == base.ReleaseTrack.BETA:
+      self.ParseWebServerAccessControlConfigOptions(args)
     return super(CreateBeta, self).Run(args)
 
   def ParseIpAliasConfigOptions(self, args):
@@ -310,6 +320,13 @@ class CreateBeta(Create):
               prerequisite='enable-private-environment',
               opt='master-ipv4-cidr'))
 
+  def ParseWebServerAccessControlConfigOptions(self, args):
+    self.web_server_access_control = environments_api_util.BuildWebServerAllowedIps(
+        args.web_server_allow_ip, not args.web_server_allow_ip,
+        args.web_server_deny_all)
+    flags.ValidateIpRanges(
+        [acl['ip_range'] for acl in self.web_server_access_control])
+
   def GetOperationMessage(self, args):
     """See base class."""
     return environments_api_util.Create(
@@ -336,6 +353,7 @@ class CreateBeta(Create):
         private_environment=args.enable_private_environment,
         private_endpoint=args.enable_private_endpoint,
         master_ipv4_cidr=args.master_ipv4_cidr,
+        web_server_access_control=self.web_server_access_control,
         release_track=self.ReleaseTrack())
 
 
@@ -351,7 +369,7 @@ class CreateAlpha(CreateBeta):
 
   @staticmethod
   def Args(parser):
-    CreateBeta.Args(parser)
+    CreateBeta.AlphaAndBetaArgs(parser)
 
     # Adding alpha arguments
     parser.add_argument(

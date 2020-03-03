@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -233,6 +233,7 @@ class _NormalProgressTracker(_BaseProgressTracker):
       if not self._done:
         self._ticks += 1
         self._Print(self._GetSuffix())
+    self._stream.flush()
     return self._done
 
   def _GetSuffix(self):
@@ -704,7 +705,7 @@ class _BaseStagedProgressTracker(collections.Mapping):
 
   def HasWarning(self):
     """Returns True if this tracker has encountered at least one warning."""
-    return bool(self._completed_with_warnings_stages)
+    return bool(self._exit_output_warnings)
 
   def IsWaiting(self, stage):
     """Returns True if the stage is not yet started."""
@@ -912,6 +913,17 @@ class _BaseStagedProgressTracker(collections.Mapping):
       self._PrintExitOutput(failed=True)
       self._exception_is_uncaught = False
       raise failure_exception  # pylint: disable=raising-bad-type
+
+  def AddWarning(self, warning_message):
+    """Add a warning message independent of any particular stage.
+
+    This warning message will be printed on __exit__.
+
+    Args:
+      warning_message: str, user visible warning message.
+    """
+    with self._lock:
+      self._exit_output_warnings.append(warning_message)
 
 
 class _NormalStagedProgressTracker(_BaseStagedProgressTracker):

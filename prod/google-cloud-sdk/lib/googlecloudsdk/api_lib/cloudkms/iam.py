@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ def GetKeyRingIamPolicy(key_ring_ref):
   messages = base.GetMessagesModule()
 
   req = messages.CloudkmsProjectsLocationsKeyRingsGetIamPolicyRequest(
+      options_requestedPolicyVersion=iam_util.MAX_LIBRARY_IAM_SUPPORTED_VERSION,
       resource=key_ring_ref.RelativeName())
 
   return client.projects_locations_keyRings.GetIamPolicy(req)
@@ -55,6 +56,12 @@ def SetKeyRingIamPolicy(key_ring_ref, policy, update_mask):
   """
   client = base.GetClientInstance()
   messages = base.GetMessagesModule()
+
+  policy.version = iam_util.MAX_LIBRARY_IAM_SUPPORTED_VERSION
+  if not update_mask:
+    update_mask = 'version'
+  elif 'version' not in update_mask:
+    update_mask += ',version'
 
   req = messages.CloudkmsProjectsLocationsKeyRingsSetIamPolicyRequest(
       resource=key_ring_ref.RelativeName(),
@@ -93,6 +100,7 @@ def GetCryptoKeyIamPolicy(crypto_key_ref):
   messages = base.GetMessagesModule()
 
   req = messages.CloudkmsProjectsLocationsKeyRingsCryptoKeysGetIamPolicyRequest(
+      options_requestedPolicyVersion=iam_util.MAX_LIBRARY_IAM_SUPPORTED_VERSION,
       resource=crypto_key_ref.RelativeName())
 
   return client.projects_locations_keyRings_cryptoKeys.GetIamPolicy(req)
@@ -114,6 +122,12 @@ def SetCryptoKeyIamPolicy(crypto_key_ref, policy, update_mask):
   client = base.GetClientInstance()
   messages = base.GetMessagesModule()
 
+  policy.version = iam_util.MAX_LIBRARY_IAM_SUPPORTED_VERSION
+  if not update_mask:
+    update_mask = 'version'
+  elif 'version' not in update_mask:
+    update_mask += ',version'
+
   req = messages.CloudkmsProjectsLocationsKeyRingsCryptoKeysSetIamPolicyRequest(
       resource=crypto_key_ref.RelativeName(),
       setIamPolicyRequest=messages.SetIamPolicyRequest(
@@ -122,11 +136,25 @@ def SetCryptoKeyIamPolicy(crypto_key_ref, policy, update_mask):
   return client.projects_locations_keyRings_cryptoKeys.SetIamPolicy(req)
 
 
+def TestCryptoKeyIamPermissions(crypto_key_ref, permissions):
+  """Return permissions that the caller has on the named CryptoKey."""
+  client = base.GetClientInstance()
+  messages = base.GetMessagesModule()
+
+  req = messages.CloudkmsProjectsLocationsKeyRingsCryptoKeysTestIamPermissionsRequest(
+      resource=crypto_key_ref.RelativeName(),
+      testIamPermissionsRequest=messages.TestIamPermissionsRequest(
+          permissions=permissions))
+  return client.projects_locations_keyRings_cryptoKeys.TestIamPermissions(req)
+
+
 def AddPolicyBindingToCryptoKey(crypto_key_ref, member, role):
   """Does an atomic Read-Modify-Write, adding the member to the role."""
   messages = base.GetMessagesModule()
 
   policy = GetCryptoKeyIamPolicy(crypto_key_ref)
+  policy.version = iam_util.MAX_LIBRARY_IAM_SUPPORTED_VERSION
+
   iam_util.AddBindingToIamPolicy(messages.Binding, policy, member, role)
   return SetCryptoKeyIamPolicy(
       crypto_key_ref, policy, update_mask='bindings,etag')
@@ -135,6 +163,8 @@ def AddPolicyBindingToCryptoKey(crypto_key_ref, member, role):
 def RemovePolicyBindingFromCryptoKey(crypto_key_ref, member, role):
   """Does an atomic Read-Modify-Write, removing the member from the role."""
   policy = GetCryptoKeyIamPolicy(crypto_key_ref)
+  policy.version = iam_util.MAX_LIBRARY_IAM_SUPPORTED_VERSION
+
   iam_util.RemoveBindingFromIamPolicy(policy, member, role)
   return SetCryptoKeyIamPolicy(
       crypto_key_ref, policy, update_mask='bindings,etag')

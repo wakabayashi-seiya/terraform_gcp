@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,7 +35,8 @@ from googlecloudsdk.core.resource import resource_filter
 from googlecloudsdk.core.resource import resource_projector
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+@base.ReleaseTracks(base.ReleaseTrack.GA, base.ReleaseTrack.BETA,
+                    base.ReleaseTrack.ALPHA)
 class ListInstances(base.ListCommand):
   r"""List instances with specific OS inventory data values.
 
@@ -97,7 +98,7 @@ class ListInstances(base.ListCommand):
 
   _GUEST_ATTRIBUTES_PACKAGE_FIELD_KEYS = ('InstalledPackages', 'PackageUpdates')
 
-  _SPECIAL_PACKAGE_MANAGERS = ('wua', 'qfe')
+  _SPECIAL_PACKAGE_MANAGERS = ('wua', 'qfe', 'Zypper_patches')
   _REGULAR_PACKAGE_MANAGERS = ('deb', 'googet', 'rpm', 'gem', 'pip')
 
   @staticmethod

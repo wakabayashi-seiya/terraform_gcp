@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from googlecloudsdk.calliope import base
 
 ALL_TRACKS = [t.id for t in base.ReleaseTrack.AllValues()]
 RELEASE_TRACKS = 'release_tracks'
+GROUP = 'group'
 
 
 class DoesNotExistForTrackError(Exception):
@@ -45,6 +46,7 @@ def _SetValuesForTrack(obj, track):
     DoesNotExistForTrackError: if the object does not exist for the track.
   """
   if isinstance(obj, dict):
+    is_group = GROUP in obj
     # Check if it exists for this track, and raise an Exception if it doesn't.
     if RELEASE_TRACKS in obj:
       if track not in obj[RELEASE_TRACKS]:
@@ -60,14 +62,14 @@ def _SetValuesForTrack(obj, track):
         del obj[track_key]
     # Recursively update all children.
     # Remove them if they don't exist for the track.
-    for key, child in obj.items():
+    for key, child in list(obj.items()):
       try:
         _SetValuesForTrack(child, track)
       except DoesNotExistForTrackError:
         del obj[key]
-    if not obj:
-      # All of the children have been omitted, such as for an arg group nested
-      # under the `group` key.
+    if is_group and not obj:
+      # All of the children have been omitted for an arg group nested under the
+      # `group` key.
       raise DoesNotExistForTrackError()
   elif isinstance(obj, list):
     # Recursively update all children.
@@ -97,7 +99,7 @@ def SeparateDeclarativeCommandTracks(command_impls):
     command_impls = [command_impls]
   for impl in command_impls:
     release_tracks = impl.get(RELEASE_TRACKS, [])
-    if len(release_tracks) <= 1:
+    if not release_tracks:
       yield impl
     else:
       for track in release_tracks:

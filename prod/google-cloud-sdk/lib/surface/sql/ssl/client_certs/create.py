@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ from googlecloudsdk.command_lib.sql import flags
 from googlecloudsdk.core import log
 from googlecloudsdk.core import properties
 from googlecloudsdk.core.util import files
+import six
 
 
 class _BaseAddCert(object):
@@ -67,10 +68,11 @@ class _BaseAddCert(object):
     # First check if args.out_file is writeable. If not, abort and don't create
     # the useless cert.
     try:
-      files.WriteFileContents(args.cert_file, 'placeholder\n', private=True)
+      files.WriteFileContents(
+          args.cert_file, 'placeholder\n', private=True, create_path=False)
     except (files.Error, OSError) as e:
       raise exceptions.ArgumentError('unable to write [{path}]: {error}'.format(
-          path=args.cert_file, error=str(e)))
+          path=args.cert_file, error=six.text_type(e)))
 
     client = api_util.SqlClient(api_util.API_VERSION_DEFAULT)
     sql_client = client.sql_client

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -90,6 +90,7 @@ class Patch(base.Command):
             instance=instance_ref.instance))
 
     patch_database = sql_messages.Database(
+        kind='sql#database',
         project=instance_ref.project,
         instance=instance_ref.instance,
         name=args.database)

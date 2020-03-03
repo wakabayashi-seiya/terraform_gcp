@@ -1,5 +1,5 @@
 #
-# Copyright 2005-2009 Google Inc. All Rights Reserved.
+# Copyright 2005-2009 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,13 +22,12 @@
 
 from __future__ import absolute_import
 
-__author__ = 'arb@google.com (Anthony Baxter)'
-
 
 from . import GrocLexer
 from . import GrocParser
-
 import antlr3
+
+__author__ = 'arb@google.com (Anthony Baxter)'
 
 
 class GrocException(Exception):
@@ -46,6 +45,7 @@ class GrocLexerWithErrors(GrocLexer.GrocLexer):
 
     Arguments:
       msg: the error message
+
     Raises:
       GrocException: always.
     """
@@ -63,6 +63,7 @@ class GrocParserWithErrors(GrocParser.GrocParser):
 
     Arguments:
       msg: the error message
+
     Raises:
       GrocException: always.
     """

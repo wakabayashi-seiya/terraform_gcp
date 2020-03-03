@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,9 @@ from __future__ import unicode_literals
 from googlecloudsdk.calliope import base
 
 
-@base.Hidden
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA,
+                    base.ReleaseTrack.BETA,
+                    base.ReleaseTrack.GA)
 class Recommender(base.Group):
   """Manage Cloud recommendations and recommendation rules.
 
@@ -35,3 +36,4 @@ class Recommender(base.Group):
   recommendation, you must use the desired service's API, not the Recommender.
   Interact with and manage resources in Cloud Recommender.
   """
+  category = base.API_PLATFORM_AND_ECOSYSTEMS_CATEGORY

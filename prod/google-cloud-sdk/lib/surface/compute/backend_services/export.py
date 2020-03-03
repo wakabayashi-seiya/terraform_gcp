@@ -22,19 +22,38 @@ import sys
 from googlecloudsdk.api_lib.compute import base_classes
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.compute import flags as compute_flags
+from googlecloudsdk.command_lib.compute import traffic_control_codec_utils as codecs
 from googlecloudsdk.command_lib.compute.backend_services import backend_services_utils
 from googlecloudsdk.command_lib.compute.backend_services import flags
 from googlecloudsdk.command_lib.export import util as export_util
 from googlecloudsdk.core.util import files
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+DETAILED_HELP = {
+    'DESCRIPTION':
+        """\
+        Exports a backend service's configuration to a file.
+        This configuration can be imported at a later time.
+        """,
+    'EXAMPLES':
+        """\
+        A backend service can be exported by running:
+
+          $ {command} NAME --destination=<path-to-file> --global
+        """
+}
+
+
+@base.ReleaseTracks(base.ReleaseTrack.GA, base.ReleaseTrack.BETA,
+                    base.ReleaseTrack.ALPHA)
 class Export(base.Command):
   """Export a backend service.
 
   Exports a backend service's configuration to a file.
   This configuration can be imported at a later time.
   """
+
+  detailed_help = DETAILED_HELP
 
   @classmethod
   def GetApiVersion(cls):
@@ -72,6 +91,7 @@ class Export(base.Command):
     backend_service = backend_services_utils.SendGetRequest(
         client, backend_service_ref)
 
+    codecs.RegisterL7TrafficControlCodecs(self.GetApiVersion())
     if args.destination:
       with files.FileWriter(args.destination) as stream:
         export_util.Export(message=backend_service,

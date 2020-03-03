@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,9 @@ from googlecloudsdk.core.util import encoding
 from googlecloudsdk.core.util import files as file_utils
 from googlecloudsdk.core.util import pkg_resources
 from googlecloudsdk.core.util import platforms
+
+from oauth2client import client
+import six
 
 
 class Error(exceptions.Error):
@@ -110,7 +113,7 @@ class InstallationConfig(object):
     Returns:
       time.struct_time, The parsed time.
     """
-    return time.strptime(str(revision),
+    return time.strptime(six.text_type(revision),
                          InstallationConfig.REVISION_FORMAT_STRING)
 
   @staticmethod
@@ -133,7 +136,7 @@ class InstallationConfig(object):
                release_channel, config_suffix):
     # JSON returns all unicode.  We know these are regular strings and using
     # unicode in environment variables on Windows doesn't work.
-    self.version = str(version)
+    self.version = version
     self.revision = revision
     self.user_agent = str(user_agent)
     self.documentation_url = str(documentation_url)
@@ -281,17 +284,6 @@ class Paths(object):
     return os.path.join(self.global_config_dir, 'completion_cache')
 
   @property
-  def credentials_path(self):
-    """Gets the path to the file to store Oauth2Client credentials in.
-
-    This is oauth2client.contrib.multistore_file format file.
-
-    Returns:
-      str, The path to the credential file.
-    """
-    return os.path.join(self.global_config_dir, 'credentials')
-
-  @property
   def credentials_db_path(self):
     """Gets the path to the file to store credentials in.
 
@@ -360,6 +352,19 @@ class Paths(object):
     return os.path.join(self.global_config_dir, '.last_survey_prompt.yaml')
 
   @property
+  def opt_in_prompting_cache_path(self):
+    """Gets the path to the file to cache information about opt-in prompting.
+
+    This is stored in the config directory instead of the installation state
+    because if the SDK is installed as root, it will fail to persist the cache
+    when you are running gcloud as a normal user.
+
+    Returns:
+      str, The path to the file.
+    """
+    return os.path.join(self.global_config_dir, '.last_opt_in_prompt.yaml')
+
+  @property
   def installation_properties_path(self):
     """Gets the path to the installation-wide properties file.
 
@@ -420,6 +425,19 @@ class Paths(object):
       str, The path to the sentinel file.
     """
     return os.path.join(self.global_config_dir, 'config_sentinel')
+
+  @property
+  def valid_ppk_sentinel_file(self):
+    """Gets the path to the sentinel used to check for PPK encoding validity.
+
+    The presence of this file is simply used to indicate whether or not we've
+    correctly encoded the PPK used for ssh on Windows (re-encoding may be
+    necessary in order to fix a bug in an older version of winkeygen.exe).
+
+    Returns:
+      str, The path to the sentinel file.
+    """
+    return os.path.join(self.global_config_dir, '.valid_ppk_sentinel')
 
   @property
   def container_config_path(self):
@@ -490,3 +508,23 @@ class Paths(object):
       str, The path to the GCE cache.
     """
     return os.path.join(self.global_config_dir, 'gce')
+
+
+def ADCFilePath():
+  """Gets the ADC default file path.
+
+  Returns:
+    str, The path to the default ADC file.
+  """
+  # pylint:disable=protected-access
+  return client._get_well_known_file()
+
+
+def ADCEnvVariable():
+  """Gets the value of the ADC environment variable.
+
+  Returns:
+    str, The value of the env var or None if unset.
+  """
+  return encoding.GetEncodedValue(
+      os.environ, client.GOOGLE_APPLICATION_CREDENTIALS, None)

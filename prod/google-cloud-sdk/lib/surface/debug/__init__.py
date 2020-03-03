@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,15 +27,14 @@ from googlecloudsdk.calliope import base
 class Debug(base.Group):
   """Commands for interacting with the Cloud Debugger.
 
-  The {command} command group provides interaction with Stackdriver Debugger,
-  allowing you to list and manipulate debugging targets, snapshots and
-  logpoints.
+  The {command} command group provides interaction with Cloud Debugger, allowing
+  you to list and manipulate debugging targets, snapshots and logpoints.
 
-  Stackdriver Debugger is a feature of the Google Cloud Platform that lets you
-  inspect the state of an application at any code location without using logging
-  statements and without stopping or slowing down your applications.
+  Cloud Debugger is a feature of Google Cloud that lets you inspect the state of
+  an application at any code location without using logging statements and
+  without stopping or slowing down your applications.
 
-  More information on Stackdriver Debugger can be found here:
+  More information on Cloud Debugger can be found here:
   https://cloud.google.com/debugger and detailed documentation can be found
   here: https://cloud.google.com/debugger/docs/
 

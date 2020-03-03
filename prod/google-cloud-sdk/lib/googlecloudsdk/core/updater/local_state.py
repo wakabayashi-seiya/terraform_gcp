@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -115,8 +115,9 @@ def _RaisesPermissionsError(func):
     except (OSError, IOError) as e:
       if e.errno == errno.EACCES:
         exceptions.reraise(
-            PermissionsError(message=e.strerror,
-                             path=os.path.abspath(e.filename)))
+            PermissionsError(
+                message=encoding.Decode(e.strerror),
+                path=encoding.Decode(os.path.abspath(e.filename))))
       raise
   return _TryFunc
 
@@ -597,6 +598,15 @@ class InstallationState(object):
 
     This does not raise exceptions if compiling a given file fails.
     """
+    # Use two different regex exclusions (passed to compile_dir)
+    # based on the python runtime. We package some python code
+    # that is not valid python2 syntax.
+    if six.PY2:
+      regex_exclusion = re.compile('(httplib2/python3'
+                                   '|platform/bq/third_party/yaml/lib3)')
+    else:
+      regex_exclusion = None
+
     # The self.sdk_root pathname could contain unicode chars and py_compile
     # chokes on unicode paths. Using relative paths from self.sdk_root works
     # around the problem.
@@ -610,7 +620,11 @@ class InstallationState(object):
       for d in to_compile:
         # Using rx to skip unused Python3 directory vendored with gsutil's copy
         # of httplib2.
-        compileall.compile_dir(d, rx=re.compile('python3'), quiet=True)
+        # Using 2 for quiet, in python 2.7 this value is used as a bool in the
+        # implementation and bool(2) is True. Starting in python 3.5 this
+        # parameter was changed to a multilevel value, where 1 hides files
+        # being processed and 2 suppresses output.
+        compileall.compile_dir(d, rx=regex_exclusion, quiet=2, force=True)
 
 
 class InstallationManifest(object):

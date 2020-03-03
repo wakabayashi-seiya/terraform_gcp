@@ -9,6 +9,7 @@ class GenomicsV2alpha1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://genomics.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'genomics'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform', u'https://www.googleapis.com/auth/genomics']
@@ -51,7 +52,11 @@ class GenomicsV2alpha1(base_api.BaseApiClient):
           }
 
     def Run(self, request, global_params=None):
-      r"""Runs a pipeline.
+      r"""Runs a pipeline.  The returned Operation's metadata field will contain a.
+google.genomics.v2alpha1.Metadata object describing the status of the
+pipeline execution.  The [response] field will contain a
+google.genomics.v2alpha1.RunPipelineResponse object if the pipeline
+completes successfully.
 
 **Note:** Before you can use this method, the Genomics Service Agent
 must have access to your project. This is done automatically when the

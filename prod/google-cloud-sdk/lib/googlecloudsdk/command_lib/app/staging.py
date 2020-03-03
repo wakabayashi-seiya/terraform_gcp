@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -40,10 +40,12 @@ import abc
 import io
 import os
 import re
+import shutil
 import tempfile
 
 from googlecloudsdk.api_lib.app import env
 from googlecloudsdk.api_lib.app import runtime_registry
+from googlecloudsdk.command_lib.app import jarfile
 from googlecloudsdk.command_lib.util import java
 from googlecloudsdk.core import config
 from googlecloudsdk.core import exceptions
@@ -53,7 +55,6 @@ from googlecloudsdk.core.updater import update_manager
 from googlecloudsdk.core.util import files
 from googlecloudsdk.core.util import platforms
 import six
-
 
 _JAVA_APPCFG_ENTRY_POINT = 'com.google.appengine.tools.admin.AppCfg'
 
@@ -77,6 +78,20 @@ class NoSdkRootError(StagingCommandNotFoundError):
   def __init__(self):
     super(NoSdkRootError, self).__init__(
         'No SDK root could be found. Please check your installation.')
+
+
+class NoMainClassError(exceptions.Error):
+
+  def __init__(self):
+    super(NoMainClassError, self).__init__(
+        'Invalid jar file: it does not contain a Main-Class Manifest entry.')
+
+
+class MavenPomNotSupported(exceptions.Error):
+
+  def __init__(self):
+    super(MavenPomNotSupported, self).__init__(
+        'Maven source deployment is not supported for Java8 GAE project.')
 
 
 class StagingCommandFailedError(exceptions.Error):
@@ -172,10 +187,11 @@ class _Command(six.with_metaclass(abc.ABCMeta, object)):
     log.info('Executing staging command: [{0}]\n\n'.format(' '.join(args)))
     out = io.StringIO()
     err = io.StringIO()
-    return_code = execution_utils.Exec(args, no_exit=True, out_func=out.write,
-                                       err_func=err.write)
-    message = _STAGING_COMMAND_OUTPUT_TEMPLATE.format(out=out.getvalue(),
-                                                      err=err.getvalue())
+    return_code = execution_utils.Exec(
+        args, no_exit=True, out_func=out.write, err_func=err.write)
+    message = _STAGING_COMMAND_OUTPUT_TEMPLATE.format(
+        out=out.getvalue(), err=err.getvalue())
+    message = message.replace('\r\n', '\n')
     log.info(message)
     if return_code:
       raise StagingCommandFailedError(args, return_code, message)
@@ -203,6 +219,110 @@ class NoopCommand(_Command):
 
   def __eq__(self, other):
     return isinstance(other, NoopCommand)
+
+
+class CreateJava11MavenProjectCommand(_Command):
+  """A command that creates a java11 runtime app.yaml from a jar file."""
+
+  def EnsureInstalled(self):
+    pass
+
+  def GetPath(self):
+    return
+
+  def GetArgs(self, descriptor, pom_file, staging_dir):
+    return
+
+  def Run(self, staging_area, pom_file, project_dir):
+    # Logic is: copy/symlink the Maven project in the staged area, and create a
+    # simple file app.yaml for runtime: java11 if it does not exist.
+    # If it exists in the standard and documented default location
+    # (in project_dir/src/main/appengine/app.yaml), copy it in the staged
+    # area.
+    appenginewebxml = os.path.join(project_dir, 'src', 'main', 'webapp',
+                                   'WEB-INF', 'appengine-web.xml')
+    if os.path.exists(appenginewebxml):
+      raise MavenPomNotSupported()
+    appyaml = os.path.join(project_dir, 'src', 'main', 'appengine', 'app.yaml')
+    if os.path.exists(appyaml):
+      # Put the user app.yaml at the root of the staging directory to deploy
+      # as required by the Cloud SDK.
+      shutil.copy2(appyaml, staging_area)
+    else:
+      # Create a very simple 1 liner app.yaml for Java11 runtime.
+      files.WriteFileContents(
+          os.path.join(staging_area, 'app.yaml'),
+          'runtime: java11\n')
+
+    for name in os.listdir(project_dir):
+      # Do not deploy locally built artifacts, buildpack will clean this anyway.
+      if name == 'target':
+        continue
+      srcname = os.path.join(project_dir, name)
+      dstname = os.path.join(staging_area, name)
+      if os.path.isdir(srcname):
+        if hasattr(os, 'symlink'):
+          os.symlink(srcname, dstname)
+        else:
+          files.CopyTree(srcname, dstname)
+      else:
+        if hasattr(os, 'symlink'):
+          os.symlink(srcname, dstname)
+        else:
+          shutil.copy2(srcname, dstname)
+
+    return staging_area
+
+  def __eq__(self, other):
+    return isinstance(other, CreateJava11MavenProjectCommand)
+
+
+# end ludo
+
+
+class CreateJava11YamlCommand(_Command):
+  """A command that creates a java11 runtime app.yaml from a jar file."""
+
+  def EnsureInstalled(self):
+    pass
+
+  def GetPath(self):
+    return None
+
+  def GetArgs(self, descriptor, jar_file, staging_dir):
+    return None
+
+  def Run(self, staging_area, jar_file, app_dir):
+    # Logic is simple: copy the jar in the staged area, and create a simple
+    # file app.yaml for runtime: java11.
+    shutil.copy2(jar_file, staging_area)
+    files.WriteFileContents(
+        os.path.join(staging_area, 'app.yaml'),
+        'runtime: java11\n',
+        private=True)
+    manifest = jarfile.ReadManifest(jar_file)
+    if manifest:
+      main_entry = manifest.main_section.get('Main-Class')
+      if main_entry is None:
+        raise NoMainClassError()
+      classpath_entry = manifest.main_section.get('Class-Path')
+      if classpath_entry:
+        libs = classpath_entry.split()
+        for lib in libs:
+          dependent_file = os.path.join(app_dir, lib)
+          # We copy the dep jar in the correct staging sub directories
+          # and only if it exists,
+          if os.path.isfile(dependent_file):
+            destination = os.path.join(staging_area, lib)
+            files.MakeDir(os.path.abspath(os.path.join(destination, os.pardir)))
+            if hasattr(os, 'symlink'):
+              os.symlink(dependent_file, destination)
+            else:
+              shutil.copy(dependent_file, destination)
+    return staging_area
+
+  def __eq__(self, other):
+    return isinstance(other, CreateJava11YamlCommand)
 
 
 class _BundledCommand(_Command):
@@ -322,15 +442,13 @@ class ExecutableCommand(_Command):
 _GO_APP_STAGER_DIR = os.path.join('platform', 'google_appengine')
 
 # Path to the jar which contains the staging command
-_APPENGINE_TOOLS_JAR = os.path.join(
-    'platform', 'google_appengine', 'google', 'appengine', 'tools', 'java',
-    'lib', 'appengine-tools-api.jar')
+_APPENGINE_TOOLS_JAR = os.path.join('platform', 'google_appengine', 'google',
+                                    'appengine', 'tools', 'java', 'lib',
+                                    'appengine-tools-api.jar')
 
 _STAGING_REGISTRY = {
     runtime_registry.RegistryEntry(
-        re.compile(r'(go|go1\..+)$'), {
-            env.FLEX, env.MANAGED_VMS
-        }):
+        re.compile(r'(go|go1\..+)$'), {env.FLEX, env.MANAGED_VMS}):
         _BundledCommand(
             os.path.join(_GO_APP_STAGER_DIR, 'go-app-stager'),
             os.path.join(_GO_APP_STAGER_DIR, 'go-app-stager.exe'),
@@ -349,11 +467,16 @@ _STAGING_REGISTRY = {
             _APPENGINE_TOOLS_JAR,
             component='app-engine-java',
             mapper=_JavaStagingMapper),
+    runtime_registry.RegistryEntry('java-jar', {env.STANDARD}):
+        CreateJava11YamlCommand(),
 }
 
 # _STAGING_REGISTRY_BETA extends _STAGING_REGISTRY, overriding entries if the
 # same key is used.
-_STAGING_REGISTRY_BETA = {}
+_STAGING_REGISTRY_BETA = {
+    runtime_registry.RegistryEntry('java-maven-project', {env.STANDARD}):
+        CreateJava11MavenProjectCommand(),
+}
 
 
 class Stager(object):
@@ -370,7 +493,7 @@ class Stager(object):
       app_dir: str, path to the unstaged app directory
       runtime: str, the name of the runtime for the application to stage
       environment: api_lib.app.env.Environment, the environment for the
-          application to stage
+        application to stage
 
     Returns:
       str, the path to the staged directory or None if no corresponding staging

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +31,13 @@ class GetShieldedIdentity(base.DescribeCommand):
   *{command}* displays the Shielded identity associated with a Google Compute
   Engine instance in a project.
   """
+
+  detailed_help = {
+      'EXAMPLES': """
+  To get the shielded identity for an instance, run:
+
+    $ {command} example-instance --zone=us-central1-b
+  """}
 
   @staticmethod
   def Args(parser):

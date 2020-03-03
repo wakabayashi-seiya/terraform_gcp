@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,28 +18,30 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-import json
+import functools
 import textwrap
 
 from googlecloudsdk.api_lib.container.binauthz import apis
 from googlecloudsdk.api_lib.container.binauthz import attestors
 from googlecloudsdk.api_lib.container.binauthz import containeranalysis
+from googlecloudsdk.api_lib.container.binauthz import containeranalysis_apis as ca_apis
 from googlecloudsdk.api_lib.container.binauthz import kms
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.container.binauthz import flags
 from googlecloudsdk.command_lib.container.binauthz import util as binauthz_command_util
+from googlecloudsdk.command_lib.container.binauthz import validation
 from googlecloudsdk.core import log
 from googlecloudsdk.core import properties
 from googlecloudsdk.core import resources
 from googlecloudsdk.core.console import console_io
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+@base.ReleaseTracks(base.ReleaseTrack.BETA, base.ReleaseTrack.ALPHA)
 class SignAndCreate(base.CreateCommand):
   r"""Sign and create a Binary Authorization Attestation using a Cloud KMS key.
 
   This command signs and creates a Binary Authorization attestation for your
-  project. The attestation is created for the specified artifact (e.g. a grc.io
+  project. The attestation is created for the specified artifact (e.g. a gcr.io
   container URL), associate with the specified attestor, and stored under the
   specified project.
 
@@ -99,6 +101,15 @@ class SignAndCreate(base.CreateCommand):
 
           This parameter is only necessary if the `--public-key-id-override`
           flag was provided when this KMS key was added to the Attestor."""))
+    if cls.ReleaseTrack() == base.ReleaseTrack.ALPHA:
+      parser.add_argument(
+          '--validate',
+          action='store_true',
+          default=False,
+          help=textwrap.dedent("""\
+            Whether to validate that the Attestation can be verified by the
+            provided Attestor.
+          """))
 
   def Run(self, args):
     project_ref = resources.REGISTRY.Parse(
@@ -121,16 +132,19 @@ class SignAndCreate(base.CreateCommand):
         attestor.userOwnedDrydockNote.noteReference, {})
 
     key_id = args.public_key_id_override or kms.GetKeyUri(key_ref)
-    if key_id not in set(
-        pubkey.id for pubkey in attestor.userOwnedDrydockNote.publicKeys):
-      log.warning('No public key with ID [%s] found on attestor [%s]', key_id,
-                  attestor.name)
-      console_io.PromptContinue(
-          prompt_string='Create and upload Attestation anyway?',
-          cancel_on_no=True)
 
-    payload_dict = binauthz_command_util.MakeSignaturePayload(args.artifact_url)
-    payload = json.dumps(payload_dict).encode('utf8')
+    # TODO(b/138719072): Remove when validation is on by default
+    validation_enabled = 'validate' in args and args.validate
+    if not validation_enabled:
+      if key_id not in set(
+          pubkey.id for pubkey in attestor.userOwnedDrydockNote.publicKeys):
+        log.warning('No public key with ID [%s] found on attestor [%s]', key_id,
+                    attestor.name)
+        console_io.PromptContinue(
+            prompt_string='Create and upload Attestation anyway?',
+            cancel_on_no=True)
+
+    payload = binauthz_command_util.MakeSignaturePayload(args.artifact_url)
 
     kms_client = kms.Client()
     pubkey_response = kms_client.GetPublicKey(key_ref.RelativeName())
@@ -139,11 +153,20 @@ class SignAndCreate(base.CreateCommand):
         key_ref.RelativeName(),
         kms.GetAlgorithmDigestType(pubkey_response.algorithm), payload)
 
-    return containeranalysis.Client().CreateGenericAttestationOccurrence(
+    validation_callback = functools.partial(
+        validation.validate_attestation,
+        attestor_ref=attestor_ref,
+        api_version=api_version)
+
+    client = containeranalysis.Client(
+        ca_apis.GetApiVersion(self.ReleaseTrack()))
+    return client.CreateAttestationOccurrence(
         project_ref=project_ref,
         note_ref=note_ref,
         artifact_url=normalized_artifact_url,
         public_key_id=key_id,
         signature=sign_response.signature,
         plaintext=payload,
+        validation_callback=(validation_callback
+                             if validation_enabled else None),
     )

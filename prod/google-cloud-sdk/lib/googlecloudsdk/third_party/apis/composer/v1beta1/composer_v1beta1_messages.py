@@ -12,6 +12,26 @@ from apitools.base.py import extra_types
 package = 'composer'
 
 
+class AllowedIpRange(_messages.Message):
+  r"""Allowed IP range with user-provided description.
+
+  Fields:
+    description: Optional. User-provided description. It must contain at most
+      300 characters.
+    value: IP address or range, defined using CIDR notation, of requests that
+      this rule applies to. You can use the wildcard character "*" to match
+      all IPs equivalent to "0/0" and "::/0" together. Examples: `192.168.1.1`
+      or `192.168.0.0/16` or `2001:db8::/32`           or
+      `2001:0db8:0000:0042:0000:8a2e:0370:7334`.   <p>IP range prefixes should
+      be properly truncated. For example, `1.2.3.4/24` should be truncated to
+      `1.2.3.0/24`. Similarly, for IPv6, `2001:db8::1/32` should be truncated
+      to `2001:db8::/32`.
+  """
+
+  description = _messages.StringField(1)
+  value = _messages.StringField(2)
+
+
 class ComposerProjectsLocationsEnvironmentsCreateRequest(_messages.Message):
   r"""A ComposerProjectsLocationsEnvironmentsCreateRequest object.
 
@@ -249,7 +269,8 @@ class Environment(_messages.Message):
       constrained to be <= 128 bytes in size.
     name: The resource name of the environment, in the form:
       "projects/{projectId}/locations/{locationId}/environments/{environmentId
-      }"
+      }"  EnvironmentId must start with a lowercase letter followed by up to
+      63 lowercase letters, numbers, or hyphens, and cannot end with a hyphen.
     state: The current state of the environment.
     updateTime: Output only. The time at which this environment was last
       modified.
@@ -337,6 +358,9 @@ class EnvironmentConfig(_messages.Message):
       Composer environment.
     softwareConfig: The configuration settings for software inside the
       environment.
+    webServerNetworkAccessControl: Optional. The network-level access control
+      policy for the Airflow web server. If unspecified, no network-level
+      access restrictions will be applied.
   """
 
   airflowUri = _messages.StringField(1)
@@ -346,6 +370,7 @@ class EnvironmentConfig(_messages.Message):
   nodeCount = _messages.IntegerField(5, variant=_messages.Variant.INT32)
   privateEnvironmentConfig = _messages.MessageField('PrivateEnvironmentConfig', 6)
   softwareConfig = _messages.MessageField('SoftwareConfig', 7)
+  webServerNetworkAccessControl = _messages.MessageField('WebServerNetworkAccessControl', 8)
 
 
 class IPAllocationPolicy(_messages.Message):
@@ -481,8 +506,10 @@ class NodeConfig(_messages.Message):
       corresponding to the Cloud Composer location, and propagate that choice
       to both fields. If exactly one of this field and `nodeConfig.location`
       is specified, the location information from the specified field will be
-      propagated to the unspecified field.  If this field is unspecified, the
-      `machineTypeId` defaults to "n1-standard-1".
+      propagated to the unspecified field.  The `machineTypeId` must not be a
+      [shared-core machine type](/compute/docs/machine-types#sharedcore).  If
+      this field is unspecified, the `machineTypeId` defaults to
+      "n1-standard-1".
     network: Optional. The Compute Engine network to be used for machine
       communications, specified as a [relative resource
       name](/apis/design/resource_names#relative_resource_name). For example:
@@ -553,7 +580,8 @@ class Operation(_messages.Message):
       if any.
     name: The server-assigned name, which is only unique within the same
       service that originally returns it. If you use the default HTTP mapping,
-      the `name` should have the format of `operations/some/unique/name`.
+      the `name` should be a resource name ending with
+      `operations/{unique_id}`.
     response: The normal response of the operation in case of success.  If the
       original method returns no data on success, such as `Delete`, the
       response is `google.protobuf.Empty`.  If the original method is standard
@@ -694,12 +722,9 @@ class PrivateClusterConfig(_messages.Message):
   Fields:
     enablePrivateEndpoint: Optional. If `true`, access to the public endpoint
       of the GKE cluster is denied.
-    masterIpv4CidrBlock: The IP range in CIDR notation to use for the hosted
-      master network. This range is used for assigning internal IP addresses
-      to the cluster master or set of masters and to the internal load
-      balancer virtual IP. This range must not overlap with any other ranges
-      in use within the cluster's network. If left blank, the default value of
-      '172.16.0.0/28' is used.
+    masterIpv4CidrBlock: Optional. The CIDR block from which IPv4 range for
+      GKE master will be reserved. If left blank, the default value of
+      '172.16.0.0/23' is used.
   """
 
   enablePrivateEndpoint = _messages.BooleanField(1)
@@ -716,10 +741,13 @@ class PrivateEnvironmentConfig(_messages.Message):
       true.
     privateClusterConfig: Optional. Configuration for the private GKE cluster
       for a Private IP Cloud Composer environment.
+    webServerIpv4ReservedRange: Output only. The IP range reserved for the
+      tenant project's App Engine VMs.
   """
 
   enablePrivateEnvironment = _messages.BooleanField(1)
   privateClusterConfig = _messages.MessageField('PrivateClusterConfig', 2)
+  webServerIpv4ReservedRange = _messages.StringField(3)
 
 
 class SoftwareConfig(_messages.Message):
@@ -984,37 +1012,10 @@ class StandardQueryParameters(_messages.Message):
 class Status(_messages.Message):
   r"""The `Status` type defines a logical error model that is suitable for
   different programming environments, including REST APIs and RPC APIs. It is
-  used by [gRPC](https://github.com/grpc). The error model is designed to be:
-  - Simple to use and understand for most users - Flexible enough to meet
-  unexpected needs  # Overview  The `Status` message contains three pieces of
-  data: error code, error message, and error details. The error code should be
-  an enum value of google.rpc.Code, but it may accept additional error codes
-  if needed.  The error message should be a developer-facing English message
-  that helps developers *understand* and *resolve* the error. If a localized
-  user-facing error message is needed, put the localized message in the error
-  details or localize it in the client. The optional error details may contain
-  arbitrary information about the error. There is a predefined set of error
-  detail types in the package `google.rpc` that can be used for common error
-  conditions.  # Language mapping  The `Status` message is the logical
-  representation of the error model, but it is not necessarily the actual wire
-  format. When the `Status` message is exposed in different client libraries
-  and different wire protocols, it can be mapped differently. For example, it
-  will likely be mapped to some exceptions in Java, but more likely mapped to
-  some error codes in C.  # Other uses  The error model and the `Status`
-  message can be used in a variety of environments, either with or without
-  APIs, to provide a consistent developer experience across different
-  environments.  Example uses of this error model include:  - Partial errors.
-  If a service needs to return partial errors to the client,     it may embed
-  the `Status` in the normal response to indicate the partial     errors.  -
-  Workflow errors. A typical workflow has multiple steps. Each step may
-  have a `Status` message for error reporting.  - Batch operations. If a
-  client uses batch request and batch response, the     `Status` message
-  should be used directly inside batch response, one for     each error sub-
-  response.  - Asynchronous operations. If an API call embeds asynchronous
-  operation     results in its response, the status of those operations should
-  be     represented directly using the `Status` message.  - Logging. If some
-  API errors are stored in logs, the message `Status` could     be used
-  directly after any stripping needed for security/privacy reasons.
+  used by [gRPC](https://github.com/grpc). Each `Status` message contains
+  three pieces of data: error code, error message, and error details.  You can
+  find out more about this error model and how to work with it in the [API
+  Design Guide](https://cloud.google.com/apis/design/errors).
 
   Messages:
     DetailsValueListEntry: A DetailsValueListEntry object.
@@ -1057,6 +1058,16 @@ class Status(_messages.Message):
   code = _messages.IntegerField(1, variant=_messages.Variant.INT32)
   details = _messages.MessageField('DetailsValueListEntry', 2, repeated=True)
   message = _messages.StringField(3)
+
+
+class WebServerNetworkAccessControl(_messages.Message):
+  r"""Network-level access control policy for the Airflow web server.
+
+  Fields:
+    allowedIpRanges: A collection of allowed IP ranges with descriptions.
+  """
+
+  allowedIpRanges = _messages.MessageField('AllowedIpRange', 1, repeated=True)
 
 
 encoding.AddCustomJsonFieldMapping(

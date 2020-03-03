@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 """Helpers for flags in commands working with Google Cloud Functions."""
 
 from __future__ import absolute_import
@@ -30,21 +29,49 @@ from googlecloudsdk.command_lib.util.concepts import concept_parsers
 from googlecloudsdk.core import properties
 from googlecloudsdk.core import resources
 
-
 API = 'cloudfunctions'
 API_VERSION = 'v1'
 LOCATIONS_COLLECTION = API + '.projects.locations'
 
 SEVERITIES = ['DEBUG', 'INFO', 'ERROR']
+EGRESS_SETTINGS = ['PRIVATE-RANGES-ONLY', 'ALL']
+INGRESS_SETTINGS = ['ALL', 'INTERNAL-ONLY']
+INGRESS_SETTINGS_MAPPING = {
+    'ALLOW_ALL': 'all',
+    'ALLOW_INTERNAL_ONLY': 'internal-only',
+}
+
+EGRESS_SETTINGS_MAPPING = {
+    'PRIVATE_RANGES_ONLY': 'private-ranges-only',
+    'ALL_TRAFFIC': 'all',
+}
 
 
 def AddMinLogLevelFlag(parser):
   min_log_arg = base.ChoiceArgument(
       '--min-log-level',
       choices=[x.lower() for x in SEVERITIES],
-      help_str='Minimum level of logs to be fetched.'
-  )
+      help_str='Minimum level of logs to be fetched.')
   min_log_arg.AddToParser(parser)
+
+
+def AddIngressSettingsFlag(parser):
+  ingress_settings_arg = base.ChoiceArgument(
+      '--ingress-settings',
+      choices=[x.lower() for x in INGRESS_SETTINGS],
+      help_str='Ingress settings controls what traffic can reach the function.'
+      'By default `all` will be used.')
+  ingress_settings_arg.AddToParser(parser)
+
+
+def AddEgressSettingsFlag(parser):
+  egress_settings_arg = base.ChoiceArgument(
+      '--egress-settings',
+      choices=[x.lower() for x in EGRESS_SETTINGS],
+      help_str='Egress settings controls what traffic is diverted through the '
+      'VPC Access Connector resource. '
+      'By default `private-ranges-only` will be used.')
+  egress_settings_arg.AddToParser(parser)
 
 
 def GetLocationsUri(resource):
@@ -93,6 +120,31 @@ def AddFunctionRetryFlag(parser):
             'failure.'),
       action='store_true',
   )
+
+
+def AddAllowUnauthenticatedFlag(parser):
+  """Add the --allow-unauthenticated flag."""
+  parser.add_argument(
+      '--allow-unauthenticated',
+      default=False,
+      action='store_true',
+      help=('If set, makes this a public function. This will allow all '
+            'callers, without checking authentication.'))
+
+
+def ShouldEnsureAllUsersInvoke(args):
+  if args.allow_unauthenticated:
+    return True
+  else:
+    return False
+
+
+def ShouldDenyAllUsersInvoke(args):
+  if (args.IsSpecified('allow_unauthenticated') and
+      not args.allow_unauthenticated):
+    return True
+  else:
+    return False
 
 
 def AddSourceFlag(parser):
@@ -197,26 +249,50 @@ def AddRuntimeFlag(parser):
           - `nodejs10`: Node.js 10
           - `python37`: Python 3.7
           - `go111`: Go 1.11
+          - `go113`: Go 1.13
           - `nodejs6`: Node.js 6 (deprecated)
           """)
 
 
-def AddVPCMutexGroup(parser, enable_connected_vpc):
-  """Add mutex group for --connected-vpc and --vpc-connector."""
+def AddVPCConnectorMutexGroup(parser):
+  """Add flag for specifying VPC connector to the parser."""
   mutex_group = parser.add_group(mutex=True)
-  if enable_connected_vpc:
-    mutex_group.add_argument(
-        '--connected-vpc',
-        help='Specifies the VPC network to connect the function to.',
-        hidden=True)
   mutex_group.add_argument(
       '--vpc-connector',
       help="""\
-        The VPC Access connector that the function can connect to. It
-        should be the fully-qualified URI of the VPC Access connector
-        resource whose format is:
+        The VPC Access connector that the function can connect to. It can be
+        either the fully-qualified URI, or the short name of the VPC Access
+        connector resource. If the short name is used, the connector must
+        belong to the same project. The format of this field is either
         `projects/${PROJECT}/locations/${LOCATION}/connectors/${CONNECTOR}`
-        or an empty string to clear the field.
+        or `${CONNECTOR}`, where `${CONNECTOR}` is the short name of the VPC
+        Access connector.
+      """)
+  mutex_group.add_argument(
+      '--clear-vpc-connector',
+      action='store_true',
+      help="""\
+        Clears the VPC connector field.
+      """)
+
+
+def AddBuildWorkerPoolMutexGroup(parser):
+  """Add flag for specifying Build Worker Pool to the parser."""
+  mutex_group = parser.add_group(mutex=True)
+  mutex_group.add_argument(
+      '--build-worker-pool',
+      help="""\
+        Name of the Cloud Build Custom Worker Pool that should be used to build
+        the function. The format of this field is
+        `projects/${PROJECT}/workerPools/${WORKERPOOL}` where ${PROJECT} is the
+        project id where the worker pool is defined and ${WORKERPOOL} is the
+        short name of the worker pool.
+      """)
+  mutex_group.add_argument(
+      '--clear-build-worker-pool',
+      action='store_true',
+      help="""\
+        Clears the Cloud Build Custom Worker Pool field.
       """)
 
 
@@ -232,8 +308,7 @@ def AddEntryPointFlag(parser):
       the system will try to use function named "function". For Node.js this
       is name of a function exported by the module specified in
       `source_location`.
-"""
-  )
+""")
 
 
 def AddMaxInstancesFlag(parser):
@@ -245,15 +320,13 @@ def AddMaxInstancesFlag(parser):
       help="""\
         Sets the maximum number of instances for the function. A function
         execution that would exceed max-instances times out.
-      """
-  )
+      """)
   mutex_group.add_argument(
       '--clear-max-instances',
       action='store_true',
       help="""\
         Clears the maximum instances setting for the function.
-      """
-  )
+      """)
 
 
 def AddTriggerFlagGroup(parser):
@@ -279,7 +352,8 @@ def AddTriggerFlagGroup(parser):
             'bucket will trigger function execution.'),
       type=api_util.ValidateAndStandarizeBucketUriOrRaise)
   trigger_group.add_argument(
-      '--trigger-http', action='store_true',
+      '--trigger-http',
+      action='store_true',
       help="""\
       Function will be assigned an endpoint, which you can view by using
       the `describe` command. Any HTTP request (of a supported type) to the
@@ -293,8 +367,7 @@ def AddTriggerFlagGroup(parser):
       metavar='EVENT_TYPE',
       help=('Specifies which action should trigger the function. For a '
             'list of acceptable values, call '
-            '`gcloud functions event-types list`.')
-  )
+            '`gcloud functions event-types list`.'))
   trigger_provider_spec_group.add_argument(
       '--trigger-resource',
       metavar='RESOURCE',
@@ -386,8 +459,7 @@ def AddServiceAccountFlag(parser):
 
       If not provided, the function will use the project's default service
       account.
-      """
-  )
+      """)
 
 
 def AddIAMPolicyFileArg(parser):
@@ -396,3 +468,10 @@ def AddIAMPolicyFileArg(parser):
       metavar='POLICY_FILE',
       help='Path to a local JSON or YAML formatted file '
       'containing a valid policy.')
+
+
+def AddIgnoreFileFlag(parser):
+  parser.add_argument(
+      '--ignore-file',
+      help='Override the .gcloudignore file and use the specified file instead.'
+  )

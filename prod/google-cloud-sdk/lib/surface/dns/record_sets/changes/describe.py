@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ from __future__ import division
 from __future__ import unicode_literals
 
 from googlecloudsdk.api_lib.dns import util
-from googlecloudsdk.api_lib.util import apis
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.dns import flags
 from googlecloudsdk.core import properties
@@ -51,8 +50,10 @@ class Describe(base.DescribeCommand):
     # this patter of checking ReleaseTrack. Break this into multiple classes.
     if self.ReleaseTrack() == base.ReleaseTrack.BETA:
       api_version = 'v1beta2'
+    elif self.ReleaseTrack() == base.ReleaseTrack.ALPHA:
+      api_version = 'v1alpha2'
 
-    dns_client = apis.GetClientInstance('dns', api_version)
+    dns_client = util.GetApiClient(api_version)
     change_ref = util.GetRegistry(api_version).Parse(
         args.change_id,
         params={

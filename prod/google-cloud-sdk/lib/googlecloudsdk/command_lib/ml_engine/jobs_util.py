@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,9 +33,10 @@ from googlecloudsdk.core import properties
 from googlecloudsdk.core import resources
 from googlecloudsdk.core import yaml
 from googlecloudsdk.core.resource import resource_printer
+import six
 
 
-_CONSOLE_URL = ('https://console.cloud.google.com/ml/jobs/{job_id}?'
+_CONSOLE_URL = ('https://console.cloud.google.com/mlengine/jobs/{job_id}?'
                 'project={project}')
 _LOGS_URL = ('https://console.cloud.google.com/logs?'
              'resource=ml.googleapis.com%2Fjob_id%2F{job_id}'
@@ -49,7 +50,6 @@ _TEXT_FILE_URL = ('https://www.tensorflow.org/guide/datasets'
                   '#consuming_text_data')
 _TF_RECORD_URL = ('https://www.tensorflow.org/guide/datasets'
                   '#consuming_tfrecord_data')
-
 
 _PREDICTION_DATA_FORMAT_MAPPER = arg_utils.ChoiceEnumMapper(
     '--data-format',
@@ -131,11 +131,13 @@ class TrainingCustomInputServerConfig(object):
                parameter_image_uri=None,
                parameter_accelerator_type=None,
                parameter_accelerator_count=None,
+               tpu_tf_version=None,
                worker_machine_type=None,
                worker_machine_count=None,
                worker_image_uri=None,
                work_accelerator_type=None,
-               work_accelerator_count=None):
+               work_accelerator_count=None,
+               use_chief_in_tf_config=None):
     self.master_image_uri = master_image_uri
     self.master_machine_type = master_machine_type
     self.master_accelerator_type = master_accelerator_type
@@ -145,6 +147,7 @@ class TrainingCustomInputServerConfig(object):
     self.parameter_image_uri = parameter_image_uri
     self.parameter_accelerator_type = parameter_accelerator_type
     self.parameter_accelerator_count = parameter_accelerator_count
+    self.tpu_tf_version = tpu_tf_version
     self.worker_machine_type = worker_machine_type
     self.worker_machine_count = worker_machine_count
     self.worker_image_uri = worker_image_uri
@@ -152,6 +155,7 @@ class TrainingCustomInputServerConfig(object):
     self.work_accelerator_count = work_accelerator_count
     self.runtime_version = runtime_version
     self.scale_tier = scale_tier
+    self.use_chief_in_tf_config = use_chief_in_tf_config
 
   def ValidateConfig(self):
     """Validate that custom config parameters are set correctly."""
@@ -167,31 +171,38 @@ class TrainingCustomInputServerConfig(object):
   def GetFieldMap(self):
     """Return a mapping of object fields to apitools message fields."""
     return {
-        'masterConfig': {'imageUri': self.master_image_uri,
-                         'acceleratorConfig':
-                             {'count': self.master_accelerator_count,
-                              'type': self.master_accelerator_type}
-                        },
+        'masterConfig': {
+            'imageUri': self.master_image_uri,
+            'acceleratorConfig': {
+                'count': self.master_accelerator_count,
+                'type': self.master_accelerator_type
+            }
+        },
         'masterType': self.master_machine_type,
         'parameterServerConfig': {
             'imageUri': self.parameter_image_uri,
-            'acceleratorConfig':
-                {'count': self.parameter_accelerator_count,
-                 'type': self.parameter_accelerator_type}
+            'acceleratorConfig': {
+                'count': self.parameter_accelerator_count,
+                'type': self.parameter_accelerator_type
+            }
         },
         'parameterServerCount': self.parameter_machine_count,
         'parameterServerType': self.parameter_machine_type,
-        'workerConfig': {'imageUri': self.worker_image_uri,
-                         'acceleratorConfig':
-                             {'count': self.work_accelerator_count,
-                              'type': self.work_accelerator_type}
-                        },
+        'workerConfig': {
+            'imageUri': self.worker_image_uri,
+            'acceleratorConfig': {
+                'count': self.work_accelerator_count,
+                'type': self.work_accelerator_type
+            },
+            'tpuTfVersion': self.tpu_tf_version
+        },
         'workerCount': self.worker_machine_count,
         'workerType': self.worker_machine_type,
+        'useChiefInTfConfig': self.use_chief_in_tf_config,
     }
 
   @classmethod
-  def FromArgs(cls, args):
+  def FromArgs(cls, args, support_tpu_tf_version=False):
     """Build TrainingCustomInputServerConfig from argparse.Namespace."""
     tier = args.scale_tier
 
@@ -201,11 +212,11 @@ class TrainingCustomInputServerConfig(object):
         tier = data.get('trainingInput', {}).get('scaleTier', None)
 
     parsed_tier = ScaleTierFlagMap().GetEnumForChoice(tier)
+
     return cls(
         scale_tier=parsed_tier,
         runtime_version=args.runtime_version,
         master_machine_type=args.master_machine_type,
-
         master_image_uri=args.master_image_uri,
         master_accelerator_type=(args.master_accelerator.get('type')
                                  if args.master_accelerator else None),
@@ -214,17 +225,19 @@ class TrainingCustomInputServerConfig(object):
         parameter_machine_type=args.parameter_server_machine_type,
         parameter_machine_count=args.parameter_server_count,
         parameter_image_uri=args.parameter_server_image_uri,
-        parameter_accelerator_type=args.parameter_server_accelerator.get(
-            'type') if args.parameter_server_accelerator else None,
+        parameter_accelerator_type=args.parameter_server_accelerator.get('type')
+        if args.parameter_server_accelerator else None,
         parameter_accelerator_count=args.parameter_server_accelerator.get(
             'count') if args.parameter_server_accelerator else None,
+        tpu_tf_version=args.tpu_tf_version if support_tpu_tf_version else None,
         worker_machine_type=args.worker_machine_type,
         worker_machine_count=args.worker_count,
         worker_image_uri=args.worker_image_uri,
         work_accelerator_type=(args.worker_accelerator.get('type')
                                if args.worker_accelerator else None),
         work_accelerator_count=(args.worker_accelerator.get('count')
-                                if args.worker_accelerator else None))
+                                if args.worker_accelerator else None),
+        use_chief_in_tf_config=args.use_chief_in_tf_config)
 
 
 def DataFormatFlagMap():
@@ -341,8 +354,7 @@ def SubmitTraining(jobs_client, job, job_dir=None, staging_bucket=None,
                    packages=None, package_path=None, scale_tier=None,
                    config=None, module_name=None, runtime_version=None,
                    python_version=None, stream_logs=None, user_args=None,
-                   labels=None, supports_container_training=False,
-                   custom_train_server_config=None):
+                   labels=None, custom_train_server_config=None):
   """Submit a training job."""
   region = properties.VALUES.compute.region.Get(required=True)
   staging_location = jobs_prep.GetStagingLocation(
@@ -352,8 +364,7 @@ def SubmitTraining(jobs_client, job, job_dir=None, staging_bucket=None,
     uris = jobs_prep.UploadPythonPackages(
         packages=packages,
         package_path=package_path,
-        staging_location=staging_location,
-        supports_container_training=supports_container_training)
+        staging_location=staging_location)
   except jobs_prep.NoStagingLocationError:
     raise flags.ArgumentError(
         'If local packages are provided, the `--staging-bucket` or '
@@ -363,20 +374,24 @@ def SubmitTraining(jobs_client, job, job_dir=None, staging_bucket=None,
   scale_tier_enum = jobs_client.training_input_class.ScaleTierValueValuesEnum
   scale_tier = scale_tier_enum(scale_tier) if scale_tier else None
 
-  job = jobs_client.BuildTrainingJob(
-      path=config,
-      module_name=module_name,
-      job_name=job,
-      trainer_uri=uris,
-      region=region,
-      job_dir=job_dir.ToUrl() if job_dir else None,
-      scale_tier=scale_tier,
-      user_args=user_args,
-      runtime_version=runtime_version,
-      python_version=python_version,
-      labels=labels,
-      custom_train_server_config=custom_train_server_config
-  )
+  try:
+    job = jobs_client.BuildTrainingJob(
+        path=config,
+        module_name=module_name,
+        job_name=job,
+        trainer_uri=uris,
+        region=region,
+        job_dir=job_dir.ToUrl() if job_dir else None,
+        scale_tier=scale_tier,
+        user_args=user_args,
+        runtime_version=runtime_version,
+        python_version=python_version,
+        labels=labels,
+        custom_train_server_config=custom_train_server_config)
+  except jobs_prep.NoStagingLocationError:
+    raise flags.ArgumentError(
+        'If `--package-path` is not specified, at least one Python package '
+        'must be specified via `--packages`.')
 
   project_ref = resources.REGISTRY.Parse(
       properties.VALUES.core.project.Get(required=True),
@@ -404,7 +419,7 @@ def SubmitTraining(jobs_client, job, job_dir=None, staging_bucket=None,
       log.status.Print(_FOLLOW_UP_MESSAGE.format(job_id=job.jobId,
                                                  project=project_ref.Name()))
     except exceptions.HttpError as err:
-      log.status.Print('Polling logs failed:\n{}\n'.format(str(err)))
+      log.status.Print('Polling logs failed:\n{}\n'.format(six.text_type(err)))
       log.info('Failure details:', exc_info=True)
       log.status.Print(_FOLLOW_UP_MESSAGE.format(job_id=job.jobId,
                                                  project=project_ref.Name()))

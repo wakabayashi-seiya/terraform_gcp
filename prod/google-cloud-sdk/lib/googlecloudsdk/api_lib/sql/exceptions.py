@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2015 Google Inc. All Rights Reserved.
+# Copyright 2015 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -56,3 +56,7 @@ class UpdateError(Error):
 
 class CloudSqlProxyError(Error):
   """An error raised when the Cloud SQL Proxy fails to start."""
+
+
+class InvalidStateError(Error):
+  """An error raised when a Cloud SQL resource is in an invalid state."""

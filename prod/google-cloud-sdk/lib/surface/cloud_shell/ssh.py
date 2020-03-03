@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,13 +18,14 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import datetime
 import threading
-
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.cloud_shell import util
 from googlecloudsdk.command_lib.util.ssh import ssh
 from googlecloudsdk.core import log
 from googlecloudsdk.core import properties
+import six
 
 
 @base.ReleaseTracks(base.ReleaseTrack.ALPHA)
@@ -76,9 +77,10 @@ class SshAlpha(base.Command):
     command_list = args.command.split(' ') if args.command else ['bash -l']
     project = properties.VALUES.core.project.Get()
     connection_info = util.PrepareEnvironment(args)
+    util.AuthorizeEnvironment()
     command = ssh.SSHCommand(
         remote=ssh.Remote(host=connection_info.host, user=connection_info.user),
-        port=str(connection_info.port),
+        port=six.text_type(connection_info.port),
         identity_file=connection_info.key,
         remote_command=(['DEVSHELL_PROJECT_ID=' + project]
                         if project else []) + command_list,
@@ -88,7 +90,8 @@ class SshAlpha(base.Command):
     )
 
     if args.dry_run:
-      log.Print(' '.join(command.Build(connection_info.ssh_env)))
+      elems = command.Build(connection_info.ssh_env)
+      log.Print(' '.join([six.moves.shlex_quote(elem) for elem in elems]))
     else:
       self.done = threading.Event()
       thread = threading.Thread(target=self.Reauthorize, args=())
@@ -99,5 +102,6 @@ class SshAlpha(base.Command):
 
   def Reauthorize(self):
     while not self.done.is_set():
-      self.done.wait(30 * 60)  # Push every 30 minutes
+      self.done.wait(
+          (util.MIN_CREDS_EXPIRY - datetime.timedelta(minutes=2)).seconds)
       util.AuthorizeEnvironment()

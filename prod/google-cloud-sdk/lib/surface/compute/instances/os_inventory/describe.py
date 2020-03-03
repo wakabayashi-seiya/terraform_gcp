@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,14 +29,22 @@ from googlecloudsdk.calliope import exceptions as calliope_exceptions
 from googlecloudsdk.command_lib.compute.instances import flags
 from googlecloudsdk.command_lib.compute.instances.os_inventory import exceptions
 from googlecloudsdk.core.resource import resource_projector
+import six
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+@base.ReleaseTracks(base.ReleaseTrack.GA, base.ReleaseTrack.BETA,
+                    base.ReleaseTrack.ALPHA)
 class Describe(base.DescribeCommand):
   """Describe a Google Compute Engine virtual instance's OS inventory data.
 
   *{command}* displays all OS inventory data associated with a Google Compute
   Engine virtual machine instance.
+
+  ## EXAMPLES
+
+  To see OS inventory of an instance named my-instance, run:
+
+        $ {command} my-instance
   """
 
   _GUEST_ATTRIBUTES_PACKAGE_FIELD_KEYS = ('InstalledPackages', 'PackageUpdates')
@@ -62,8 +70,14 @@ class Describe(base.DescribeCommand):
             InstalledPackages.rpm:format=
               "table[box,title='Installed Packages (RPM)']
                 (Name:sort=1,Arch,Version)",
+            InstalledPackages.Zypper_patches:format=
+              "table[box,title='Installed Patches (Zypper)'](
+                Name:sort=1,
+                Category,
+                Severity,
+                Summary:wrap=14)",
             InstalledPackages.wua:format=
-              "table[box,title='Installed Packages (Windows Update Agent)'](
+              "table[all-box,title='Installed Packages (Windows Update Agent)'](
                 Title:sort=1:wrap,
                 Categories.list():wrap,
                 KBArticleIDs.list():wrap=14,
@@ -87,8 +101,14 @@ class Describe(base.DescribeCommand):
             PackageUpdates.yum:format=
               "table[box,title='Package Updates Available (Yum)']
                 (Name:sort=1,Arch,Version)",
+            PackageUpdates.Zypper_patches:format=
+              "table[box,title='Patches Available (Zypper)'](
+                Name:sort=1,
+                Category,
+                Severity,
+                Summary:wrap=14)",
             PackageUpdates.wua:format=
-              "table[box,title='Package Updates Available (Windows Update Agent)'](
+              "table[all-box,title='Package Updates Available (Windows Update Agent)'](
                 Title:sort=1:wrap,
                 Categories.list():wrap,
                 KBArticleIDs.list():wrap=14,
@@ -125,7 +145,7 @@ class Describe(base.DescribeCommand):
       return response.queryValue.items
     except calliope_exceptions.ToolException as e:
       if ('The resource \'guestInventory/\' of type \'Guest Attribute\' was not'
-          ' found.') in str(e):
+          ' found.') in six.text_type(e):
         problems = [{
             '',
             'OS inventory data was not found. Make sure the OS Config agent '

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -36,6 +36,7 @@ from googlecloudsdk.core import yaml
 from googlecloudsdk.core.resource import resource_printer
 from googlecloudsdk.core.util import files
 from googlecloudsdk.core.util import retry
+import six
 
 
 EMAIL_REGEX = re.compile(r'^.+@([^.@][^@]+)$')
@@ -67,10 +68,6 @@ def GetMessagesModule():
 
 def GetClientInstance():
   return apis.GetClientInstance('servicemanagement', 'v1')
-
-
-def GetEndpointsServiceName():
-  return 'endpoints.googleapis.com'
 
 
 def GetServiceManagementServiceName():
@@ -151,7 +148,7 @@ def PushAdvisorChangeTypeToString(change_type):
   messages = GetMessagesModule()
   enums = messages.ConfigChange.ChangeTypeValueValuesEnum
   if change_type in [enums.ADDED, enums.REMOVED, enums.MODIFIED]:
-    return str(change_type).lower()
+    return six.text_type(change_type).lower()
   else:
     return '[unknown]'
 
@@ -270,13 +267,15 @@ def ReadServiceConfigFile(file_path):
         'Could not open service config file [{0}]: {1}'.format(file_path, ex))
 
 
-def PushNormalizedGoogleServiceConfig(service_name, project, config_dict):
+def PushNormalizedGoogleServiceConfig(service_name, project, config_dict,
+                                      config_id=None):
   """Pushes a given normalized Google service configuration.
 
   Args:
     service_name: name of the service
     project: the producer project Id
     config_dict: the parsed contents of the Google Service Config file.
+    config_id: The id name for the config
 
   Returns:
     Result of the ServicesConfigsCreate request (a Service object)
@@ -288,6 +287,7 @@ def PushNormalizedGoogleServiceConfig(service_name, project, config_dict):
   # JsonToMessage takes the message first and value second
   service_config = encoding.DictToMessage(config_dict, messages.Service)
   service_config.producerProjectId = project
+  service_config.id = config_id
   create_request = (
       messages.ServicemanagementServicesConfigsCreateRequest(
           serviceName=service_name,
@@ -301,7 +301,7 @@ def GetServiceConfigIdFromSubmitConfigSourceResponse(response):
 
 
 def PushMultipleServiceConfigFiles(service_name, config_files, is_async,
-                                   validate_only=False):
+                                   validate_only=False, config_id=None):
   """Pushes a given set of service configuration files.
 
   Args:
@@ -310,6 +310,7 @@ def PushMultipleServiceConfigFiles(service_name, config_files, is_async,
     is_async: whether to wait for aync operations or not.
     validate_only: whether to perform a validate-only run of the operation
                      or not.
+    config_id: an optional name for the config
 
   Returns:
     Full response from the SubmitConfigSource request.
@@ -321,7 +322,7 @@ def PushMultipleServiceConfigFiles(service_name, config_files, is_async,
   messages = GetMessagesModule()
   client = GetClientInstance()
 
-  config_source = messages.ConfigSource()
+  config_source = messages.ConfigSource(id=config_id)
   config_source.files.extend(config_files)
 
   config_source_request = messages.SubmitConfigSourceRequest(
@@ -413,12 +414,13 @@ def DoesServiceExist(service_name):
     return True
 
 
-def CreateService(service_name, project):
+def CreateService(service_name, project, is_async=False):
   """Creates a Service resource.
 
   Args:
     service_name: name of the service to be created.
     project: the project Id
+    is_async: If False, the method will block until the operation completes.
   """
   messages = GetMessagesModule()
   client = GetClientInstance()
@@ -427,23 +429,9 @@ def CreateService(service_name, project):
       serviceName=service_name,
       producerProjectId=project,
   )
-  client.services.Create(create_request)
+  result = client.services.Create(create_request)
 
-
-def GetByteStringFromFingerprint(fingerprint):
-  """Helper function to create a byte string from a SHA fingerprint.
-
-  Args:
-    fingerprint: The fingerprint to transform in the form of
-                 "12:34:56:78:90:...:EF".
-
-  Returns:
-    The fingerprint converted to a byte string (excluding the colons).
-  """
-  if not ValidateFingerprint(fingerprint):
-    raise exceptions.FingerprintError('Invalid fingerprint')
-  byte_tokens = fingerprint.split(':')
-  return str(bytearray([int(b, 16) for b in byte_tokens]))
+  GetProcessedOperationResult(result, is_async=is_async)
 
 
 def ValidateFingerprint(fingerprint):
@@ -614,3 +602,36 @@ def LoadJsonOrYaml(input_string):
 
   # First, try to decode JSON. If that fails, try to decode YAML.
   return TryJson() or TryYaml()
+
+
+def CreateRollout(service_config_id, service_name, is_async=False):
+  """Creates a Rollout for a Service Config within it's service.
+
+  Args:
+    service_config_id: The service config id
+    service_name: The name of the service
+    is_async: (Optional) Wheter or not operation should be asynchronous
+
+  Returns:
+    The rollout object or long running operation if is_async is true
+  """
+  messages = GetMessagesModule()
+  client = GetClientInstance()
+
+  percentages = messages.TrafficPercentStrategy.PercentagesValue()
+  percentages.additionalProperties.append(
+      (messages.TrafficPercentStrategy.PercentagesValue.AdditionalProperty(
+          key=service_config_id, value=100.0)))
+  traffic_percent_strategy = messages.TrafficPercentStrategy(
+      percentages=percentages)
+  rollout = messages.Rollout(
+      serviceName=service_name,
+      trafficPercentStrategy=traffic_percent_strategy,)
+  rollout_create = messages.ServicemanagementServicesRolloutsCreateRequest(
+      rollout=rollout,
+      serviceName=service_name,
+  )
+  rollout_operation = client.services_rollouts.Create(rollout_create)
+  op = ProcessOperationResult(rollout_operation, is_async)
+
+  return op.get('response', None)

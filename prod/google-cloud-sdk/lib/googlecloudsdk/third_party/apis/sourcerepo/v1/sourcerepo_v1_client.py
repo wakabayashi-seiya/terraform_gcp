@@ -9,6 +9,7 @@ class SourcerepoV1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://sourcerepo.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'sourcerepo'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform', u'https://www.googleapis.com/auth/source.full_control', u'https://www.googleapis.com/auth/source.read_only', u'https://www.googleapis.com/auth/source.read_write']
@@ -153,7 +154,7 @@ set.
         method_id=u'sourcerepo.projects.repos.getIamPolicy',
         ordered_params=[u'resource'],
         path_params=[u'resource'],
-        query_params=[],
+        query_params=[u'options_requestedPolicyVersion'],
         relative_path=u'v1/{+resource}:getIamPolicy',
         request_field='',
         request_type_name=u'SourcerepoProjectsReposGetIamPolicyRequest',

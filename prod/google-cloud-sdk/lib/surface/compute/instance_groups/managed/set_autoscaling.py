@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2015 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -54,16 +54,24 @@ class SetAutoscaling(base.Command):
     instance_groups_flags.MULTISCOPE_INSTANCE_GROUP_MANAGER_ARG.AddArgument(
         parser)
 
-  def CreateAutoscalerResource(self, client, resources, igm_ref, args,
-                               mode_enabled=False):
+  def CreateAutoscalerResource(self,
+                               client,
+                               resources,
+                               igm_ref,
+                               args,
+                               scale_in=False):
     autoscaler = managed_instance_groups_utils.AutoscalerForMigByRef(
         client, resources, igm_ref)
     autoscaler_name = getattr(autoscaler, 'name', None)
     new_one = managed_instance_groups_utils.IsAutoscalerNew(autoscaler)
     autoscaler_name = autoscaler_name or args.name
     autoscaler_resource = managed_instance_groups_utils.BuildAutoscaler(
-        args, client.messages, igm_ref, autoscaler_name, autoscaler,
-        mode_enabled=mode_enabled)
+        args,
+        client.messages,
+        igm_ref,
+        autoscaler_name,
+        autoscaler,
+        scale_in=scale_in)
     return autoscaler_resource, new_one
 
   def _SetAutoscalerFromFile(
@@ -193,9 +201,11 @@ class SetAutoscalingAlpha(SetAutoscaling):
   @staticmethod
   def Args(parser):
     managed_instance_groups_utils.AddAutoscalerArgs(
-        parser=parser, queue_scaling_enabled=True,
-        autoscaling_file_enabled=True, stackdriver_metrics_flags=True,
-        mode_enabled=True)
+        parser=parser,
+        queue_scaling_enabled=True,
+        autoscaling_file_enabled=True,
+        stackdriver_metrics_flags=True,
+        scale_in=True)
     instance_groups_flags.MULTISCOPE_INSTANCE_GROUP_MANAGER_ARG.AddArgument(
         parser)
 
@@ -216,7 +226,7 @@ class SetAutoscalingAlpha(SetAutoscaling):
         igm_ref, client)
 
     autoscaler_resource, is_new = self.CreateAutoscalerResource(
-        client, holder.resources, igm_ref, args, mode_enabled=True)
+        client, holder.resources, igm_ref, args, scale_in=True)
 
     managed_instance_groups_utils.ValidateGeneratedAutoscalerIsValid(
         args, autoscaler_resource)

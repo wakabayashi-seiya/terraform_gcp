@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -140,6 +140,11 @@ WORKERS = base.Argument(
     type=int,
     help=('Number of workers with which to run. '
           'Ignored if --distributed is not specified. Default: 2'))
+EVALUATORS = base.Argument(
+    '--evaluator-count',
+    type=int,
+    help=('Number of evaluators with which to run. '
+          'Ignored if --distributed is not specified. Default: 0'))
 START_PORT = base.Argument(
     '--start-port',
     type=int,
@@ -216,7 +221,7 @@ PACKAGES = base.Argument(
 Path to Python archives used for training. These can be local paths
 (absolute or relative), in which case they will be uploaded to the Cloud
 Storage bucket given by `--staging-bucket`, or Cloud Storage URLs
-(`gs://bucket-name/path/to/package.tar.gz`).
+('gs://bucket-name/path/to/package.tar.gz').
 """)
 
 
@@ -330,13 +335,13 @@ FRAMEWORK_MAPPER = arg_utils.ChoiceEnumMapper(
      GoogleCloudMlV1Version.FrameworkValueValuesEnum),
     custom_mappings=_FRAMEWORK_CHOICES,
     help_str=('The ML framework used to train this version of the model. '
-              'If not specified, defaults to `tensorflow`'))
+              'If not specified, defaults to \'tensorflow\''))
 
 
 def AddPythonVersionFlag(parser, context):
   help_str = (
       'Version of Python used {context}. If not set, the default '
-      'version is 2.7. Python 3.5 is available when `runtime_version` is '
+      'version is 2.7. Python 3.5 is available when `--runtime-version` is '
       'set to 1.4 and above. Python 2.7 works with all supported runtime '
       'versions.').format(context=context)
   version = base.Argument(
@@ -481,14 +486,14 @@ def AddUserCodeArgs(parser):
           The fully-qualified name of the custom prediction class in the package
           provided for custom prediction.
 
-          For example, `--prediction-class my_package.SequenceModel`.
+          For example, `--prediction-class=my_package.SequenceModel`.
           """))
   user_code_group.AddArgument(base.Argument(
       '--package-uris',
       type=arg_parsers.ArgList(),
       metavar='PACKAGE_URI',
       help="""\
-          Comma-separated list of Google Cloud Storage URIs (`gs://...`) for
+          Comma-separated list of Google Cloud Storage URIs ('gs://...') for
           user-supplied Python packages to use.
           """))
   user_code_group.AddToParser(parser)
@@ -497,20 +502,22 @@ def AddUserCodeArgs(parser):
 def GetAcceleratorFlag():
   return base.Argument(
       '--accelerator',
-      type=arg_parsers.ArgDict(spec={
-          'type': str,
-          'count': int,
-      }, required_keys=['type', 'count']),
+      type=arg_parsers.ArgDict(
+          spec={
+              'type': str,
+              'count': int,
+          }, required_keys=['type', 'count']),
       help="""\
 Manage the accelerator config for GPU serving. When deploying a model with the
-new Alpha Google Compute Engine Machine Types, a GPU accelerator may also be selected.
-You can see what accelerators are supported in what location via the
-'gcloud alpha ml-engine locations list' command.
+new Alpha Google Compute Engine Machine Types, a GPU accelerator may also
+be selected. Accelerator config for version creation is currently available
+in us-central1 only.
 
 *type*::: The type of the accelerator. Choices are {}.
 
 *count*::: The number of accelerators to attach to each machine running the job.
-""".format(', '.join(["'{}'".format(c) for c in _ACCELERATOR_TYPE_MAPPER.choices])))
+""".format(', '.join(
+    ["'{}'".format(c) for c in _OP_ACCELERATOR_TYPE_MAPPER.choices])))
 
 
 def ParseAcceleratorFlag(accelerator):
@@ -537,7 +544,45 @@ The count of the accelerator must be greater than 0.
       type=accelerator_type)
 
 
-def AddCustomContainerFlags(parser):
+def AddExplainabilityFlags(parser):
+  """Add args that configure explainability."""
+  base.ChoiceArgument(
+      '--explanation-method',
+      choices=['integrated-gradients', 'sampled-shapley', 'xrai'],
+      required=False,
+      help_str="""\
+          Enable explanations and select the explanation method to use.
+
+          The valid options are:
+            integrated-gradients: Use Integrated Gradients.
+            sampled-shapley: Use Sampled Shapley.
+            xrai: Use XRAI.
+      """
+  ).AddToParser(parser)
+  base.Argument(
+      '--num-integral-steps',
+      type=arg_parsers.BoundedInt(1, sys.maxsize, unlimited=True),
+      default=50,
+      required=False,
+      help="""\
+          Number of integral steps for Integrated Gradients. Only valid when
+          `--explanation-method=integrated-gradients` or
+          `--explanation-method=xrai` is specified.
+      """
+  ).AddToParser(parser)
+  base.Argument(
+      '--num-paths',
+      type=arg_parsers.BoundedInt(1, sys.maxsize, unlimited=True),
+      default=50,
+      required=False,
+      help="""\
+          Number of paths for Sampled Shapley. Only valid when
+          `--explanation-method=sampled-shapley` is specified.
+      """
+  ).AddToParser(parser)
+
+
+def AddCustomContainerFlags(parser, support_tpu_tf_version=False):
   """Add Custom container flags to parser."""
   GetMasterMachineType().AddToParser(parser)
   GetMasterAccelerator().AddToParser(parser)
@@ -548,6 +593,9 @@ def AddCustomContainerFlags(parser):
   GetWorkerMachineConfig().AddToParser(parser)
   GetWorkerAccelerator().AddToParser(parser)
   GetWorkerImageUri().AddToParser(parser)
+  GetUseChiefInTfConfig().AddToParser(parser)
+  if support_tpu_tf_version:
+    GetTpuTfVersion().AddToParser(parser)
 
 # Custom Container Flags
 _ACCELERATOR_TYPE_MAPPER = arg_utils.ChoiceEnumMapper(
@@ -556,6 +604,14 @@ _ACCELERATOR_TYPE_MAPPER = arg_utils.ChoiceEnumMapper(
     ).GoogleCloudMlV1AcceleratorConfig.TypeValueValuesEnum,
     help_str='The available types of accelerators.',
     include_filter=lambda x: x != 'ACCELERATOR_TYPE_UNSPECIFIED',
+    required=False)
+
+_OP_ACCELERATOR_TYPE_MAPPER = arg_utils.ChoiceEnumMapper(
+    'generic-accelerator',
+    jobs.GetMessagesModule().GoogleCloudMlV1AcceleratorConfig
+    .TypeValueValuesEnum,
+    help_str='The available types of accelerators.',
+    include_filter=lambda x: x.startswith('NVIDIA'),
     required=False)
 
 _ACCELERATOR_TYPE_HELP = """\
@@ -608,7 +664,7 @@ def GetMasterMachineType():
   help_text = """\
   Specifies the type of virtual machine to use for training job's master worker.
 
-  You must set this value when `scaleTier` is set to `CUSTOM`.
+  You must set this value when `--scale-tier` is set to `CUSTOM`.
   """
   return base.Argument(
       '--master-machine-type', required=False, help=help_text)
@@ -628,7 +684,7 @@ def GetMasterImageUri():
       required=False,
       help=('Docker image to run on each master worker. '
             'This image must be in Google Container Registry. Only one of '
-            '`master-image-uri` and `runtimeVersion` must be specified.'))
+            '`--master-image-uri` and `--runtime-version` must be specified.'))
 
 
 def GetParameterServerMachineTypeConfig():
@@ -636,7 +692,7 @@ def GetParameterServerMachineTypeConfig():
   machine_type = base.Argument(
       '--parameter-server-machine-type',
       required=True,
-      help=('Type of virtual machine to use for training job\'s'
+      help=('Type of virtual machine to use for training job\'s '
             'parameter servers. This flag must be specified if any of the '
             'other arguments in this group are specified machine to use for '
             'training job\'s parameter servers.'))
@@ -669,7 +725,7 @@ def GetParameterServerImageUri():
       required=False,
       help=('Docker image to run on each parameter server. '
             'This image must be in Google Container Registry. If not '
-            'specified, the value of `master-image-uri` is used.'))
+            'specified, the value of `--master-image-uri` is used.'))
 
 
 def GetWorkerMachineConfig():
@@ -709,7 +765,28 @@ def GetWorkerImageUri():
       required=False,
       help=('Docker image to run on each worker node. '
             'This image must be in Google Container Registry. If not '
-            'specified, the value of `master-image-uri` is used.'))
+            'specified, the value of `--master-image-uri` is used.'))
+
+
+def GetTpuTfVersion():
+  """Build tpu-tf-version flag."""
+  return base.Argument(
+      '--tpu-tf-version',
+      required=False,
+      help=('Runtime version of TensorFlow used by the container. This field '
+            'must be specified if a custom container on the TPU worker is '
+            'being used.'))
+
+
+def GetUseChiefInTfConfig():
+  """Build use-chief-in-tf-config flag."""
+  return base.Argument(
+      '--use-chief-in-tf-config',
+      required=False,
+      type=arg_parsers.ArgBoolean(),
+      help=('Use "chief" role in the cluster instead of "master". This is '
+            'required for TensorFlow 2.0 and newer versions. Unlike "master" '
+            'node, "chief" node does not run evaluation.'))
 
 
 def AddMachineTypeFlagToParser(parser):

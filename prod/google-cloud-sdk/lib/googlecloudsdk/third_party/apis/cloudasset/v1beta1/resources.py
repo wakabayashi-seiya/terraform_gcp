@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2015 Google Inc. All Rights Reserved.
+# Copyright 2015 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ import enum
 
 
 BASE_URL = 'https://cloudasset.googleapis.com/v1beta1/'
-DOCS_URL = 'https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/quickstart-cloud-asset-inventory'
+DOCS_URL = 'https://cloud.google.com/asset-inventory/docs/quickstart'
 
 
 class Collections(enum.Enum):

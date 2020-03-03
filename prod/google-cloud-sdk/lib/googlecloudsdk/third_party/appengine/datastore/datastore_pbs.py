@@ -1,6 +1,6 @@
 # !/usr/bin/python2.4  # pylint: disable=g-unknown-interpreter
 #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 
 """Utilities for converting between v3 and v1 datastore protocol buffers.
 
@@ -89,7 +90,7 @@ MEANING_EMPTY_LIST = 24
 URI_MEANING_ZLIB = 'ZLIB'
 
 # Limits. Must be kept in sync with
-# java/com/google/apphosting/datastore/service/common/DatastoreHelper.java.
+# apphosting/datastore/config.proto flags
 MAX_URL_CHARS = 2083
 MAX_INDEXED_STRING_CHARS = 500
 MAX_INDEXED_BLOB_BYTES = 500

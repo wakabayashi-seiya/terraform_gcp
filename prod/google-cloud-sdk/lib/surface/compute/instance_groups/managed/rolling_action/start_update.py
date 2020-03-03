@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ from googlecloudsdk.command_lib.compute import flags
 from googlecloudsdk.command_lib.compute import scope as compute_scope
 from googlecloudsdk.command_lib.compute.instance_groups import flags as instance_groups_flags
 from googlecloudsdk.command_lib.compute.instance_groups.managed import flags as instance_groups_managed_flags
+from googlecloudsdk.command_lib.compute.instance_groups.managed import rolling_action
 from googlecloudsdk.command_lib.compute.managed_instance_groups import update_instances_utils
 
 
@@ -112,11 +113,12 @@ class StartUpdate(base.Command):
                                             client.messages))
     if args.canary_version:
       versions.append(
-          update_instances_utils.ParseVersion(
-              igm_ref.project, '--canary-version', args.canary_version,
-              resources, client.messages))
+          update_instances_utils.ParseVersion(igm_ref.project,
+                                              '--canary-version',
+                                              args.canary_version, resources,
+                                              client.messages))
     managed_instance_groups_utils.ValidateVersions(igm_info, versions,
-                                                   args.force)
+                                                   resources, args.force)
 
     # TODO(b/36049787): Decide what we should do when two versions have the same
     #              instance template (this can happen with canary restart
@@ -140,10 +142,13 @@ class StartUpdate(base.Command):
     if hasattr(args, 'min_ready'):
       update_policy.minReadySec = args.min_ready
     # replacement_method is available in alpha API only
-    if hasattr(args, 'replacement_method') and args.replacement_method:
+    if hasattr(args, 'replacement_method'):
       replacement_method = update_instances_utils.ParseReplacementMethod(
           args.replacement_method, client.messages)
       update_policy.replacementMethod = replacement_method
+
+    rolling_action.ValidateAndFixUpdaterAgainstStateful(update_policy, igm_ref,
+                                                        igm_info, client, args)
 
     igm_resource = client.messages.InstanceGroupManager(
         instanceTemplate=None, updatePolicy=update_policy, versions=versions)
@@ -164,24 +169,16 @@ class StartUpdate(base.Command):
     return service, 'Patch', request
 
 
-@base.ReleaseTracks(base.ReleaseTrack.BETA)
+@base.ReleaseTracks(base.ReleaseTrack.BETA, base.ReleaseTrack.ALPHA)
 class StartUpdateBeta(StartUpdate):
   """Start update instances of managed instance group."""
 
   @staticmethod
   def Args(parser):
-    _AddArgs(parser=parser, supports_min_ready=True)
-    instance_groups_flags.MULTISCOPE_INSTANCE_GROUP_MANAGER_ARG.AddArgument(
-        parser)
-
-
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
-class StartUpdateAlpha(StartUpdate):
-  """Start update instances of managed instance group."""
-
-  @staticmethod
-  def Args(parser):
-    _AddArgs(parser, supports_min_ready=True, supports_replacement_method=True)
+    _AddArgs(
+        parser=parser,
+        supports_min_ready=True,
+        supports_replacement_method=True)
     instance_groups_flags.MULTISCOPE_INSTANCE_GROUP_MANAGER_ARG.AddArgument(
         parser)
 

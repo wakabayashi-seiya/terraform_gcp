@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,16 +79,13 @@ def _CommonArgs(parser):
           {command} my-disk-1 my-disk-2 my-disk-3 --snapshot-names snapshot-1,snapshot-2,snapshot-3
 
       will result in `my-disk-1` being snapshotted as
-      `snapshot-1`, `my-disk-2` as `snapshot-2`, and so on.
+      `snapshot-1`, `my-disk-2` as `snapshot-2`, and so on. The name must match
+      the `(?:[a-z](?:[-a-z0-9]{0,61}[a-z0-9])?)` regular expression, which
+      means it must start with an alphabetic character followed by one or more
+      alphanumeric characters or dashes. The name must not exceed 63 characters
+      and must not contain special symbols. All characters must be lowercase.
       """)
-  parser.add_argument(
-      '--guest-flush',
-      action='store_true',
-      default=False,
-      help=('Create an application consistent snapshot by informing the OS '
-            'to prepare for the snapshot process. Currently only supported '
-            'on Windows instances using the Volume Shadow Copy Service '
-            '(VSS).'))
+  flags.AddGuestFlushFlag(parser, 'snapshot')
   flags.AddStorageLocationFlag(parser, 'snapshot')
   csek_utils.AddCsekKeyArgs(parser, flags_about_creation=False)
 
@@ -185,7 +182,7 @@ class SnapshotDisks(base.SilentCommand):
 
     operation_refs = [holder.resources.Parse(r.selfLink) for r in responses]
 
-    if args.async:
+    if args.async_:
       for operation_ref in operation_refs:
         log.status.Print('Disk snapshot in progress for [{}].'
                          .format(operation_ref.SelfLink()))

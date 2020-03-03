@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,6 +42,11 @@ class UpdatePoliciesGA(base.UpdateCommand):
     return client.Patch(policy_ref, title=args.title)
 
 
-@base.ReleaseTracks(base.ReleaseTrack.BETA, base.ReleaseTrack.ALPHA)
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class UpdatePoliciesAlpha(UpdatePoliciesGA):
+  _API_VERSION = 'v1alpha'
+
+
+@base.ReleaseTracks(base.ReleaseTrack.BETA)
 class UpdatePoliciesBeta(UpdatePoliciesGA):
-  _API_VERSION = 'v1beta'
+  _API_VERSION = 'v1'

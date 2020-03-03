@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@ from __future__ import unicode_literals
 
 from googlecloudsdk.api_lib.dataproc import dataproc as dp
 from googlecloudsdk.api_lib.dataproc import exceptions
-from googlecloudsdk.api_lib.dataproc import util as dp_util
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.dataproc import clusters
 from googlecloudsdk.command_lib.dataproc import flags
@@ -29,7 +28,8 @@ from googlecloudsdk.core import yaml_validator
 from googlecloudsdk.core.console import console_io
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA, base.ReleaseTrack.BETA)
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA, base.ReleaseTrack.BETA,
+                    base.ReleaseTrack.GA)
 class Import(base.UpdateCommand):
   """Import a cluster.
 
@@ -37,12 +37,24 @@ class Import(base.UpdateCommand):
   this name already exists, an error will be thrown.
   """
 
+  detailed_help = {
+      'EXAMPLES': """
+To import a cluster from a YAML file, run:
+
+  $ {command} my_cluster --region=us-central1 --source=cluster.yaml
+
+To import a cluster from standard output, run:
+
+  $ {command} my_cluster --region=us-central1
+"""
+  }
+
   @classmethod
   def GetApiVersion(cls):
     """Returns the API version based on the release track."""
-    if cls.ReleaseTrack() == base.ReleaseTrack.BETA:
-      return 'v1beta2'
-    return 'v1'
+    if cls.ReleaseTrack() == base.ReleaseTrack.GA:
+      return 'v1'
+    return 'v1beta2'
 
   @classmethod
   def GetSchemaPath(cls, for_help=False):
@@ -52,7 +64,8 @@ class Import(base.UpdateCommand):
 
   @classmethod
   def Args(cls, parser):
-    parser.add_argument('name', help='The name of the cluster to import.')
+    dataproc = dp.Dataproc(cls.ReleaseTrack())
+    flags.AddClusterResourceArg(parser, 'import', dataproc.api_version)
     export_util.AddImportFlags(parser, cls.GetSchemaPath(for_help=True))
     base.ASYNC_FLAG.AddToParser(parser)
     # 30m is backend timeout + 5m for safety buffer.
@@ -71,9 +84,10 @@ class Import(base.UpdateCommand):
     except yaml_validator.ValidationError as e:
       raise exceptions.ValidationError(e.message)
 
-    cluster_ref = dp_util.ParseCluster(args.name, dataproc)
+    cluster_ref = args.CONCEPTS.cluster.Parse()
     cluster.clusterName = cluster_ref.clusterName
     cluster.projectId = cluster_ref.projectId
 
     # Import only supports create, not update (for now).
-    return clusters.CreateCluster(dataproc, cluster, args.async, args.timeout)
+    return clusters.CreateCluster(dataproc, cluster_ref, cluster, args.async_,
+                                  args.timeout)

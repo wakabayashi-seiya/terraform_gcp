@@ -9,6 +9,7 @@ class RuntimeconfigV1beta1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://runtimeconfig.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'runtimeconfig'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform', u'https://www.googleapis.com/auth/cloudruntimeconfig']
@@ -614,7 +615,7 @@ set.
         method_id=u'runtimeconfig.projects.configs.getIamPolicy',
         ordered_params=[u'resource'],
         path_params=[u'resource'],
-        query_params=[],
+        query_params=[u'options_requestedPolicyVersion'],
         relative_path=u'v1beta1/{+resource}:getIamPolicy',
         request_field='',
         request_type_name=u'RuntimeconfigProjectsConfigsGetIamPolicyRequest',
@@ -652,6 +653,8 @@ set.
     def SetIamPolicy(self, request, global_params=None):
       r"""Sets the access control policy on the specified resource. Replaces any.
 existing policy.
+
+Can return Public Errors: NOT_FOUND, INVALID_ARGUMENT and PERMISSION_DENIED
 
       Args:
         request: (RuntimeconfigProjectsConfigsSetIamPolicyRequest) input message

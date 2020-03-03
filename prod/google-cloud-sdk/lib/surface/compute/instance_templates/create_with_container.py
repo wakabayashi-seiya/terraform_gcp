@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -62,6 +62,7 @@ def _Args(parser, release_track, container_mount_enabled=False):
   instances_flags.AddMinCpuPlatformArgs(parser, release_track)
   instances_flags.AddNetworkTierArgs(parser, instance=True)
   labels_util.AddCreateLabelsFlags(parser)
+  instances_flags.AddPrivateNetworkIpArgs(parser)
 
   flags.AddRegionFlag(
       parser,
@@ -128,6 +129,7 @@ class CreateWithContainer(base.CreateCommand):
         scope_lister=flags.GetDefaultScopeLister(client),
         messages=client.messages,
         network=args.network,
+        private_ip=args.private_network_ip,
         region=args.region,
         subnet=args.subnet,
         address=(instance_template_utils.EPHEMERAL_ADDRESS
@@ -174,7 +176,8 @@ class CreateWithContainer(base.CreateCommand):
         machine_type=args.machine_type,
         custom_cpu=args.custom_cpu,
         custom_memory=args.custom_memory,
-        ext=getattr(args, 'custom_extensions', None))
+        ext=getattr(args, 'custom_extensions', None),
+        vm_type=getattr(args, 'custom_vm_type', None))
 
   def _GetDisks(self, args, client, holder, instance_template_ref, image_uri,
                 match_container_mount_disks=False):

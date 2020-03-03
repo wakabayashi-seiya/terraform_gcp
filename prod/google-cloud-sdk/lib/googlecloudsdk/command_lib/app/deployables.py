@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -143,6 +143,74 @@ def ServiceYamlMatcher(path, stager):
   return None
 
 
+def JarMatcher(jar_path, stager):
+  """Generate a Service from a Java fatjar path.
+
+  This function is a path matcher that returns if and only if:
+  - `jar_path` points to  a jar file .
+
+  The service will be staged according to the stager as a jar runtime,
+  which is defined in staging.py.
+
+  Args:
+    jar_path: str, Unsanitized absolute path pointing to a file of jar type.
+    stager: staging.Stager, stager that will be invoked if there is a runtime
+      and environment match.
+
+  Raises:
+    staging.StagingCommandFailedError, staging command failed.
+
+  Returns:
+    Service, fully populated with entries that respect a staged deployable
+        service, or None if the path does not match the pattern described.
+  """
+  _, ext = os.path.splitext(jar_path)
+  if os.path.exists(jar_path) and ext in ['.jar']:
+    app_dir = os.path.abspath(os.path.join(jar_path, os.pardir))
+    descriptor = jar_path
+    staging_dir = stager.Stage(descriptor, app_dir, 'java-jar', env.STANDARD)
+    yaml_path = os.path.join(staging_dir, 'app.yaml')
+    service_info = yaml_parsing.ServiceYamlInfo.FromFile(yaml_path)
+    return Service(descriptor, app_dir, service_info, staging_dir)
+  return None
+
+
+def PomXmlMatcher(path, stager):
+  """Generate a Service from an Maven project source path.
+
+  This function is a path matcher that returns true if and only if:
+  - `path` points to either a Maven `pom.xml` or `<maven=project-dir>` where
+    `<maven-project-dir>/pom.xml` exists.
+
+  If the runtime and environment match an entry in the stager, the service will
+  be staged into a directory.
+
+  Args:
+    path: str, Unsanitized absolute path, may point to a directory or a file of
+      any type. There is no guarantee that it exists.
+    stager: staging.Stager, stager that will be invoked if there is a runtime
+      and environment match.
+
+  Raises:
+    staging.StagingCommandFailedError, staging command failed.
+
+  Returns:
+    Service, fully populated with entries that respect a potentially
+        staged deployable service, or None if the path does not match the
+        pattern described.
+  """
+  descriptor = path if os.path.isfile(path) else os.path.join(path, 'pom.xml')
+  filename = os.path.basename(descriptor)
+  if os.path.exists(descriptor) and filename == 'pom.xml':
+    app_dir = os.path.dirname(descriptor)
+    staging_dir = stager.Stage(descriptor, app_dir, 'java-maven-project',
+                               env.STANDARD)
+    yaml_path = os.path.join(staging_dir, 'app.yaml')
+    service_info = yaml_parsing.ServiceYamlInfo.FromFile(yaml_path)
+    return Service(descriptor, app_dir, service_info, staging_dir)
+  return None
+
+
 def AppengineWebMatcher(path, stager):
   """Generate a Service from an appengine-web.xml source path.
 
@@ -198,16 +266,16 @@ def UnidentifiedDirMatcher(path, stager):
 
 
 def GetPathMatchers():
-  """Get list of path matchers ordered by ascending precedence.
+  """Get list of path matchers ordered by descending precedence.
 
   Returns:
     List[Function], ordered list of functions on the form fn(path, stager),
     where fn returns a Service or None if no match.
   """
   return [
-      ServiceYamlMatcher,
-      AppengineWebMatcher,
-      UnidentifiedDirMatcher]
+      ServiceYamlMatcher, AppengineWebMatcher, JarMatcher, PomXmlMatcher,
+      UnidentifiedDirMatcher
+  ]
 
 
 class Services(object):
@@ -305,7 +373,7 @@ def GetDeployables(args, stager, path_matchers):
     stager: staging.Stager, stager that will be invoked on sources that have
         entries in the stager's registry.
     path_matchers: List[Function], list of functions on the form
-        fn(path, stager) ordered by ascending precendence, where fn returns
+        fn(path, stager) ordered by descending precedence, where fn returns
         a Service or None if no match.
 
   Raises:
@@ -337,4 +405,3 @@ def GetDeployables(args, stager, path_matchers):
       continue
     raise exceptions.UnknownSourceError(path)
   return services.GetAll(), configs.GetAll()
-

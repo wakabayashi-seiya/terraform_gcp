@@ -17,10 +17,12 @@ class Addressable(_messages.Message):
   r"""Information for connecting over HTTP(s).
 
   Fields:
-    hostname: A string attribute.
+    hostname: Deprecated - use url instead.
+    url: A string attribute.
   """
 
   hostname = _messages.StringField(1)
+  url = _messages.StringField(2)
 
 
 class AuditConfig(_messages.Message):
@@ -34,16 +36,16 @@ class AuditConfig(_messages.Message):
   multiple AuditConfigs:      {       "audit_configs": [         {
   "service": "allServices"           "audit_log_configs": [             {
   "log_type": "DATA_READ",               "exempted_members": [
-  "user:foo@gmail.com"               ]             },             {
+  "user:jose@example.com"               ]             },             {
   "log_type": "DATA_WRITE",             },             {
   "log_type": "ADMIN_READ",             }           ]         },         {
-  "service": "fooservice.googleapis.com"           "audit_log_configs": [
+  "service": "sampleservice.googleapis.com"           "audit_log_configs": [
   {               "log_type": "DATA_READ",             },             {
   "log_type": "DATA_WRITE",               "exempted_members": [
-  "user:bar@gmail.com"               ]             }           ]         }
-  ]     }  For fooservice, this policy enables DATA_READ, DATA_WRITE and
-  ADMIN_READ logging. It also exempts foo@gmail.com from DATA_READ logging,
-  and bar@gmail.com from DATA_WRITE logging.
+  "user:aliya@example.com"               ]             }           ]         }
+  ]     }  For sampleservice, this policy enables DATA_READ, DATA_WRITE and
+  ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging,
+  and aliya@example.com from DATA_WRITE logging.
 
   Fields:
     auditLogConfigs: The configuration for logging of each type of permission.
@@ -59,10 +61,10 @@ class AuditConfig(_messages.Message):
 class AuditLogConfig(_messages.Message):
   r"""Provides the configuration for logging a type of permissions. Example:
   {       "audit_log_configs": [         {           "log_type": "DATA_READ",
-  "exempted_members": [             "user:foo@gmail.com"           ]
+  "exempted_members": [             "user:jose@example.com"           ]
   },         {           "log_type": "DATA_WRITE",         }       ]     }
   This enables 'DATA_READ' and 'DATA_WRITE' logging, while exempting
-  foo@gmail.com from DATA_READ logging.
+  jose@example.com from DATA_READ logging.
 
   Enums:
     LogTypeValueValuesEnum: The log type that this config enables.
@@ -111,23 +113,40 @@ class Binding(_messages.Message):
   r"""Associates `members` with a `role`.
 
   Fields:
-    condition: Unimplemented. The condition that is associated with this
-      binding. NOTE: an unsatisfied condition will not allow user access via
-      current binding. Different bindings, including their conditions, are
-      examined independently.
+    condition: The condition that is associated with this binding. NOTE: An
+      unsatisfied condition will not allow user access via current binding.
+      Different bindings, including their conditions, are examined
+      independently.
     members: Specifies the identities requesting access for a Cloud Platform
       resource. `members` can have the following values:  * `allUsers`: A
       special identifier that represents anyone who is    on the internet;
       with or without a Google account.  * `allAuthenticatedUsers`: A special
       identifier that represents anyone    who is authenticated with a Google
       account or a service account.  * `user:{emailid}`: An email address that
-      represents a specific Google    account. For example, `alice@gmail.com`
-      .   * `serviceAccount:{emailid}`: An email address that represents a
-      service    account. For example, `my-other-
+      represents a specific Google    account. For example,
+      `alice@example.com` .   * `serviceAccount:{emailid}`: An email address
+      that represents a service    account. For example, `my-other-
       app@appspot.gserviceaccount.com`.  * `group:{emailid}`: An email address
-      that represents a Google group.    For example, `admins@example.com`.
-      * `domain:{domain}`: A Google Apps domain name that represents all the
-      users of that domain. For example, `google.com` or `example.com`.
+      that represents a Google group.    For example, `admins@example.com`.  *
+      `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique
+      identifier) representing a user that has been recently deleted. For
+      example, `alice@example.com?uid=123456789012345678901`. If the user is
+      recovered, this value reverts to `user:{emailid}` and the recovered user
+      retains the role in the binding.  *
+      `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address
+      (plus    unique identifier) representing a service account that has been
+      recently    deleted. For example,    `my-other-
+      app@appspot.gserviceaccount.com?uid=123456789012345678901`.    If the
+      service account is undeleted, this value reverts to
+      `serviceAccount:{emailid}` and the undeleted service account retains the
+      role in the binding.  * `deleted:group:{emailid}?uid={uniqueid}`: An
+      email address (plus unique    identifier) representing a Google group
+      that has been recently    deleted. For example,
+      `admins@example.com?uid=123456789012345678901`. If    the group is
+      recovered, this value reverts to `group:{emailid}` and the    recovered
+      group retains the role in the binding.   * `domain:{domain}`: The G
+      Suite domain (primary) that represents all the    users of that domain.
+      For example, `google.com` or `example.com`.
     role: Role that is assigned to `members`. For example, `roles/viewer`,
       `roles/editor`, or `roles/owner`.
   """
@@ -149,18 +168,445 @@ class Capabilities(_messages.Message):
   drop = _messages.StringField(2, repeated=True)
 
 
+class CloudAuditLogsSource(_messages.Message):
+  r"""A CloudAuditLogsSource object.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "events.cloud.google.com/v1alpha1".
+    kind: The kind of resource, in this case "CloudAuditLogsSource".
+    metadata: Metadata associated with this CloudAuditLogsSource.
+    spec: Spec defines the desired state of the CloudAuditLogsSource.
+    status: Status represents the current state of the CloudAuditLogsSource.
+      This data may be out of date. +optional
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  metadata = _messages.MessageField('ObjectMeta', 3)
+  spec = _messages.MessageField('CloudAuditLogsSourceSpec', 4)
+  status = _messages.MessageField('CloudAuditLogsSourceStatus', 5)
+
+
+class CloudAuditLogsSourceSpec(_messages.Message):
+  r"""The desired state of the CloudAuditLogsSource.
+
+  Fields:
+    ceOverrides: CloudEventOverrides defines overrides to control the output
+      format and modifications of the event sent to the sink. +optional
+    methodName: Required. The method name at the service API. This must match
+      "methodName" in Cloud Audit Logs. Regex or Wildcards (*) are not
+      supported. Example: "google.cloud.bigquery.job.create".
+    resourceName: Optional. The resource specification. This must match
+      "methodName" in Cloud Audit Logs. Regex or Wildcards (*) are not
+      supported. Example: "projects/my-project/jobs/foo".
+    serviceAccountName: Optional. Email address of the IAM service account
+      associated with the source. The service account represents the identity
+      of the source, and determines what permissions the source has. If not
+      provided, the source will use the project's default service account.
+    serviceName: Required. The GCP service name. This must match "serviceName"
+      in Cloud Audit Logs. Regex or Wildcards (*) are not supported. Example:
+      "bigquery.googleapis.com".
+    sink: Sink is a reference to an object that will resolve to a domain name
+      or a URI directly to use as the sink.
+  """
+
+  ceOverrides = _messages.MessageField('CloudEventOverrides', 1)
+  methodName = _messages.StringField(2)
+  resourceName = _messages.StringField(3)
+  serviceAccountName = _messages.StringField(4)
+  serviceName = _messages.StringField(5)
+  sink = _messages.MessageField('Destination', 6)
+
+
+class CloudAuditLogsSourceStatus(_messages.Message):
+  r"""CloudAuditLogsSourceStatus represents the current state of a
+  CloudAuditLogsSource.
+
+  Fields:
+    conditions: Array of observed CloudAuditLogsSourceConditions, indicating
+      the current state of the CloudAuditLogsSource.
+    observedGeneration: ObservedGeneration is the 'Generation' of the
+      CloudAuditLogsSource that was last processed by the controller.
+    sinkUri: SinkURI is the current active sink URI that has been configured
+      for the Source. +optional
+  """
+
+  conditions = _messages.MessageField('Condition', 1, repeated=True)
+  observedGeneration = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  sinkUri = _messages.StringField(3)
+
+
+class CloudEventOverrides(_messages.Message):
+  r"""CloudEventOverrides defines arguments for a Source that control the
+  output format of the CloudEvents produced by the Source.
+
+  Messages:
+    ExtensionsValue: Extensions specify what attribute are added or overridden
+      on the outbound event. Each `Extensions` key-value pair are set on the
+      event as an attribute extension independently. +optional
+
+  Fields:
+    extensions: Extensions specify what attribute are added or overridden on
+      the outbound event. Each `Extensions` key-value pair are set on the
+      event as an attribute extension independently. +optional
+  """
+
+  @encoding.MapUnrecognizedFields('additionalProperties')
+  class ExtensionsValue(_messages.Message):
+    r"""Extensions specify what attribute are added or overridden on the
+    outbound event. Each `Extensions` key-value pair are set on the event as
+    an attribute extension independently. +optional
+
+    Messages:
+      AdditionalProperty: An additional property for a ExtensionsValue object.
+
+    Fields:
+      additionalProperties: Additional properties of type ExtensionsValue
+    """
+
+    class AdditionalProperty(_messages.Message):
+      r"""An additional property for a ExtensionsValue object.
+
+      Fields:
+        key: Name of the additional property.
+        value: A string attribute.
+      """
+
+      key = _messages.StringField(1)
+      value = _messages.StringField(2)
+
+    additionalProperties = _messages.MessageField('AdditionalProperty', 1, repeated=True)
+
+  extensions = _messages.MessageField('ExtensionsValue', 1)
+
+
+class CloudPubSubSource(_messages.Message):
+  r"""A CloudPubSubSource object.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "events.cloud.google.com/v1alpha1".
+    kind: The kind of resource, in this case "CloudPubSubSource".
+    metadata: Metadata associated with this CloudPubSubSource.
+    spec: Spec defines the desired state of the CloudPubSubSource.
+    status: Status represents the current state of the CloudPubSubSource. This
+      data may be out of date. +optional
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  metadata = _messages.MessageField('ObjectMeta', 3)
+  spec = _messages.MessageField('CloudPubSubSourceSpec', 4)
+  status = _messages.MessageField('CloudPubSubSourceStatus', 5)
+
+
+class CloudPubSubSourceSpec(_messages.Message):
+  r"""The desired state of the CloudPubSubSource.
+
+  Fields:
+    ackDeadline: AckDeadline is the default maximum time after a subscriber
+      receives a message before the subscriber should acknowledge the message.
+      Defaults to 30 seconds ('30s'). +optional
+    ceOverrides: CloudEventOverrides defines overrides to control the output
+      format and modifications of the event sent to the sink. +optional
+    project: Project is the ID of the Google Cloud Project that the
+      CloudPubSubSource Topic exists in. If omitted, defaults to same as the
+      cluster. +optional
+    pubsubSecret: CloudPubSubSourceSecret is the credential to use to create
+      Topic / PullSubscription resources. If omitted, uses Secret.
+    retainAckedMessages: RetainAckedMessages defines whether to retain
+      acknowledged messages. If true, acknowledged messages will not be
+      expunged until they fall out of the RetentionDuration window.
+    retentionDuration: RetentionDuration defines how long to retain messages
+      in backlog, from the time of publish. If RetainAckedMessages is true,
+      this duration affects the retention of acknowledged messages, otherwise
+      only unacknowledged messages are retained. Cannot be longer than 7 days
+      or shorter than 10 minutes. Defaults to 7 days ('7d'). +optional
+    secret: Secret is the credential to use to create the Scheduler Job. If
+      not specified, defaults to: Name: google-cloud-key Key: key.json
+      +optional
+    sink: Sink is a reference to an object that will resolve to a domain name
+      or a URI directly to use as the sink.
+    topic: Topic is the ID of the CloudPubSubSource Topic to Subscribe to. It
+      must be in the form of the unique identifier within the project, not the
+      entire name. E.g. it must be 'laconia', not 'projects/my-
+      proj/topics/laconia'.
+  """
+
+  ackDeadline = _messages.StringField(1)
+  ceOverrides = _messages.MessageField('CloudEventOverrides', 2)
+  project = _messages.StringField(3)
+  pubsubSecret = _messages.MessageField('SecretKeySelector', 4)
+  retainAckedMessages = _messages.BooleanField(5)
+  retentionDuration = _messages.StringField(6)
+  secret = _messages.MessageField('SecretKeySelector', 7)
+  sink = _messages.MessageField('Destination', 8)
+  topic = _messages.StringField(9)
+
+
+class CloudPubSubSourceStatus(_messages.Message):
+  r"""CloudPubSubSourceStatus represents the current state of a
+  CloudPubSubSource.
+
+  Fields:
+    conditions: Array of observed CloudPubSubSourceConditions, indicating the
+      current state of the CloudPubSubSource.
+    observedGeneration: ObservedGeneration is the 'Generation' of the
+      CloudPubSubSource that was last processed by the controller.
+    sinkUri: SinkURI is the current active sink URI that has been configured
+      for the Source. +optional
+  """
+
+  conditions = _messages.MessageField('Condition', 1, repeated=True)
+  observedGeneration = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  sinkUri = _messages.StringField(3)
+
+
+class CloudSchedulerSource(_messages.Message):
+  r"""The CloudSchedulerSource resource.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "events.cloud.google.com/v1alpha1".
+    kind: The kind of resource, in this case "CloudSchedulerSource".
+    metadata: Metadata associated with this CloudSchedulerSource.
+    spec: Spec defines the desired state of the CloudSchedulerSource.
+    status: Status represents the current state of the CloudSchedulerSource.
+      This data may be out of date.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  metadata = _messages.MessageField('ObjectMeta', 3)
+  spec = _messages.MessageField('CloudSchedulerSourceSpec', 4)
+  status = _messages.MessageField('CloudSchedulerSourceStatus', 5)
+
+
+class CloudSchedulerSourceSpec(_messages.Message):
+  r"""The desired state of the CloudSchedulerSource.
+
+  Fields:
+    ceOverrides: CloudEventOverrides defines overrides to control the output
+      format and modifications of the event sent to the sink.
+    data: Data to send in the payload of the Event.
+    location: Location to create the Scheduler job in.
+    project: Project is the ID of the Google Cloud Project that the
+      CloudPubSubSource Topic exists in. If omitted, defaults to same as the
+      cluster.
+    pubsubSecret: CloudPubSubSourceSecret is the credential to use to create
+      Topic / PullSubscription resources. If omitted, uses Secret.
+    schedule: Schedule in cron format, for example: "* * * * *" would be run
+      every minute.
+    secret: Secret is the credential to use to create the Scheduler Job. If
+      not specified, defaults to: Name: google-cloud-key Key: key.json
+    sink: Sink is a reference to an object that will resolve to a domain name
+      or a URI directly to use as the sink.
+  """
+
+  ceOverrides = _messages.MessageField('CloudEventOverrides', 1)
+  data = _messages.StringField(2)
+  location = _messages.StringField(3)
+  project = _messages.StringField(4)
+  pubsubSecret = _messages.MessageField('SecretKeySelector', 5)
+  schedule = _messages.StringField(6)
+  secret = _messages.MessageField('SecretKeySelector', 7)
+  sink = _messages.MessageField('Destination', 8)
+
+
+class CloudSchedulerSourceStatus(_messages.Message):
+  r"""CloudSchedulerSourceStatus represents the current state of a
+  CloudSchedulerSource.
+
+  Fields:
+    conditions: Array of observed CloudSchedulerSourceConditions, indicating
+      the current state of the CloudSchedulerSource.
+    observedGeneration: ObservedGeneration is the 'Generation' of the
+      CloudSchedulerSource that was last processed by the controller.
+    sinkUri: SinkURI is the current active sink URI that has been configured
+      for the Source.
+  """
+
+  conditions = _messages.MessageField('Condition', 1, repeated=True)
+  observedGeneration = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  sinkUri = _messages.StringField(3)
+
+
+class CloudStorageSource(_messages.Message):
+  r"""The CloudStorageSource resource.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "events.cloud.google.com/v1alpha1".
+    kind: The kind of resource, in this case "CloudStorageSource".
+    metadata: Metadata associated with this CloudStorageSource.
+    spec: Spec defines the desired state of the CloudStorageSource.
+    status: Status represents the current state of the CloudStorageSource.
+      This data may be out of date.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  metadata = _messages.MessageField('ObjectMeta', 3)
+  spec = _messages.MessageField('CloudStorageSourceSpec', 4)
+  status = _messages.MessageField('CloudStorageSourceStatus', 5)
+
+
+class CloudStorageSourceSpec(_messages.Message):
+  r"""The desired state of the CloudStorageSource.
+
+  Fields:
+    bucket: Bucket to subscribe to.
+    ceOverrides: CloudEventOverrides defines overrides to control the output
+      format and modifications of the event sent to the sink.
+    eventTypes: EventTypes to subscribe to. If unspecified, then subscribe to
+      all events.
+    objectNamePrefix: ObjectNamePrefix limits the notifications to objects
+      with this prefix.
+    payloadFormat: PayloadFormat specifies the contents of the message
+      payload. See https://cloud.google.com/storage/docs/pubsub-
+      notifications#payload.
+    project: Project is the ID of the Google Cloud Project that the PubSub
+      Topic exists in. If omitted, defaults to same as the cluster.
+    pubsubSecret: PubSubSecret is the credential to use to create Topic /
+      PullSubscription resources. If omitted, uses Secret.
+    secret: Secret is the credential to use to create the Scheduler Job. If
+      not specified, defaults to: Name: google-cloud-key Key: key.json
+    serviceAccountName: ServiceAccountName holds the name of the Kubernetes
+      service account as which the underlying K8s resources should be run. If
+      unspecified this will default to the "default" service account for the
+      namespace in which the GCS exists.
+    sink: Sink is a reference to an object that will resolve to a domain name
+      or a URI directly to use as the sink.
+  """
+
+  bucket = _messages.StringField(1)
+  ceOverrides = _messages.MessageField('CloudEventOverrides', 2)
+  eventTypes = _messages.StringField(3, repeated=True)
+  objectNamePrefix = _messages.StringField(4)
+  payloadFormat = _messages.StringField(5)
+  project = _messages.StringField(6)
+  pubsubSecret = _messages.MessageField('SecretKeySelector', 7)
+  secret = _messages.MessageField('SecretKeySelector', 8)
+  serviceAccountName = _messages.StringField(9)
+  sink = _messages.MessageField('Destination', 10)
+
+
+class CloudStorageSourceStatus(_messages.Message):
+  r"""CloudStorageSourceStatus represents the current state of a
+  CloudStorageSource.
+
+  Fields:
+    conditions: Array of observed CloudStorageSourceConditions, indicating the
+      current state of the CloudStorageSource.
+    observedGeneration: ObservedGeneration is the 'Generation' of the
+      CloudStorageSource that was last processed by the controller.
+    sinkUri: SinkURI is the current active sink URI that has been configured
+      for the Source.
+  """
+
+  conditions = _messages.MessageField('Condition', 1, repeated=True)
+  observedGeneration = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  sinkUri = _messages.StringField(3)
+
+
+class Condition(_messages.Message):
+  r"""Condition defines a generic condition for a Resource
+
+  Fields:
+    lastTransitionTime: Optional. Last time the condition transitioned from
+      one status to another.
+    message: Optional. Human readable message indicating details about the
+      current status.
+    reason: Optional. One-word CamelCase reason for the condition's last
+      transition.
+    severity: Optional. How to interpret failures of this condition, one of
+      Error, Warning, Info
+    status: Status of the condition, one of True, False, Unknown.
+    type: type is used to communicate the status of the reconciliation
+      process. See also:
+      https://github.com/knative/serving/blob/master/docs/spec/errors.md
+      #error-conditions-and-reporting Types common to all resources include: *
+      "Ready": True when the Resource is ready.
+  """
+
+  lastTransitionTime = _messages.StringField(1)
+  message = _messages.StringField(2)
+  reason = _messages.StringField(3)
+  severity = _messages.StringField(4)
+  status = _messages.StringField(5)
+  type = _messages.StringField(6)
+
+
 class ConfigMapEnvSource(_messages.Message):
   r"""ConfigMapEnvSource selects a ConfigMap to populate the environment
   variables with.  The contents of the target ConfigMap's Data field will
   represent the key-value pairs as environment variables.
 
   Fields:
-    localObjectReference: The ConfigMap to select from.
-    optional: Specify whether the ConfigMap must be defined +optional
+    localObjectReference: This field should not be used directly as it is
+      meant to be inlined directly into the message. Use the "name" field
+      instead.
+    name: Cloud Run fully managed: not supported  Cloud Run for Anthos:
+      supported  The ConfigMap to select from.
+    optional: Cloud Run fully managed: not supported  Cloud Run for Anthos:
+      supported  Specify whether the ConfigMap must be defined +optional
   """
 
   localObjectReference = _messages.MessageField('LocalObjectReference', 1)
-  optional = _messages.BooleanField(2)
+  name = _messages.StringField(2)
+  optional = _messages.BooleanField(3)
+
+
+class ConfigMapKeySelector(_messages.Message):
+  r"""Cloud Run fully managed: not supported  Cloud Run on GKE: supported
+  Selects a key from a ConfigMap.
+
+  Fields:
+    key: Cloud Run fully managed: not supported  Cloud Run on GKE: supported
+      The key to select.
+    localObjectReference: This field should not be used directly as it is
+      meant to be inlined directly into the message. Use the "name" field
+      instead.
+    name: Cloud Run fully managed: not supported  Cloud Run on GKE: supported
+      The ConfigMap to select from.
+    optional: Cloud Run fully managed: not supported  Cloud Run on GKE:
+      supported  Specify whether the ConfigMap or its key must be defined
+      +optional
+  """
+
+  key = _messages.StringField(1)
+  localObjectReference = _messages.MessageField('LocalObjectReference', 2)
+  name = _messages.StringField(3)
+  optional = _messages.BooleanField(4)
+
+
+class ConfigMapVolumeSource(_messages.Message):
+  r"""Adapts a ConfigMap into a volume. The contents of the target ConfigMap's
+  Data field will be presented in a volume as files using the keys in the Data
+  field as the file names, unless the items element is populated with specific
+  mappings of keys to paths.
+
+  Fields:
+    defaultMode: Mode bits to use on created files by default. Must be a value
+      between 0 and 0777. Defaults to 0644. Directories within the path are
+      not affected by this setting. This might be in conflict with other
+      options that affect the file mode, like fsGroup, and the result can be
+      other mode bits set.
+    items: If unspecified, each key-value pair in the Data field of the
+      referenced Secret will be projected into the volume as a file whose name
+      is the key and content is the value. If specified, the listed keys will
+      be projected into the specified paths, and unlisted keys will not be
+      present. If a key is specified which is not present in the Secret, the
+      volume setup will error unless it is marked optional.
+    name: Name of the config.
+    optional: Specify whether the Secret or its keys must be defined.
+  """
+
+  defaultMode = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+  items = _messages.MessageField('KeyToPath', 2, repeated=True)
+  name = _messages.StringField(3)
+  optional = _messages.BooleanField(4)
 
 
 class Configuration(_messages.Message):
@@ -172,7 +618,8 @@ class Configuration(_messages.Message):
   /blob/master/docs/spec/overview.md#configuration
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "serving.knative.dev/v1alpha1".
     kind: The kind of resource, in this case always "Configuration".
     metadata: Metadata associated with this Configuration, including name,
       namespace, labels, and annotations.
@@ -199,6 +646,8 @@ class ConfigurationCondition(_messages.Message):
       +optional
     reason: One-word CamelCase reason for the condition's last transition.
       +optional
+    severity: How to interpret failures of this condition, one of Error,
+      Warning, Info +optional
     status: Status of the condition, one of True, False, Unknown.
     type: ConfigurationConditionType is used to communicate the status of the
       reconciliation process. See also:
@@ -209,8 +658,9 @@ class ConfigurationCondition(_messages.Message):
   lastTransitionTime = _messages.StringField(1)
   message = _messages.StringField(2)
   reason = _messages.StringField(3)
-  status = _messages.StringField(4)
-  type = _messages.StringField(5)
+  severity = _messages.StringField(4)
+  status = _messages.StringField(5)
+  type = _messages.StringField(6)
 
 
 class ConfigurationSpec(_messages.Message):
@@ -231,10 +681,13 @@ class ConfigurationSpec(_messages.Message):
       conventions.md#associate-modifications-with-revisions  Cloud Run does
       not currently support referencing a build that is responsible for
       materializing the container image from source.
+    template: Template holds the latest specification for the Revision to be
+      stamped out.
   """
 
   generation = _messages.IntegerField(1, variant=_messages.Variant.INT32)
   revisionTemplate = _messages.MessageField('RevisionTemplate', 2)
+  template = _messages.MessageField('RevisionTemplate', 3)
 
 
 class ConfigurationStatus(_messages.Message):
@@ -415,11 +868,27 @@ class ContainerPort(_messages.Message):
   protocol = _messages.StringField(5)
 
 
+class Destination(_messages.Message):
+  r"""A Destination object.
+
+  Fields:
+    ref: ObjectReference points to an Addressable. + optional
+    uri: URI is for direct URI Designations or used with the resulting URL
+      from Addressable ObjectReference. If used with an ObjectReference, will
+      be appended to the path of the resulting URL from the Addressable. +
+      optional
+  """
+
+  ref = _messages.MessageField('ObjectReference', 1)
+  uri = _messages.StringField(2)
+
+
 class DomainMapping(_messages.Message):
   r"""Resource to hold the state and status of a user's domain mapping.
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "domains.cloudrun.com/v1alpha1".
     kind: The kind of resource, in this case "DomainMapping".
     metadata: Metadata associated with this BuildTemplate.
     spec: The spec for this DomainMapping.
@@ -437,21 +906,24 @@ class DomainMappingCondition(_messages.Message):
   r"""DomainMappingCondition contains state information for a DomainMapping.
 
   Fields:
-    internalMessage: Human readable message that contains additional details
-      not shared with external users.
+    lastTransitionTime: Last time the condition transitioned from one status
+      to another. +optional
     message: Human readable message indicating details about the current
       status. +optional
     reason: One-word CamelCase reason for the condition's current status.
       +optional
+    severity: How to interpret failures of this condition, one of Error,
+      Warning, Info +optional
     status: Status of the condition, one of True, False, Unknown.
     type: Type of domain mapping condition.
   """
 
-  internalMessage = _messages.StringField(1)
+  lastTransitionTime = _messages.StringField(1)
   message = _messages.StringField(2)
   reason = _messages.StringField(3)
-  status = _messages.StringField(4)
-  type = _messages.StringField(5)
+  severity = _messages.StringField(4)
+  status = _messages.StringField(5)
+  type = _messages.StringField(6)
 
 
 class DomainMappingSpec(_messages.Message):
@@ -475,10 +947,13 @@ class DomainMappingSpec(_messages.Message):
 
     Values:
       CERTIFICATE_MODE_UNSPECIFIED: <no description>
-      AUTOMATIC: <no description>
+      NONE: Do not provision an HTTPS certificate.
+      AUTOMATIC: Automatically provisions an HTTPS certificate via
+        LetsEncrypt.
     """
     CERTIFICATE_MODE_UNSPECIFIED = 0
-    AUTOMATIC = 1
+    NONE = 1
+    AUTOMATIC = 2
 
   certificateMode = _messages.EnumField('CertificateModeValueValuesEnum', 1)
   forceOverride = _messages.BooleanField(2)
@@ -491,6 +966,8 @@ class DomainMappingStatus(_messages.Message):
   Fields:
     conditions: Array of observed DomainMappingConditions, indicating the
       current state of the DomainMapping.
+    mappedRouteName: The name of the route that the mapping currently points
+      to.
     observedGeneration: ObservedGeneration is the 'Generation' of the
       DomainMapping that was last processed by the controller.  Clients
       polling for completed reconciliation should poll until
@@ -502,8 +979,9 @@ class DomainMappingStatus(_messages.Message):
   """
 
   conditions = _messages.MessageField('DomainMappingCondition', 1, repeated=True)
-  observedGeneration = _messages.IntegerField(2, variant=_messages.Variant.INT32)
-  resourceRecords = _messages.MessageField('ResourceRecord', 3, repeated=True)
+  mappedRouteName = _messages.StringField(2)
+  observedGeneration = _messages.IntegerField(3, variant=_messages.Variant.INT32)
+  resourceRecords = _messages.MessageField('ResourceRecord', 4, repeated=True)
 
 
 class Empty(_messages.Message):
@@ -543,10 +1021,29 @@ class EnvVar(_messages.Message):
       double $$, ie: $$(VAR_NAME). Escaped references will never be expanded,
       regardless of whether the variable exists or not. Defaults to "".
       +optional
+    valueFrom: Cloud Run fully managed: not supported  Cloud Run on GKE:
+      supported  Source for the environment variable's value. Cannot be used
+      if value is not empty. +optional
   """
 
   name = _messages.StringField(1)
   value = _messages.StringField(2)
+  valueFrom = _messages.MessageField('EnvVarSource', 3)
+
+
+class EnvVarSource(_messages.Message):
+  r"""Cloud Run fully managed: not supported  Cloud Run on GKE: supported
+  EnvVarSource represents a source for the value of an EnvVar.
+
+  Fields:
+    configMapKeyRef: Cloud Run fully managed: not supported  Cloud Run on GKE:
+      supported  Selects a key of a ConfigMap. +optional
+    secretKeyRef: Cloud Run fully managed: not supported  Cloud Run on GKE:
+      supported  Selects a key of a secret in the pod's namespace +optional
+  """
+
+  configMapKeyRef = _messages.MessageField('ConfigMapKeySelector', 1)
+  secretKeyRef = _messages.MessageField('SecretKeySelector', 2)
 
 
 class ExecAction(_messages.Message):
@@ -565,21 +1062,33 @@ class ExecAction(_messages.Message):
 
 
 class Expr(_messages.Message):
-  r"""Represents an expression text. Example:      title: "User account
-  presence"     description: "Determines whether the request has a user
-  account"     expression: "size(request.user) > 0"
+  r"""Represents a textual expression in the Common Expression Language (CEL)
+  syntax. CEL is a C-like expression language. The syntax and semantics of CEL
+  are documented at https://github.com/google/cel-spec.  Example (Comparison):
+  title: "Summary size limit"     description: "Determines if a summary is
+  less than 100 chars"     expression: "document.summary.size() < 100"
+  Example (Equality):      title: "Requestor is owner"     description:
+  "Determines if requestor is the document owner"     expression:
+  "document.owner == request.auth.claims.email"  Example (Logic):      title:
+  "Public documents"     description: "Determine whether the document should
+  be publicly visible"     expression: "document.type != 'private' &&
+  document.type != 'internal'"  Example (Data Manipulation):      title:
+  "Notification string"     description: "Create a notification string with a
+  timestamp."     expression: "'New message received at ' +
+  string(document.create_time)"  The exact variables and functions that may be
+  referenced within an expression are determined by the service that evaluates
+  it. See the service documentation for additional information.
 
   Fields:
-    description: An optional description of the expression. This is a longer
+    description: Optional. Description of the expression. This is a longer
       text which describes the expression, e.g. when hovered over it in a UI.
     expression: Textual representation of an expression in Common Expression
-      Language syntax.  The application context of the containing message
-      determines which well-known feature set of CEL is supported.
-    location: An optional string indicating the location of the expression for
+      Language syntax.
+    location: Optional. String indicating the location of the expression for
       error reporting, e.g. a file name and a position in the file.
-    title: An optional title for the expression, i.e. a short string
-      describing its purpose. This can be used e.g. in UIs which allow to
-      enter the expression.
+    title: Optional. Title for the expression, i.e. a short string describing
+      its purpose. This can be used e.g. in UIs which allow to enter the
+      expression.
   """
 
   description = _messages.StringField(1)
@@ -638,94 +1147,6 @@ class Handler(_messages.Message):
   tcpSocket = _messages.MessageField('TCPSocketAction', 3)
 
 
-class HttpBody(_messages.Message):
-  r"""Message that represents an arbitrary HTTP body. It should only be used
-  for payload formats that can't be represented as JSON, such as raw binary or
-  an HTML page.   This message can be used both in streaming and non-streaming
-  API methods in the request as well as the response.  It can be used as a
-  top-level request field, which is convenient if one wants to extract
-  parameters from either the URL or HTTP template into the request fields and
-  also want access to the raw HTTP body.  Example:      message
-  GetResourceRequest {       // A unique request id.       string request_id =
-  1;        // The raw HTTP body is bound to this field.
-  google.api.HttpBody http_body = 2;     }      service ResourceService {
-  rpc GetResource(GetResourceRequest) returns (google.api.HttpBody);       rpc
-  UpdateResource(google.api.HttpBody) returns (google.protobuf.Empty);     }
-  Example with streaming methods:      service CaldavService {       rpc
-  GetCalendar(stream google.api.HttpBody)         returns (stream
-  google.api.HttpBody);       rpc UpdateCalendar(stream google.api.HttpBody)
-  returns (stream google.api.HttpBody);     }  Use of this type only changes
-  how the request and response bodies are handled, all other features will
-  continue to work unchanged.
-
-  Messages:
-    ExtensionsValueListEntry: A ExtensionsValueListEntry object.
-
-  Fields:
-    contentType: The HTTP Content-Type header value specifying the content
-      type of the body.
-    data: The HTTP request/response body as raw binary.
-    extensions: Application specific response metadata. Must be set in the
-      first response for streaming APIs.
-  """
-
-  @encoding.MapUnrecognizedFields('additionalProperties')
-  class ExtensionsValueListEntry(_messages.Message):
-    r"""A ExtensionsValueListEntry object.
-
-    Messages:
-      AdditionalProperty: An additional property for a
-        ExtensionsValueListEntry object.
-
-    Fields:
-      additionalProperties: Properties of the object. Contains field @type
-        with type URL.
-    """
-
-    class AdditionalProperty(_messages.Message):
-      r"""An additional property for a ExtensionsValueListEntry object.
-
-      Fields:
-        key: Name of the additional property.
-        value: A extra_types.JsonValue attribute.
-      """
-
-      key = _messages.StringField(1)
-      value = _messages.MessageField('extra_types.JsonValue', 2)
-
-    additionalProperties = _messages.MessageField('AdditionalProperty', 1, repeated=True)
-
-  contentType = _messages.StringField(1)
-  data = _messages.BytesField(2)
-  extensions = _messages.MessageField('ExtensionsValueListEntry', 3, repeated=True)
-
-
-class Initializer(_messages.Message):
-  r"""Initializer is information about an initializer that has not yet
-  completed.
-
-  Fields:
-    name: name of the process that is responsible for initializing this
-      object.
-  """
-
-  name = _messages.StringField(1)
-
-
-class Initializers(_messages.Message):
-  r"""Initializers tracks the progress of initialization.
-
-  Fields:
-    pending: Pending is a list of initializers that must execute in order
-      before this object is visible. When the last pending initializer is
-      removed, and no failing result is set, the initializers struct will be
-      set to nil and the object is considered as initialized and visible to
-      all clients. +patchMergeKey=name +patchStrategy=merge
-  """
-
-  pending = _messages.MessageField('Initializer', 1, repeated=True)
-
-
 class IntOrString(_messages.Message):
   r"""IntOrString is a type that can hold an int32 or a string.  When used in
   JSON or YAML marshalling and unmarshalling, it produces or consumes the
@@ -740,7 +1161,26 @@ class IntOrString(_messages.Message):
 
   intVal = _messages.IntegerField(1, variant=_messages.Variant.INT32)
   strVal = _messages.StringField(2)
-  type = _messages.IntegerField(3)
+  type = _messages.IntegerField(3, variant=_messages.Variant.INT32)
+
+
+class KeyToPath(_messages.Message):
+  r"""Maps a string key to a path within a volume.
+
+  Fields:
+    key: The key to project.
+    mode: Mode bits to use on this file, must be a value between 0 and 0777.
+      If not specified, the volume defaultMode will be used. This might be in
+      conflict with other options that affect the file mode, like fsGroup, and
+      the result can be other mode bits set. +optional
+    path: The relative path of the file to map the key to. May not be an
+      absolute path. May not contain the path element '..'. May not start with
+      the string '..'.
+  """
+
+  key = _messages.StringField(1)
+  mode = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  path = _messages.StringField(3)
 
 
 class Lifecycle(_messages.Message):
@@ -782,11 +1222,91 @@ class ListAuthorizedDomainsResponse(_messages.Message):
   nextPageToken = _messages.StringField(2)
 
 
+class ListCloudAuditLogsSourcesResponse(_messages.Message):
+  r"""ListCloudAuditLogsSourcesResponse is a list of CloudAuditLogsSource
+  resources.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "events.cloud.google.com/v1alpha1".
+    items: List of CloudAuditLogsSources.
+    kind: The kind of this resource, in this case "CloudAuditLogsSourceList".
+    metadata: Metadata associated with this CloudAuditLogsSource list.
+    unreachable: Locations that could not be reached.
+  """
+
+  apiVersion = _messages.StringField(1)
+  items = _messages.MessageField('CloudAuditLogsSource', 2, repeated=True)
+  kind = _messages.StringField(3)
+  metadata = _messages.MessageField('ListMeta', 4)
+  unreachable = _messages.StringField(5, repeated=True)
+
+
+class ListCloudPubSubSourcesResponse(_messages.Message):
+  r"""ListCloudPubSubSourcesResponse is a list of CloudPubSubSource resources.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "events.cloud.google.com/v1alpha1".
+    items: List of CloudPubSubSources.
+    kind: The kind of this resource, in this case "CloudPubSubSourceList".
+    metadata: Metadata associated with this CloudPubSubSource list.
+    unreachable: Locations that could not be reached.
+  """
+
+  apiVersion = _messages.StringField(1)
+  items = _messages.MessageField('CloudPubSubSource', 2, repeated=True)
+  kind = _messages.StringField(3)
+  metadata = _messages.MessageField('ListMeta', 4)
+  unreachable = _messages.StringField(5, repeated=True)
+
+
+class ListCloudSchedulerSourcesResponse(_messages.Message):
+  r"""ListCloudSchedulerSourcesResponse is a list of CloudSchedulerSource
+  resources.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "events.cloud.google.com/v1alpha1".
+    items: List of CloudSchedulerSources.
+    kind: The kind of this resource, in this case "CloudSchedulerSourceList".
+    metadata: Metadata associated with this CloudSchedulerSource list.
+    unreachable: Locations that could not be reached.
+  """
+
+  apiVersion = _messages.StringField(1)
+  items = _messages.MessageField('CloudSchedulerSource', 2, repeated=True)
+  kind = _messages.StringField(3)
+  metadata = _messages.MessageField('ListMeta', 4)
+  unreachable = _messages.StringField(5, repeated=True)
+
+
+class ListCloudStorageSourcesResponse(_messages.Message):
+  r"""ListCloudStorageSourcesResponse is a list of CloudStorageSource
+  resources.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "events.cloud.google.com/v1alpha1".
+    items: List of CloudStorageSources.
+    kind: The kind of this resource, in this case "CloudStorageSourceList".
+    metadata: Metadata associated with this CloudStorageSource list.
+    unreachable: Locations that could not be reached.
+  """
+
+  apiVersion = _messages.StringField(1)
+  items = _messages.MessageField('CloudStorageSource', 2, repeated=True)
+  kind = _messages.StringField(3)
+  metadata = _messages.MessageField('ListMeta', 4)
+  unreachable = _messages.StringField(5, repeated=True)
+
+
 class ListConfigurationsResponse(_messages.Message):
   r"""ListConfigurationsResponse is a list of Configuration resources.
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "serving.knative.dev/v1alpha1".
     items: List of Configurations.
     kind: The kind of this resource, in this case "ConfigurationList".
     metadata: Metadata associated with this Configuration list.
@@ -804,16 +1324,19 @@ class ListDomainMappingsResponse(_messages.Message):
   r"""ListDomainMappingsResponse is a list of DomainMapping resources.
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "domains.cloudrun.com/v1alpha1".
     items: List of DomainMappings.
     kind: The kind of this resource, in this case "DomainMappingList".
     metadata: Metadata associated with this DomainMapping list.
+    unreachable: Locations that could not be reached.
   """
 
   apiVersion = _messages.StringField(1)
   items = _messages.MessageField('DomainMapping', 2, repeated=True)
   kind = _messages.StringField(3)
   metadata = _messages.MessageField('ListMeta', 4)
+  unreachable = _messages.StringField(5, repeated=True)
 
 
 class ListLocationsResponse(_messages.Message):
@@ -862,7 +1385,8 @@ class ListRevisionsResponse(_messages.Message):
   r"""ListRevisionsResponse is a list of Revision resources.
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "serving.knative.dev/v1alpha1".
     items: List of Revisions.
     kind: The kind of this resource, in this case "RevisionList".
     metadata: Metadata associated with this revision list.
@@ -880,7 +1404,8 @@ class ListRoutesResponse(_messages.Message):
   r"""ListRoutesResponse is a list of Route resources.
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "serving.knative.dev/v1alpha1".
     items: List of Routes.
     kind: The kind of this resource, in this case always "RouteList".
     metadata: Metadata associated with this Route list.
@@ -898,7 +1423,8 @@ class ListServicesResponse(_messages.Message):
   r"""A list of Service resources.
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "serving.knative.dev/v1alpha1".
     items: List of Services.
     kind: The kind of this resource, in this case "ServiceList".
     metadata: Metadata associated with this Service list.
@@ -907,6 +1433,25 @@ class ListServicesResponse(_messages.Message):
 
   apiVersion = _messages.StringField(1)
   items = _messages.MessageField('Service', 2, repeated=True)
+  kind = _messages.StringField(3)
+  metadata = _messages.MessageField('ListMeta', 4)
+  unreachable = _messages.StringField(5, repeated=True)
+
+
+class ListTriggersResponse(_messages.Message):
+  r"""ListTriggersResponse is a list of Trigger resources.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "eventing.knative.dev/v1alpha1".
+    items: List of Triggers.
+    kind: The kind of this resource, in this case "TriggerList".
+    metadata: Metadata associated with this Trigger list.
+    unreachable: Locations that could not be reached.
+  """
+
+  apiVersion = _messages.StringField(1)
+  items = _messages.MessageField('Trigger', 2, repeated=True)
   kind = _messages.StringField(3)
   metadata = _messages.MessageField('ListMeta', 4)
   unreachable = _messages.StringField(5, repeated=True)
@@ -1084,16 +1629,6 @@ class ObjectMeta(_messages.Message):
       conventions.md#idempotency +optional  string generateName = 2;
     generation: A sequence number representing a specific generation of the
       desired state. Populated by the system. Read-only. +optional
-    initializers: Not currently supported by Cloud Run.  An initializer is a
-      controller which enforces some system invariant at object creation time.
-      This field is a list of initializers that have not yet acted on this
-      object. If nil or empty, this object has been completely initialized.
-      Otherwise, the object is considered uninitialized and is hidden (in
-      list/watch and get calls) from clients that haven't explicitly asked to
-      observe uninitialized objects.  When an object is created, the system
-      will populate this list with the current set of initializers. Only
-      privileged users may set or modify this list. Once it is empty, it may
-      not be modified further by any user.
     labels: Map of string keys and values that can be used to organize and
       categorize (scope and select) objects. May match selectors of
       replication controllers and routes. More info: http://kubernetes.io/docs
@@ -1192,14 +1727,54 @@ class ObjectMeta(_messages.Message):
   finalizers = _messages.StringField(6, repeated=True)
   generateName = _messages.StringField(7)
   generation = _messages.IntegerField(8, variant=_messages.Variant.INT32)
-  initializers = _messages.MessageField('Initializers', 9)
-  labels = _messages.MessageField('LabelsValue', 10)
-  name = _messages.StringField(11)
-  namespace = _messages.StringField(12)
-  ownerReferences = _messages.MessageField('OwnerReference', 13, repeated=True)
-  resourceVersion = _messages.StringField(14)
-  selfLink = _messages.StringField(15)
-  uid = _messages.StringField(16)
+  labels = _messages.MessageField('LabelsValue', 9)
+  name = _messages.StringField(10)
+  namespace = _messages.StringField(11)
+  ownerReferences = _messages.MessageField('OwnerReference', 12, repeated=True)
+  resourceVersion = _messages.StringField(13)
+  selfLink = _messages.StringField(14)
+  uid = _messages.StringField(15)
+
+
+class ObjectReference(_messages.Message):
+  r"""ObjectReference contains enough information to let you inspect or modify
+  the referred object.
+
+  Fields:
+    apiVersion: API version of the referent. +optional
+    fieldPath: If referring to a piece of an object instead of an entire
+      object, this string should contain a valid JSON/Go field access
+      statement, such as desiredState.manifest.containers[2]. For example, if
+      the object reference is to a container within a pod, this would take on
+      a value like: "spec.containers{name}" (where "name" refers to the name
+      of the container that triggered the event) or if no container name is
+      specified "spec.containers[2]" (container with index 2 in this pod).
+      This syntax is chosen only to have some well-defined way of referencing
+      a part of an object.
+    kind: Kind of the referent. More info:
+      https://git.k8s.io/community/contributors/devel/api-conventions.md
+      #types-kinds +optional
+    name: Name of the referent. More info:
+      https://kubernetes.io/docs/concepts/overview/working-with-
+      objects/names/#names +optional
+    namespace: Namespace of the referent. More info:
+      https://kubernetes.io/docs/concepts/overview/working-with-
+      objects/namespaces/ +optional
+    resourceVersion: Specific resourceVersion to which this reference is made,
+      if any. More info: https://git.k8s.io/community/contributors/devel/api-
+      conventions.md#concurrency-control-and-consistency +optional
+    uid: UID of the referent. More info:
+      https://kubernetes.io/docs/concepts/overview/working-with-
+      objects/names/#uids +optional
+  """
+
+  apiVersion = _messages.StringField(1)
+  fieldPath = _messages.StringField(2)
+  kind = _messages.StringField(3)
+  name = _messages.StringField(4)
+  namespace = _messages.StringField(5)
+  resourceVersion = _messages.StringField(6)
+  uid = _messages.StringField(7)
 
 
 class OwnerReference(_messages.Message):
@@ -1234,29 +1809,42 @@ class OwnerReference(_messages.Message):
 
 
 class Policy(_messages.Message):
-  r"""Defines an Identity and Access Management (IAM) policy. It is used to
-  specify access control policies for Cloud Platform resources.   A `Policy`
-  consists of a list of `bindings`. A `binding` binds a list of `members` to a
-  `role`, where the members can be user accounts, Google groups, Google
-  domains, and service accounts. A `role` is a named list of permissions
-  defined by IAM.  **JSON Example**      {       "bindings": [         {
-  "role": "roles/owner",           "members": [
+  r"""An Identity and Access Management (IAM) policy, which specifies access
+  controls for Google Cloud resources.   A `Policy` is a collection of
+  `bindings`. A `binding` binds one or more `members` to a single `role`.
+  Members can be user accounts, service accounts, Google groups, and domains
+  (such as G Suite). A `role` is a named list of permissions; each `role` can
+  be an IAM predefined role or a user-created custom role.  Optionally, a
+  `binding` can specify a `condition`, which is a logical expression that
+  allows access to a resource only if the expression evaluates to `true`. A
+  condition can add constraints based on attributes of the request, the
+  resource, or both.  **JSON example:**      {       "bindings": [         {
+  "role": "roles/resourcemanager.organizationAdmin",           "members": [
   "user:mike@example.com",             "group:admins@example.com",
-  "domain:google.com",             "serviceAccount:my-other-
-  app@appspot.gserviceaccount.com"           ]         },         {
-  "role": "roles/viewer",           "members": ["user:sean@example.com"]
-  }       ]     }  **YAML Example**      bindings:     - members:       -
-  user:mike@example.com       - group:admins@example.com       -
-  domain:google.com       - serviceAccount:my-other-
-  app@appspot.gserviceaccount.com       role: roles/owner     - members:
-  - user:sean@example.com       role: roles/viewer   For a description of IAM
-  and its features, see the [IAM developer's
-  guide](https://cloud.google.com/iam/docs).
+  "domain:google.com",             "serviceAccount:my-project-
+  id@appspot.gserviceaccount.com"           ]         },         {
+  "role": "roles/resourcemanager.organizationViewer",           "members":
+  ["user:eve@example.com"],           "condition": {             "title":
+  "expirable access",             "description": "Does not grant access after
+  Sep 2020",             "expression": "request.time <
+  timestamp('2020-10-01T00:00:00.000Z')",           }         }       ],
+  "etag": "BwWWja0YfJA=",       "version": 3     }  **YAML example:**
+  bindings:     - members:       - user:mike@example.com       -
+  group:admins@example.com       - domain:google.com       - serviceAccount
+  :my-project-id@appspot.gserviceaccount.com       role:
+  roles/resourcemanager.organizationAdmin     - members:       -
+  user:eve@example.com       role: roles/resourcemanager.organizationViewer
+  condition:         title: expirable access         description: Does not
+  grant access after Sep 2020         expression: request.time <
+  timestamp('2020-10-01T00:00:00.000Z')     - etag: BwWWja0YfJA=     -
+  version: 3  For a description of IAM and its features, see the [IAM
+  documentation](https://cloud.google.com/iam/docs/).
 
   Fields:
     auditConfigs: Specifies cloud audit logging configuration for this policy.
-    bindings: Associates a list of `members` to a `role`. `bindings` with no
-      members will result in an error.
+    bindings: Associates a list of `members` to a `role`. Optionally, may
+      specify a `condition` that determines how and when the `bindings` are
+      applied. Each of the `bindings` must contain at least one member.
     etag: `etag` is used for optimistic concurrency control as a way to help
       prevent simultaneous updates of a policy from overwriting each other. It
       is strongly suggested that systems make use of the `etag` in the read-
@@ -1264,9 +1852,24 @@ class Policy(_messages.Message):
       conditions: An `etag` is returned in the response to `getIamPolicy`, and
       systems are expected to put that etag in the request to `setIamPolicy`
       to ensure that their change will be applied to the same version of the
-      policy.  If no `etag` is provided in the call to `setIamPolicy`, then
-      the existing policy is overwritten blindly.
-    version: Deprecated.
+      policy.  **Important:** If you use IAM Conditions, you must include the
+      `etag` field whenever you call `setIamPolicy`. If you omit this field,
+      then IAM allows you to overwrite a version `3` policy with a version `1`
+      policy, and all of the conditions in the version `3` policy are lost.
+    version: Specifies the format of the policy.  Valid values are `0`, `1`,
+      and `3`. Requests that specify an invalid value are rejected.  Any
+      operation that affects conditional role bindings must specify version
+      `3`. This requirement applies to the following operations:  * Getting a
+      policy that includes a conditional role binding * Adding a conditional
+      role binding to a policy * Changing a conditional role binding in a
+      policy * Removing any role binding, with or without a condition, from a
+      policy   that includes conditions  **Important:** If you use IAM
+      Conditions, you must include the `etag` field whenever you call
+      `setIamPolicy`. If you omit this field, then IAM allows you to overwrite
+      a version `3` policy with a version `1` policy, and all of the
+      conditions in the version `3` policy are lost.  If a policy does not
+      include any conditions, operations on that policy may specify any valid
+      version or leave the field unset.
   """
 
   auditConfigs = _messages.MessageField('AuditConfig', 1, repeated=True)
@@ -1530,7 +2133,8 @@ class Revision(_messages.Message):
   evision
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "serving.knative.dev/v1alpha1".
     kind: The kind of this resource, in this case "Revision".
     metadata: Metadata associated with this Revision, including name,
       namespace, labels, and annotations.
@@ -1556,6 +2160,8 @@ class RevisionCondition(_messages.Message):
       status. +optional
     reason: One-word CamelCase reason for the condition's last transition.
       +optional
+    severity: How to interpret failures of this condition, one of Error,
+      Warning, Info +optional
     status: Status of the condition, one of True, False, Unknown.
     type: RevisionConditionType is used to communicate the status of the
       reconciliation process. See also:
@@ -1570,8 +2176,9 @@ class RevisionCondition(_messages.Message):
   lastTransitionTime = _messages.StringField(1)
   message = _messages.StringField(2)
   reason = _messages.StringField(3)
-  status = _messages.StringField(4)
-  type = _messages.StringField(5)
+  severity = _messages.StringField(4)
+  status = _messages.StringField(5)
+  type = _messages.StringField(6)
 
 
 class RevisionSpec(_messages.Message):
@@ -1593,21 +2200,31 @@ class RevisionSpec(_messages.Message):
       Container, including: name, ports, and volumeMounts. The runtime
       contract is documented here:
       https://github.com/knative/serving/blob/master/docs/runtime-contract.md
-    containerConcurrency: ContainerConcurrency specifies the maximum allowed
-      in-flight (concurrent) requests per container of the Revision. Values
-      are: - `0` thread-safe, the system should manage the max concurrency.
-      This is    the default value. - `1` not-thread-safe. Single concurrency
-      - `2-N` thread-safe, max concurrency of N
+    containerConcurrency: (Optional)  ContainerConcurrency specifies the
+      maximum allowed in-flight (concurrent) requests per container instance
+      of the Revision.  Cloud Run fully managed: supported, defaults to 80
+      Cloud Run on GKE: supported, defaults to 0, which means concurrency to
+      the application is not limited, and the system decides the target
+      concurrency for the autoscaler.
+    containers: Containers holds the single container that defines the unit of
+      execution for this Revision. In the context of a Revision, we disallow a
+      number of fields on this Container, including: name and lifecycle. In
+      Cloud Run, only a single container may be provided.
     generation: Deprecated and not currently populated by Cloud Run. See
       metadata.generation instead, which is the sequence number containing the
       latest generation of the desired state.  Read-only.
-    serviceAccountName: Not currently used by Cloud Run.
+    serviceAccountName: Email address of the IAM service account associated
+      with the revision of the service. The service account represents the
+      identity of the running revision, and determines what permissions the
+      revision has. If not provided, the revision will use the project's
+      default service account.
     servingState: ServingState holds a value describing the state the
       resources are in for this Revision. Users must not specify this when
       creating a revision. It is expected that the system will manipulate this
       based on routability and load.  Populated by the system. Read-only.
     timeoutSeconds: TimeoutSeconds holds the max duration the instance is
       allowed for responding to a request. Not currently used by Cloud Run.
+    volumes: A Volume attribute.
   """
 
   class ServingStateValueValuesEnum(_messages.Enum):
@@ -1634,10 +2251,12 @@ class RevisionSpec(_messages.Message):
   concurrencyModel = _messages.StringField(1)
   container = _messages.MessageField('Container', 2)
   containerConcurrency = _messages.IntegerField(3, variant=_messages.Variant.INT32)
-  generation = _messages.IntegerField(4, variant=_messages.Variant.INT32)
-  serviceAccountName = _messages.StringField(5)
-  servingState = _messages.EnumField('ServingStateValueValuesEnum', 6)
-  timeoutSeconds = _messages.IntegerField(7, variant=_messages.Variant.INT32)
+  containers = _messages.MessageField('Container', 4, repeated=True)
+  generation = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  serviceAccountName = _messages.StringField(6)
+  servingState = _messages.EnumField('ServingStateValueValuesEnum', 7)
+  timeoutSeconds = _messages.IntegerField(8, variant=_messages.Variant.INT32)
+  volumes = _messages.MessageField('Volume', 9, repeated=True)
 
 
 class RevisionStatus(_messages.Message):
@@ -1679,7 +2298,13 @@ class RevisionTemplate(_messages.Message):
 
   Fields:
     metadata: Optional metadata for this Revision, including labels and
-      annotations. Name will be generated by the Configuration.
+      annotations. Name will be generated by the Configuration. To set minimum
+      instances for this revision, use the "autoscaling.knative.dev/minScale"
+      annotation key. (Cloud Run on GKE only). To set maximum instances for
+      this revision, use the "autoscaling.knative.dev/maxScale" annotation
+      key. To set Cloud SQL connections for the revision, use the
+      "run.googleapis.com/cloudsql-instances" annotation key. Values should be
+      comma separated.
     spec: RevisionSpec holds the desired state of the Revision (from the
       client).
   """
@@ -1700,7 +2325,8 @@ class Route(_messages.Message):
   automatically deploy the "latest ready" Revision from that Configuration.
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "serving.knative.dev/v1alpha1".
     kind: The kind of this resource, in this case always "Route".
     metadata: Metadata associated with this Route, including name, namespace,
       labels, and annotations.
@@ -1726,6 +2352,8 @@ class RouteCondition(_messages.Message):
       +optional
     reason: One-word CamelCase reason for the condition's last transition.
       +optional
+    severity: How to interpret failures of this condition, one of Error,
+      Warning, Info +optional
     status: Status of the condition, one of "True", "False", "Unknown".
     type: RouteConditionType is used to communicate the status of the
       reconciliation process. See also:
@@ -1736,8 +2364,9 @@ class RouteCondition(_messages.Message):
   lastTransitionTime = _messages.StringField(1)
   message = _messages.StringField(2)
   reason = _messages.StringField(3)
-  status = _messages.StringField(4)
-  type = _messages.StringField(5)
+  severity = _messages.StringField(4)
+  status = _messages.StringField(5)
+  type = _messages.StringField(6)
 
 
 class RouteSpec(_messages.Message):
@@ -1761,15 +2390,15 @@ class RouteStatus(_messages.Message):
   controller).
 
   Fields:
-    address: Similar to domain, information on where the service is available
-      on HTTP.
+    address: Similar to url, information on where the service is available on
+      HTTP.
     conditions: Conditions communicates information about ongoing/complete
       reconciliation processes that bring the "spec" inline with the observed
       state of the world.
-    domain: Domain holds the top-level domain that will distribute traffic
-      over the provided targets. It generally has the form https://{route-hash
-      }-{project-hash}-{cluster-level-suffix}.a.run.app
-    domainInternal: For Cloud Run, identifical to domain.
+    domain: Deprecated - use url instead. Domain holds the top-level domain
+      that will distribute traffic over the provided targets.
+    domainInternal: Deprecated - use address instead. For Cloud Run,
+      identifical to domain.
     observedGeneration: ObservedGeneration is the 'Generation' of the Route
       that was last processed by the controller.  Clients polling for
       completed reconciliation should poll until observedGeneration =
@@ -1783,6 +2412,9 @@ class RouteStatus(_messages.Message):
       will always contain RevisionName references. When ConfigurationName
       appears in the spec, this will hold the LatestReadyRevisionName that we
       last observed.
+    url: URL holds the url that will distribute traffic over the provided
+      traffic targets. It generally has the form https://{route-hash
+      }-{project-hash}-{cluster-level-suffix}.a.run.app
   """
 
   address = _messages.MessageField('Addressable', 1)
@@ -1791,6 +2423,7 @@ class RouteStatus(_messages.Message):
   domainInternal = _messages.StringField(4)
   observedGeneration = _messages.IntegerField(5, variant=_messages.Variant.INT32)
   traffic = _messages.MessageField('TrafficTarget', 6, repeated=True)
+  url = _messages.StringField(7)
 
 
 class RunNamespacesAuthorizeddomainsListRequest(_messages.Message):
@@ -1805,6 +2438,336 @@ class RunNamespacesAuthorizeddomainsListRequest(_messages.Message):
   pageSize = _messages.IntegerField(1, variant=_messages.Variant.INT32)
   pageToken = _messages.StringField(2)
   parent = _messages.StringField(3, required=True)
+
+
+class RunNamespacesCloudauditlogssourcesCreateRequest(_messages.Message):
+  r"""A RunNamespacesCloudauditlogssourcesCreateRequest object.
+
+  Fields:
+    cloudAuditLogsSource: A CloudAuditLogsSource resource to be passed as the
+      request body.
+    parent: The project ID or project number in which this
+      cloudauditlogssource should be created.
+  """
+
+  cloudAuditLogsSource = _messages.MessageField('CloudAuditLogsSource', 1)
+  parent = _messages.StringField(2, required=True)
+
+
+class RunNamespacesCloudauditlogssourcesDeleteRequest(_messages.Message):
+  r"""A RunNamespacesCloudauditlogssourcesDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: The name of the cloudauditlogssource being deleted. If needed,
+      replace {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunNamespacesCloudauditlogssourcesGetRequest(_messages.Message):
+  r"""A RunNamespacesCloudauditlogssourcesGetRequest object.
+
+  Fields:
+    name: The name of the cloudauditlogssource being retrieved. If needed,
+      replace {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunNamespacesCloudauditlogssourcesListRequest(_messages.Message):
+  r"""A RunNamespacesCloudauditlogssourcesListRequest object.
+
+  Fields:
+    continue_: Optional encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: The project ID or project number from which the
+      cloudauditlogssources should be listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
+
+
+class RunNamespacesCloudpubsubsourcesCreateRequest(_messages.Message):
+  r"""A RunNamespacesCloudpubsubsourcesCreateRequest object.
+
+  Fields:
+    cloudPubSubSource: A CloudPubSubSource resource to be passed as the
+      request body.
+    parent: The project ID or project number in which this cloudpubsubsource
+      should be created.
+  """
+
+  cloudPubSubSource = _messages.MessageField('CloudPubSubSource', 1)
+  parent = _messages.StringField(2, required=True)
+
+
+class RunNamespacesCloudpubsubsourcesDeleteRequest(_messages.Message):
+  r"""A RunNamespacesCloudpubsubsourcesDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: The name of the cloudpubsubsource being deleted. If needed, replace
+      {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunNamespacesCloudpubsubsourcesGetRequest(_messages.Message):
+  r"""A RunNamespacesCloudpubsubsourcesGetRequest object.
+
+  Fields:
+    name: The name of the cloudpubsubsource being retrieved. If needed,
+      replace {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunNamespacesCloudpubsubsourcesListRequest(_messages.Message):
+  r"""A RunNamespacesCloudpubsubsourcesListRequest object.
+
+  Fields:
+    continue_: Optional encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: The project ID or project number from which the cloudpubsubsources
+      should be listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
+
+
+class RunNamespacesCloudschedulersourcesCreateRequest(_messages.Message):
+  r"""A RunNamespacesCloudschedulersourcesCreateRequest object.
+
+  Fields:
+    cloudSchedulerSource: A CloudSchedulerSource resource to be passed as the
+      request body.
+    parent: Required. The project ID or project number in which this
+      cloudschedulersource should be created.
+  """
+
+  cloudSchedulerSource = _messages.MessageField('CloudSchedulerSource', 1)
+  parent = _messages.StringField(2, required=True)
+
+
+class RunNamespacesCloudschedulersourcesDeleteRequest(_messages.Message):
+  r"""A RunNamespacesCloudschedulersourcesDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: Required. The name of the cloudschedulersource being deleted. If
+      needed, replace {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunNamespacesCloudschedulersourcesGetRequest(_messages.Message):
+  r"""A RunNamespacesCloudschedulersourcesGetRequest object.
+
+  Fields:
+    name: Required. The name of the cloudschedulersource being retrieved. If
+      needed, replace {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunNamespacesCloudschedulersourcesListRequest(_messages.Message):
+  r"""A RunNamespacesCloudschedulersourcesListRequest object.
+
+  Fields:
+    continue_: Optional encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: Required. The project ID or project number from which the
+      cloudschedulersources should be listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
+
+
+class RunNamespacesCloudschedulersourcesReplaceCloudSchedulerSourceRequest(_messages.Message):
+  r"""A RunNamespacesCloudschedulersourcesReplaceCloudSchedulerSourceRequest
+  object.
+
+  Fields:
+    cloudSchedulerSource: A CloudSchedulerSource resource to be passed as the
+      request body.
+    name: Required. The name of the cloudschedulersource being retrieved. If
+      needed, replace {namespace_id} with the project ID.
+  """
+
+  cloudSchedulerSource = _messages.MessageField('CloudSchedulerSource', 1)
+  name = _messages.StringField(2, required=True)
+
+
+class RunNamespacesCloudstoragesourcesCreateRequest(_messages.Message):
+  r"""A RunNamespacesCloudstoragesourcesCreateRequest object.
+
+  Fields:
+    cloudStorageSource: A CloudStorageSource resource to be passed as the
+      request body.
+    parent: Required. The project ID or project number in which this
+      cloudstoragesource should be created.
+  """
+
+  cloudStorageSource = _messages.MessageField('CloudStorageSource', 1)
+  parent = _messages.StringField(2, required=True)
+
+
+class RunNamespacesCloudstoragesourcesDeleteRequest(_messages.Message):
+  r"""A RunNamespacesCloudstoragesourcesDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: Required. The name of the cloudstoragesource being deleted. If
+      needed, replace {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunNamespacesCloudstoragesourcesGetRequest(_messages.Message):
+  r"""A RunNamespacesCloudstoragesourcesGetRequest object.
+
+  Fields:
+    name: Required. The name of the cloudstoragesource being retrieved. If
+      needed, replace {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunNamespacesCloudstoragesourcesListRequest(_messages.Message):
+  r"""A RunNamespacesCloudstoragesourcesListRequest object.
+
+  Fields:
+    continue_: Optional encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: Required. The project ID or project number from which the
+      cloudstoragesources should be listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
+
+
+class RunNamespacesCloudstoragesourcesReplaceCloudStorageSourceRequest(_messages.Message):
+  r"""A RunNamespacesCloudstoragesourcesReplaceCloudStorageSourceRequest
+  object.
+
+  Fields:
+    cloudStorageSource: A CloudStorageSource resource to be passed as the
+      request body.
+    name: Required. The name of the cloudstoragesource being retrieved. If
+      needed, replace {namespace_id} with the project ID.
+  """
+
+  cloudStorageSource = _messages.MessageField('CloudStorageSource', 1)
+  name = _messages.StringField(2, required=True)
 
 
 class RunNamespacesConfigurationsGetRequest(_messages.Message):
@@ -1865,16 +2828,25 @@ class RunNamespacesDomainmappingsDeleteRequest(_messages.Message):
   r"""A RunNamespacesDomainmappingsDeleteRequest object.
 
   Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
     name: The name of the domain mapping being deleted. If needed, replace
       {namespace_id} with the project ID.
     orphanDependents: Deprecated. Specifies the cascade behavior on delete.
       Cloud Run only supports cascading behavior, so this must be false. This
-      attribute is deprecated, and might be replaced with PropagationPolicy
-      See https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+      attribute is deprecated, and is now replaced with PropagationPolicy See
+      https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
   """
 
-  name = _messages.StringField(1, required=True)
-  orphanDependents = _messages.BooleanField(2)
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  orphanDependents = _messages.BooleanField(4)
+  propagationPolicy = _messages.StringField(5)
 
 
 class RunNamespacesDomainmappingsGetRequest(_messages.Message):
@@ -1918,33 +2890,29 @@ class RunNamespacesDomainmappingsListRequest(_messages.Message):
   watch = _messages.BooleanField(8)
 
 
-class RunNamespacesDomainmappingsReplaceDomainMappingRequest(_messages.Message):
-  r"""A RunNamespacesDomainmappingsReplaceDomainMappingRequest object.
-
-  Fields:
-    domainMapping: A DomainMapping resource to be passed as the request body.
-    name: The name of the domain mapping being retrieved. If needed, replace
-      {namespace_id} with the project ID.
-  """
-
-  domainMapping = _messages.MessageField('DomainMapping', 1)
-  name = _messages.StringField(2, required=True)
-
-
 class RunNamespacesRevisionsDeleteRequest(_messages.Message):
   r"""A RunNamespacesRevisionsDeleteRequest object.
 
   Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
     name: The name of the revision being deleted. If needed, replace
       {namespace_id} with the project ID.
     orphanDependents: Deprecated. Specifies the cascade behavior on delete.
       Cloud Run only supports cascading behavior, so this must be false. This
-      attribute is deprecated, and might be replaced with PropagationPolicy
-      See https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+      attribute is deprecated, and is now replaced with PropagationPolicy See
+      https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
   """
 
-  name = _messages.StringField(1, required=True)
-  orphanDependents = _messages.BooleanField(2)
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  orphanDependents = _messages.BooleanField(4)
+  propagationPolicy = _messages.StringField(5)
 
 
 class RunNamespacesRevisionsGetRequest(_messages.Message):
@@ -2046,16 +3014,25 @@ class RunNamespacesServicesDeleteRequest(_messages.Message):
   r"""A RunNamespacesServicesDeleteRequest object.
 
   Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
     name: The name of the service being deleted. If needed, replace
       {namespace_id} with the project ID.
     orphanDependents: Deprecated. Specifies the cascade behavior on delete.
       Cloud Run only supports cascading behavior, so this must be false. This
-      attribute is deprecated, and might be replaced with PropagationPolicy
-      See https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+      attribute is deprecated, and is now replaced with PropagationPolicy See
+      https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
   """
 
-  name = _messages.StringField(1, required=True)
-  orphanDependents = _messages.BooleanField(2)
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  orphanDependents = _messages.BooleanField(4)
+  propagationPolicy = _messages.StringField(5)
 
 
 class RunNamespacesServicesGetRequest(_messages.Message):
@@ -2099,19 +3076,6 @@ class RunNamespacesServicesListRequest(_messages.Message):
   watch = _messages.BooleanField(8)
 
 
-class RunNamespacesServicesPatchRequest(_messages.Message):
-  r"""A RunNamespacesServicesPatchRequest object.
-
-  Fields:
-    httpBody: A HttpBody resource to be passed as the request body.
-    name: The name of the service being patched. If needed, replace
-      {namespace_id} with the project ID.
-  """
-
-  httpBody = _messages.MessageField('HttpBody', 1)
-  name = _messages.StringField(2, required=True)
-
-
 class RunNamespacesServicesReplaceServiceRequest(_messages.Message):
   r"""A RunNamespacesServicesReplaceServiceRequest object.
 
@@ -2123,6 +3087,80 @@ class RunNamespacesServicesReplaceServiceRequest(_messages.Message):
 
   name = _messages.StringField(1, required=True)
   service = _messages.MessageField('Service', 2)
+
+
+class RunNamespacesTriggersCreateRequest(_messages.Message):
+  r"""A RunNamespacesTriggersCreateRequest object.
+
+  Fields:
+    parent: The project ID or project number in which this trigger should be
+      created.
+    trigger: A Trigger resource to be passed as the request body.
+  """
+
+  parent = _messages.StringField(1, required=True)
+  trigger = _messages.MessageField('Trigger', 2)
+
+
+class RunNamespacesTriggersDeleteRequest(_messages.Message):
+  r"""A RunNamespacesTriggersDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: The name of the trigger being deleted. If needed, replace
+      {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunNamespacesTriggersGetRequest(_messages.Message):
+  r"""A RunNamespacesTriggersGetRequest object.
+
+  Fields:
+    name: The name of the trigger being retrieved. If needed, replace
+      {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunNamespacesTriggersListRequest(_messages.Message):
+  r"""A RunNamespacesTriggersListRequest object.
+
+  Fields:
+    continue_: Optional. Encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: The project ID or project number from which the triggers should be
+      listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
 
 
 class RunProjectsLocationsAuthorizeddomainsListRequest(_messages.Message):
@@ -2137,6 +3175,338 @@ class RunProjectsLocationsAuthorizeddomainsListRequest(_messages.Message):
   pageSize = _messages.IntegerField(1, variant=_messages.Variant.INT32)
   pageToken = _messages.StringField(2)
   parent = _messages.StringField(3, required=True)
+
+
+class RunProjectsLocationsCloudauditlogssourcesCreateRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudauditlogssourcesCreateRequest object.
+
+  Fields:
+    cloudAuditLogsSource: A CloudAuditLogsSource resource to be passed as the
+      request body.
+    parent: The project ID or project number in which this
+      cloudauditlogssource should be created.
+  """
+
+  cloudAuditLogsSource = _messages.MessageField('CloudAuditLogsSource', 1)
+  parent = _messages.StringField(2, required=True)
+
+
+class RunProjectsLocationsCloudauditlogssourcesDeleteRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudauditlogssourcesDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: The name of the cloudauditlogssource being deleted. If needed,
+      replace {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunProjectsLocationsCloudauditlogssourcesGetRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudauditlogssourcesGetRequest object.
+
+  Fields:
+    name: The name of the cloudauditlogssource being retrieved. If needed,
+      replace {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunProjectsLocationsCloudauditlogssourcesListRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudauditlogssourcesListRequest object.
+
+  Fields:
+    continue_: Optional encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: The project ID or project number from which the
+      cloudauditlogssources should be listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
+
+
+class RunProjectsLocationsCloudpubsubsourcesCreateRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudpubsubsourcesCreateRequest object.
+
+  Fields:
+    cloudPubSubSource: A CloudPubSubSource resource to be passed as the
+      request body.
+    parent: The project ID or project number in which this cloudpubsubsource
+      should be created.
+  """
+
+  cloudPubSubSource = _messages.MessageField('CloudPubSubSource', 1)
+  parent = _messages.StringField(2, required=True)
+
+
+class RunProjectsLocationsCloudpubsubsourcesDeleteRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudpubsubsourcesDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: The name of the cloudpubsubsource being deleted. If needed, replace
+      {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunProjectsLocationsCloudpubsubsourcesGetRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudpubsubsourcesGetRequest object.
+
+  Fields:
+    name: The name of the cloudpubsubsource being retrieved. If needed,
+      replace {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunProjectsLocationsCloudpubsubsourcesListRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudpubsubsourcesListRequest object.
+
+  Fields:
+    continue_: Optional encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: The project ID or project number from which the cloudpubsubsources
+      should be listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
+
+
+class RunProjectsLocationsCloudschedulersourcesCreateRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudschedulersourcesCreateRequest object.
+
+  Fields:
+    cloudSchedulerSource: A CloudSchedulerSource resource to be passed as the
+      request body.
+    parent: Required. The project ID or project number in which this
+      cloudschedulersource should be created.
+  """
+
+  cloudSchedulerSource = _messages.MessageField('CloudSchedulerSource', 1)
+  parent = _messages.StringField(2, required=True)
+
+
+class RunProjectsLocationsCloudschedulersourcesDeleteRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudschedulersourcesDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: Required. The name of the cloudschedulersource being deleted. If
+      needed, replace {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunProjectsLocationsCloudschedulersourcesGetRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudschedulersourcesGetRequest object.
+
+  Fields:
+    name: Required. The name of the cloudschedulersource being retrieved. If
+      needed, replace {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunProjectsLocationsCloudschedulersourcesListRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudschedulersourcesListRequest object.
+
+  Fields:
+    continue_: Optional encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: Required. The project ID or project number from which the
+      cloudschedulersources should be listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
+
+
+class RunProjectsLocationsCloudschedulersourcesReplaceCloudSchedulerSourceRequest(_messages.Message):
+  r"""A
+  RunProjectsLocationsCloudschedulersourcesReplaceCloudSchedulerSourceRequest
+  object.
+
+  Fields:
+    cloudSchedulerSource: A CloudSchedulerSource resource to be passed as the
+      request body.
+    name: Required. The name of the cloudschedulersource being retrieved. If
+      needed, replace {namespace_id} with the project ID.
+  """
+
+  cloudSchedulerSource = _messages.MessageField('CloudSchedulerSource', 1)
+  name = _messages.StringField(2, required=True)
+
+
+class RunProjectsLocationsCloudstoragesourcesCreateRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudstoragesourcesCreateRequest object.
+
+  Fields:
+    cloudStorageSource: A CloudStorageSource resource to be passed as the
+      request body.
+    parent: Required. The project ID or project number in which this
+      cloudstoragesource should be created.
+  """
+
+  cloudStorageSource = _messages.MessageField('CloudStorageSource', 1)
+  parent = _messages.StringField(2, required=True)
+
+
+class RunProjectsLocationsCloudstoragesourcesDeleteRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudstoragesourcesDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: Required. The name of the cloudstoragesource being deleted. If
+      needed, replace {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunProjectsLocationsCloudstoragesourcesGetRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudstoragesourcesGetRequest object.
+
+  Fields:
+    name: Required. The name of the cloudstoragesource being retrieved. If
+      needed, replace {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunProjectsLocationsCloudstoragesourcesListRequest(_messages.Message):
+  r"""A RunProjectsLocationsCloudstoragesourcesListRequest object.
+
+  Fields:
+    continue_: Optional encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: Required. The project ID or project number from which the
+      cloudstoragesources should be listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
+
+
+class RunProjectsLocationsCloudstoragesourcesReplaceCloudStorageSourceRequest(_messages.Message):
+  r"""A
+  RunProjectsLocationsCloudstoragesourcesReplaceCloudStorageSourceRequest
+  object.
+
+  Fields:
+    cloudStorageSource: A CloudStorageSource resource to be passed as the
+      request body.
+    name: Required. The name of the cloudstoragesource being retrieved. If
+      needed, replace {namespace_id} with the project ID.
+  """
+
+  cloudStorageSource = _messages.MessageField('CloudStorageSource', 1)
+  name = _messages.StringField(2, required=True)
 
 
 class RunProjectsLocationsConfigurationsGetRequest(_messages.Message):
@@ -2197,16 +3567,25 @@ class RunProjectsLocationsDomainmappingsDeleteRequest(_messages.Message):
   r"""A RunProjectsLocationsDomainmappingsDeleteRequest object.
 
   Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
     name: The name of the domain mapping being deleted. If needed, replace
       {namespace_id} with the project ID.
     orphanDependents: Deprecated. Specifies the cascade behavior on delete.
       Cloud Run only supports cascading behavior, so this must be false. This
-      attribute is deprecated, and might be replaced with PropagationPolicy
-      See https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+      attribute is deprecated, and is now replaced with PropagationPolicy See
+      https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
   """
 
-  name = _messages.StringField(1, required=True)
-  orphanDependents = _messages.BooleanField(2)
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  orphanDependents = _messages.BooleanField(4)
+  propagationPolicy = _messages.StringField(5)
 
 
 class RunProjectsLocationsDomainmappingsGetRequest(_messages.Message):
@@ -2250,19 +3629,6 @@ class RunProjectsLocationsDomainmappingsListRequest(_messages.Message):
   watch = _messages.BooleanField(8)
 
 
-class RunProjectsLocationsDomainmappingsReplaceDomainMappingRequest(_messages.Message):
-  r"""A RunProjectsLocationsDomainmappingsReplaceDomainMappingRequest object.
-
-  Fields:
-    domainMapping: A DomainMapping resource to be passed as the request body.
-    name: The name of the domain mapping being retrieved. If needed, replace
-      {namespace_id} with the project ID.
-  """
-
-  domainMapping = _messages.MessageField('DomainMapping', 1)
-  name = _messages.StringField(2, required=True)
-
-
 class RunProjectsLocationsListRequest(_messages.Message):
   r"""A RunProjectsLocationsListRequest object.
 
@@ -2283,16 +3649,25 @@ class RunProjectsLocationsRevisionsDeleteRequest(_messages.Message):
   r"""A RunProjectsLocationsRevisionsDeleteRequest object.
 
   Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
     name: The name of the revision being deleted. If needed, replace
       {namespace_id} with the project ID.
     orphanDependents: Deprecated. Specifies the cascade behavior on delete.
       Cloud Run only supports cascading behavior, so this must be false. This
-      attribute is deprecated, and might be replaced with PropagationPolicy
-      See https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+      attribute is deprecated, and is now replaced with PropagationPolicy See
+      https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
   """
 
-  name = _messages.StringField(1, required=True)
-  orphanDependents = _messages.BooleanField(2)
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  orphanDependents = _messages.BooleanField(4)
+  propagationPolicy = _messages.StringField(5)
 
 
 class RunProjectsLocationsRevisionsGetRequest(_messages.Message):
@@ -2394,28 +3769,43 @@ class RunProjectsLocationsServicesDeleteRequest(_messages.Message):
   r"""A RunProjectsLocationsServicesDeleteRequest object.
 
   Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
     name: The name of the service being deleted. If needed, replace
       {namespace_id} with the project ID.
     orphanDependents: Deprecated. Specifies the cascade behavior on delete.
       Cloud Run only supports cascading behavior, so this must be false. This
-      attribute is deprecated, and might be replaced with PropagationPolicy
-      See https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+      attribute is deprecated, and is now replaced with PropagationPolicy See
+      https://github.com/kubernetes/kubernetes/issues/46659 for more info.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
   """
 
-  name = _messages.StringField(1, required=True)
-  orphanDependents = _messages.BooleanField(2)
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  orphanDependents = _messages.BooleanField(4)
+  propagationPolicy = _messages.StringField(5)
 
 
 class RunProjectsLocationsServicesGetIamPolicyRequest(_messages.Message):
   r"""A RunProjectsLocationsServicesGetIamPolicyRequest object.
 
   Fields:
+    options_requestedPolicyVersion: Optional. The policy format version to be
+      returned.  Valid values are 0, 1, and 3. Requests specifying an invalid
+      value will be rejected.  Requests for policies with any conditional
+      bindings must specify version 3. Policies without any conditional
+      bindings may specify any valid value or leave the field unset.
     resource: REQUIRED: The resource for which the policy is being requested.
       See the operation documentation for the appropriate value for this
       field.
   """
 
-  resource = _messages.StringField(1, required=True)
+  options_requestedPolicyVersion = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+  resource = _messages.StringField(2, required=True)
 
 
 class RunProjectsLocationsServicesGetRequest(_messages.Message):
@@ -2457,19 +3847,6 @@ class RunProjectsLocationsServicesListRequest(_messages.Message):
   parent = _messages.StringField(6, required=True)
   resourceVersion = _messages.StringField(7)
   watch = _messages.BooleanField(8)
-
-
-class RunProjectsLocationsServicesPatchRequest(_messages.Message):
-  r"""A RunProjectsLocationsServicesPatchRequest object.
-
-  Fields:
-    httpBody: A HttpBody resource to be passed as the request body.
-    name: The name of the service being patched. If needed, replace
-      {namespace_id} with the project ID.
-  """
-
-  httpBody = _messages.MessageField('HttpBody', 1)
-  name = _messages.StringField(2, required=True)
 
 
 class RunProjectsLocationsServicesReplaceServiceRequest(_messages.Message):
@@ -2515,6 +3892,80 @@ class RunProjectsLocationsServicesTestIamPermissionsRequest(_messages.Message):
   testIamPermissionsRequest = _messages.MessageField('TestIamPermissionsRequest', 2)
 
 
+class RunProjectsLocationsTriggersCreateRequest(_messages.Message):
+  r"""A RunProjectsLocationsTriggersCreateRequest object.
+
+  Fields:
+    parent: The project ID or project number in which this trigger should be
+      created.
+    trigger: A Trigger resource to be passed as the request body.
+  """
+
+  parent = _messages.StringField(1, required=True)
+  trigger = _messages.MessageField('Trigger', 2)
+
+
+class RunProjectsLocationsTriggersDeleteRequest(_messages.Message):
+  r"""A RunProjectsLocationsTriggersDeleteRequest object.
+
+  Fields:
+    apiVersion: Cloud Run currently ignores this parameter.
+    kind: Cloud Run currently ignores this parameter.
+    name: The name of the trigger being deleted. If needed, replace
+      {namespace_id} with the project ID.
+    propagationPolicy: Specifies the propagation policy of delete. Cloud Run
+      currently ignores this setting, and deletes in the background. Please
+      see kubernetes.io/docs/concepts/workloads/controllers/garbage-
+      collection/ for more information.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  name = _messages.StringField(3, required=True)
+  propagationPolicy = _messages.StringField(4)
+
+
+class RunProjectsLocationsTriggersGetRequest(_messages.Message):
+  r"""A RunProjectsLocationsTriggersGetRequest object.
+
+  Fields:
+    name: The name of the trigger being retrieved. If needed, replace
+      {namespace_id} with the project ID.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class RunProjectsLocationsTriggersListRequest(_messages.Message):
+  r"""A RunProjectsLocationsTriggersListRequest object.
+
+  Fields:
+    continue_: Optional. Encoded string to continue paging.
+    fieldSelector: Allows to filter resources based on a specific value for a
+      field name. Send this in a query string format. i.e.
+      'metadata.name%3Dlorem'. Not currently used by Cloud Run.
+    includeUninitialized: Not currently used by Cloud Run.
+    labelSelector: Allows to filter resources based on a label. Supported
+      operations are =, !=, exists, in, and notIn.
+    limit: The maximum number of records that should be returned.
+    parent: The project ID or project number from which the triggers should be
+      listed.
+    resourceVersion: The baseline resource version from which the list or
+      watch operation should start. Not currently used by Cloud Run.
+    watch: Flag that indicates that the client expects to watch this resource
+      as well. Not currently used by Cloud Run.
+  """
+
+  continue_ = _messages.StringField(1)
+  fieldSelector = _messages.StringField(2)
+  includeUninitialized = _messages.BooleanField(3)
+  labelSelector = _messages.StringField(4)
+  limit = _messages.IntegerField(5, variant=_messages.Variant.INT32)
+  parent = _messages.StringField(6, required=True)
+  resourceVersion = _messages.StringField(7)
+  watch = _messages.BooleanField(8)
+
+
 class SELinuxOptions(_messages.Message):
   r"""SELinuxOptions are the labels to be applied to the container
 
@@ -2541,12 +3992,67 @@ class SecretEnvSource(_messages.Message):
   key-value pairs as environment variables.
 
   Fields:
-    localObjectReference: The Secret to select from.
-    optional: Specify whether the Secret must be defined +optional
+    localObjectReference: This field should not be used directly as it is
+      meant to be inlined directly into the message. Use the "name" field
+      instead.
+    name: Cloud Run fully managed: not supported  Cloud Run for Anthos:
+      supported  The Secret to select from.
+    optional: Cloud Run fully managed: not supported  Cloud Run for Anthos:
+      supported  Specify whether the Secret must be defined +optional
   """
 
   localObjectReference = _messages.MessageField('LocalObjectReference', 1)
-  optional = _messages.BooleanField(2)
+  name = _messages.StringField(2)
+  optional = _messages.BooleanField(3)
+
+
+class SecretKeySelector(_messages.Message):
+  r"""Cloud Run fully managed: not supported  Cloud Run on GKE: supported
+  SecretKeySelector selects a key of a Secret.
+
+  Fields:
+    key: Cloud Run fully managed: not supported  Cloud Run on GKE: supported
+      The key of the secret to select from.  Must be a valid secret key.
+    localObjectReference: This field should not be used directly as it is
+      meant to be inlined directly into the message. Use the "name" field
+      instead.
+    name: Cloud Run fully managed: not supported  Cloud Run on GKE: supported
+      The name of the secret in the pod's namespace to select from.
+    optional: Cloud Run fully managed: not supported  Cloud Run on GKE:
+      supported  Specify whether the Secret or its key must be defined
+      +optional
+  """
+
+  key = _messages.StringField(1)
+  localObjectReference = _messages.MessageField('LocalObjectReference', 2)
+  name = _messages.StringField(3)
+  optional = _messages.BooleanField(4)
+
+
+class SecretVolumeSource(_messages.Message):
+  r"""The contents of the target Secret's Data field will be presented in a
+  volume as files using the keys in the Data field as the file names.
+
+  Fields:
+    defaultMode: Mode bits to use on created files by default. Must be a value
+      between 0 and 0777. Defaults to 0644. Directories within the path are
+      not affected by this setting. This might be in conflict with other
+      options that affect the file mode, like fsGroup, and the result can be
+      other mode bits set.
+    items: If unspecified, each key-value pair in the Data field of the
+      referenced Secret will be projected into the volume as a file whose name
+      is the key and content is the value. If specified, the listed keys will
+      be projected into the specified paths, and unlisted keys will not be
+      present. If a key is specified which is not present in the Secret, the
+      volume setup will error unless it is marked optional.
+    optional: Specify whether the Secret or its keys must be defined.
+    secretName: Name of the secret in the container's namespace to use.
+  """
+
+  defaultMode = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+  items = _messages.MessageField('KeyToPath', 2, repeated=True)
+  optional = _messages.BooleanField(3)
+  secretName = _messages.StringField(4)
 
 
 class SecurityContext(_messages.Message):
@@ -2596,9 +4102,9 @@ class SecurityContext(_messages.Message):
   capabilities = _messages.MessageField('Capabilities', 2)
   privileged = _messages.BooleanField(3)
   readOnlyRootFilesystem = _messages.BooleanField(4)
-  runAsGroup = _messages.IntegerField(5)
+  runAsGroup = _messages.IntegerField(5, variant=_messages.Variant.INT32)
   runAsNonRoot = _messages.BooleanField(6)
-  runAsUser = _messages.IntegerField(7)
+  runAsUser = _messages.IntegerField(7, variant=_messages.Variant.INT32)
   seLinuxOptions = _messages.MessageField('SELinuxOptions', 8)
 
 
@@ -2615,7 +4121,8 @@ class Service(_messages.Message):
   https://github.com/knative/serving/blob/master/docs/spec/overview.md#service
 
   Fields:
-    apiVersion: The API version for this call such as "v1alpha1".
+    apiVersion: The API version for this call such as
+      "serving.knative.dev/v1alpha1".
     kind: The kind of resource, in this case "Service".
     metadata: Metadata associated with this Service, including name,
       namespace, labels, and annotations.
@@ -2641,6 +4148,8 @@ class ServiceCondition(_messages.Message):
       +optional
     reason: One-word CamelCase reason for the condition's last transition.
       +optional
+    severity: How to interpret failures of this condition, one of Error,
+      Warning, Info +optional
     status: Status of the condition, one of True, False, Unknown.
     type: ServiceConditionType is used to communicate the status of the
       reconciliation process. See also:
@@ -2653,8 +4162,9 @@ class ServiceCondition(_messages.Message):
   lastTransitionTime = _messages.StringField(1)
   message = _messages.StringField(2)
   reason = _messages.StringField(3)
-  status = _messages.StringField(4)
-  type = _messages.StringField(5)
+  severity = _messages.StringField(4)
+  status = _messages.StringField(5)
+  type = _messages.StringField(6)
 
 
 class ServiceSpec(_messages.Message):
@@ -2665,22 +4175,43 @@ class ServiceSpec(_messages.Message):
     generation: Deprecated and not currently populated by Cloud Run. See
       metadata.generation instead, which is the sequence number containing the
       latest generation of the desired state.  Read-only.
+    manual: Manual contains the options for configuring a manual service. See
+      ServiceSpec for more details.  Not currently supported by Cloud Run.
     pinned: Pins this service to a specific revision name. The revision must
-      be owned by the configuration provided.  Not currently supported by
+      be owned by the configuration provided.  Deprecated and not supported by
       Cloud Run. +optional
+    release: Release enables gradual promotion of new revisions by allowing
+      traffic to be split between two revisions. This type replaces the
+      deprecated Pinned type.  Not currently supported by Cloud Run.
     runLatest: RunLatest defines a simple Service. It will automatically
       configure a route that keeps the latest ready revision from the supplied
       configuration running. +optional
+    template: Template holds the latest specification for the Revision to be
+      stamped out.
+    traffic: Traffic specifies how to distribute traffic over a collection of
+      Knative Revisions and Configurations.
   """
 
   generation = _messages.IntegerField(1, variant=_messages.Variant.INT32)
-  pinned = _messages.MessageField('ServiceSpecPinnedType', 2)
-  runLatest = _messages.MessageField('ServiceSpecRunLatest', 3)
+  manual = _messages.MessageField('ServiceSpecManualType', 2)
+  pinned = _messages.MessageField('ServiceSpecPinnedType', 3)
+  release = _messages.MessageField('ServiceSpecReleaseType', 4)
+  runLatest = _messages.MessageField('ServiceSpecRunLatest', 5)
+  template = _messages.MessageField('RevisionTemplate', 6)
+  traffic = _messages.MessageField('TrafficTarget', 7, repeated=True)
+
+
+class ServiceSpecManualType(_messages.Message):
+  r"""ServiceSpecManualType contains the options for configuring a manual
+  service. See ServiceSpec for more details.  Not currently supported by Cloud
+  Run.
+  """
+
 
 
 class ServiceSpecPinnedType(_messages.Message):
   r"""ServiceSpecPinnedType Pins this service to a specific revision name. The
-  revision must be owned by the configuration provided.  Not currently
+  revision must be owned by the configuration provided.  Deprecated and not
   supported by Cloud Run.
 
   Fields:
@@ -2691,6 +4222,29 @@ class ServiceSpecPinnedType(_messages.Message):
 
   configuration = _messages.MessageField('ConfigurationSpec', 1)
   revisionName = _messages.StringField(2)
+
+
+class ServiceSpecReleaseType(_messages.Message):
+  r"""ServiceSpecReleaseType contains the options for slowly releasing
+  revisions. See ServiceSpec for more details.  Not currently supported by
+  Cloud Run.
+
+  Fields:
+    configuration: The configuration for this service. All revisions from this
+      service must come from a single configuration.
+    revisions: Revisions is an ordered list of 1 or 2 revisions. The first is
+      the current revision, and the second is the candidate revision. If a
+      single revision is provided, traffic will be pinned at that revision.
+      "@latest" is a shortcut for usage that refers to the latest created
+      revision by the configuration.
+    rolloutPercent: RolloutPercent is the percent of traffic that should be
+      sent to the candidate revision, i.e. the 2nd revision in the revisions
+      list. Valid values are between 0 and 99 inclusive.
+  """
+
+  configuration = _messages.MessageField('ConfigurationSpec', 1)
+  revisions = _messages.StringField(2, repeated=True)
+  rolloutPercent = _messages.IntegerField(3, variant=_messages.Variant.INT32)
 
 
 class ServiceSpecRunLatest(_messages.Message):
@@ -2708,7 +4262,7 @@ class ServiceStatus(_messages.Message):
   r"""The current state of the Service. Output only.
 
   Fields:
-    address: From RouteStatus. Similar to domain, information on where the
+    address: From RouteStatus. Similar to url, information on where the
       service is available on HTTP.
     conditions: Conditions communicates information about ongoing/complete
       reconciliation processes that bring the "spec" inline with the observed
@@ -2731,6 +4285,9 @@ class ServiceStatus(_messages.Message):
       distribution. These entries will always contain RevisionName references.
       When ConfigurationName appears in the spec, this will hold the
       LatestReadyRevisionName that we last observed.
+    url: From RouteStatus. URL holds the url that will distribute traffic over
+      the provided traffic targets. It generally has the form https://{route-
+      hash}-{project-hash}-{cluster-level-suffix}.a.run.app
   """
 
   address = _messages.MessageField('Addressable', 1)
@@ -2740,6 +4297,7 @@ class ServiceStatus(_messages.Message):
   latestReadyRevisionName = _messages.StringField(5)
   observedGeneration = _messages.IntegerField(6, variant=_messages.Variant.INT32)
   traffic = _messages.MessageField('TrafficTarget', 7, repeated=True)
+  url = _messages.StringField(8)
 
 
 class SetIamPolicyRequest(_messages.Message):
@@ -2871,6 +4429,11 @@ class TrafficTarget(_messages.Message):
       ready" revision to the new one. This field is never set in Route's
       status, only its spec. This is mutually exclusive with RevisionName.
       Cloud Run currently supports a single ConfigurationName.
+    latestRevision: LatestRevision may be optionally provided to indicate that
+      the latest ready Revision of the Configuration should be used for this
+      traffic target. When provided LatestRevision must be true if
+      RevisionName is empty; it must be false when RevisionName is non-empty.
+      +optional
     name: Name is optionally used to expose a dedicated hostname for
       referencing this target exclusively.  Not currently supported by Cloud
       Run. +optional
@@ -2881,12 +4444,171 @@ class TrafficTarget(_messages.Message):
     revisionName: RevisionName of a specific revision to which to send this
       portion of traffic. This is mutually exclusive with ConfigurationName.
       Providing RevisionName in spec is not currently supported by Cloud Run.
+    tag: Tag is optionally used to expose a dedicated url for referencing this
+      target exclusively.  Not currently supported in Cloud Run. +optional
+    url: Output only. URL displays the URL for accessing named traffic
+      targets. URL is displayed in status, and is disallowed on spec. URL must
+      contain a scheme (e.g. http://) and a hostname, but may not contain
+      anything else (e.g. basic auth, url path, etc.  Not currently supported
+      in Cloud Run.
   """
 
   configurationName = _messages.StringField(1)
+  latestRevision = _messages.BooleanField(2)
+  name = _messages.StringField(3)
+  percent = _messages.IntegerField(4, variant=_messages.Variant.INT32)
+  revisionName = _messages.StringField(5)
+  tag = _messages.StringField(6)
+  url = _messages.StringField(7)
+
+
+class Trigger(_messages.Message):
+  r"""A Trigger object.
+
+  Fields:
+    apiVersion: The API version for this call such as
+      "eventing.knative.dev/v1alpha1".
+    kind: The kind of resource, in this case "Trigger".
+    metadata: Metadata associated with this Trigger.
+    spec: Spec defines the desired state of the Trigger.
+    status: Optional. Status represents the current state of the Trigger. This
+      data may be out of date.
+  """
+
+  apiVersion = _messages.StringField(1)
+  kind = _messages.StringField(2)
+  metadata = _messages.MessageField('ObjectMeta', 3)
+  spec = _messages.MessageField('TriggerSpec', 4)
+  status = _messages.MessageField('TriggerStatus', 5)
+
+
+class TriggerCondition(_messages.Message):
+  r"""TriggerCondition contains state information for an Trigger.
+
+  Fields:
+    lastTransitionTime: Optional. Last time the condition transitioned from
+      one status to another.
+    message: Optional. Human readable message indicating details about the
+      current status.
+    reason: Optional. One-word CamelCase reason for the condition's current
+      status.
+    severity: Optional. How to interpret failures of this condition, one of
+      Error, Warning, Info
+    status: Status of the condition, one of True, False, Unknown.
+    type: Type of Trigger condition.
+  """
+
+  lastTransitionTime = _messages.StringField(1)
+  message = _messages.StringField(2)
+  reason = _messages.StringField(3)
+  severity = _messages.StringField(4)
+  status = _messages.StringField(5)
+  type = _messages.StringField(6)
+
+
+class TriggerFilter(_messages.Message):
+  r"""A TriggerFilter object.
+
+  Messages:
+    AttributesValue: Optional. Attributes filters events by exact match on
+      event context attributes. Each key in the map is compared with the
+      equivalent key in the event context. An event passes the filter if all
+      values are equal to the specified values.  Nested context attributes are
+      not supported as keys. Only string values are supported. Note that this
+      field is optional in knative. In fully managed, 'type' attribute is
+      required due to different broker implementation.
+
+  Fields:
+    attributes: Optional. Attributes filters events by exact match on event
+      context attributes. Each key in the map is compared with the equivalent
+      key in the event context. An event passes the filter if all values are
+      equal to the specified values.  Nested context attributes are not
+      supported as keys. Only string values are supported. Note that this
+      field is optional in knative. In fully managed, 'type' attribute is
+      required due to different broker implementation.
+  """
+
+  @encoding.MapUnrecognizedFields('additionalProperties')
+  class AttributesValue(_messages.Message):
+    r"""Optional. Attributes filters events by exact match on event context
+    attributes. Each key in the map is compared with the equivalent key in the
+    event context. An event passes the filter if all values are equal to the
+    specified values.  Nested context attributes are not supported as keys.
+    Only string values are supported. Note that this field is optional in
+    knative. In fully managed, 'type' attribute is required due to different
+    broker implementation.
+
+    Messages:
+      AdditionalProperty: An additional property for a AttributesValue object.
+
+    Fields:
+      additionalProperties: Additional properties of type AttributesValue
+    """
+
+    class AdditionalProperty(_messages.Message):
+      r"""An additional property for a AttributesValue object.
+
+      Fields:
+        key: Name of the additional property.
+        value: A string attribute.
+      """
+
+      key = _messages.StringField(1)
+      value = _messages.StringField(2)
+
+    additionalProperties = _messages.MessageField('AdditionalProperty', 1, repeated=True)
+
+  attributes = _messages.MessageField('AttributesValue', 1)
+
+
+class TriggerSpec(_messages.Message):
+  r"""The desired state of the Trigger.
+
+  Fields:
+    broker: Broker is the broker that this trigger receives events from. If
+      not specified, will default to 'default'.  Not currently supported by
+      Cloud Run.
+    filter: Optional. Filter is the filter to apply against all events from
+      the Broker. Only events that pass this filter will be sent to the
+      Subscriber. Note that filter is optional in knative and is only required
+      in fully managed due to different broker implementation.
+    subscriber: Sink is the addressable that will receive events.
+  """
+
+  broker = _messages.StringField(1)
+  filter = _messages.MessageField('TriggerFilter', 2)
+  subscriber = _messages.MessageField('Destination', 3)
+
+
+class TriggerStatus(_messages.Message):
+  r"""TriggerStatus represents the current state of a Trigger.
+
+  Fields:
+    conditions: Array of observed TriggerConditions, indicating the current
+      state of the Trigger.
+    observedGeneration: ObservedGeneration is the 'Generation' of the Trigger
+      that was last processed by the controller.
+    subscriberUri: SubscriberURI is the resolved URI of the receiver for this
+      Trigger.
+  """
+
+  conditions = _messages.MessageField('TriggerCondition', 1, repeated=True)
+  observedGeneration = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  subscriberUri = _messages.StringField(3)
+
+
+class Volume(_messages.Message):
+  r"""Volume represents a named volume in a container.
+
+  Fields:
+    configMap: A ConfigMapVolumeSource attribute.
+    name: Volume's name.
+    secret: A SecretVolumeSource attribute.
+  """
+
+  configMap = _messages.MessageField('ConfigMapVolumeSource', 1)
   name = _messages.StringField(2)
-  percent = _messages.IntegerField(3, variant=_messages.Variant.INT32)
-  revisionName = _messages.StringField(4)
+  secret = _messages.MessageField('SecretVolumeSource', 3)
 
 
 class VolumeDevice(_messages.Message):

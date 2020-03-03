@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,6 @@ import os
 from googlecloudsdk.api_lib.dns import import_util
 from googlecloudsdk.api_lib.dns import transaction_util
 from googlecloudsdk.api_lib.dns import util
-from googlecloudsdk.api_lib.util import apis
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.dns import flags
 from googlecloudsdk.core import log
@@ -40,7 +39,7 @@ class Execute(base.ListCommand):
 
   To execute the transaction, run:
 
-    $ {command} --zone MANAGED_ZONE
+    $ {command} --zone=MANAGED_ZONE
   """
 
   @staticmethod
@@ -55,6 +54,8 @@ class Execute(base.ListCommand):
     # this patter of checking ReleaseTrack. Break this into multiple classes.
     if self.ReleaseTrack() == base.ReleaseTrack.BETA:
       api_version = 'v1beta2'
+    elif self.ReleaseTrack() == base.ReleaseTrack.ALPHA:
+      api_version = 'v1alpha2'
 
     with transaction_util.TransactionFile(args.transaction_file) as trans_file:
       change = transaction_util.ChangeFromYamlFile(
@@ -67,7 +68,7 @@ class Execute(base.ListCommand):
       os.remove(args.transaction_file)
       return None
 
-    dns = apis.GetClientInstance('dns', api_version)
+    dns = util.GetApiClient(api_version)
     zone_ref = util.GetRegistry(api_version).Parse(
         args.zone,
         params={

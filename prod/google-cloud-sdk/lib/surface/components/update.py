@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,9 +19,12 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.components import util
+from googlecloudsdk.core import properties
 from googlecloudsdk.core.console import console_io
+from googlecloudsdk.core.util.prompt_helper import OptInPrompter
 
 
 # This command is silent as does not produce any resource output.
@@ -34,16 +37,16 @@ class Update(base.SilentCommand):
   local workstation.
   """
   detailed_help = {
-      'DESCRIPTION': """\
+      'DESCRIPTION': """
           {description}
 
           The command lists all components it is about to update, and asks for
           confirmation before proceeding.
 
           By default, this command will update all components to their latest
-          version. This can be configured by using the --version flag to choose
-          a specific version to update to. This version may also be a version
-          older than the one that is currently installed.
+          version. This can be configured by using the `--version` flag to
+          choose a specific version to update to. This version may also be a
+          version older than the one that is currently installed.
 
           You can see your current Cloud SDK version by running:
 
@@ -56,14 +59,14 @@ class Update(base.SilentCommand):
           If you run this command without the `--version` flag and you already
           have the latest version installed, no update will be performed.
       """,
-      'EXAMPLES': """\
+      'EXAMPLES': """
           To update all installed components to the latest version:
 
             $ {command}
 
           To update all installed components to version 1.2.3:
 
-            $ {command} --version 1.2.3
+            $ {command} --version=1.2.3
       """,
   }
 
@@ -88,9 +91,9 @@ class Update(base.SilentCommand):
 
   def Run(self, args):
     """Runs the list command."""
-
+    if properties.VALUES.core.disable_usage_reporting.GetBool() in [None, True]:
+      OptInPrompter().Prompt()
     update_manager = util.GetUpdateManager(args)
-
     if args.component_ids and not args.version:
       install = console_io.PromptContinue(
           message='You have specified individual components to update.  If you '

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -28,15 +28,11 @@ from googlecloudsdk.core import log
 from googlecloudsdk.core import properties
 
 from oauth2client import client
+import six
 
 
 class PrintAccessToken(base.Command):
   r"""Print an access token for your current Application Default Credentials.
-
-  Note: Consider using a service account and the complementary `gcloud auth
-  activate-service-account` to authorize access to Google Cloud Platform. For
-  details on authorizing with a service account, see
-  https://cloud.google.com/sdk/docs/authorizing#authorizing_with_a_service_account.
 
   {command} generates and prints an access token for the current
   Application Default Credential (ADC). The ADC can be specified either by
@@ -62,12 +58,20 @@ class PrintAccessToken(base.Command):
 
   def Run(self, args):
     """Run the helper command."""
+    impersonate_service_account = (
+        properties.VALUES.auth.impersonate_service_account.Get())
+    if impersonate_service_account:
+      log.warning(
+          "Impersonate service account '{}' is detected. This command cannot be"
+          ' used to print the access token for an impersonate account. The '
+          "token below is still the application default credentials' access "
+          'token.'.format(impersonate_service_account))
 
     try:
       creds = client.GoogleCredentials.get_application_default()
     except client.ApplicationDefaultCredentialsError as e:
       log.debug(e, exc_info=True)
-      raise c_exc.ToolException(str(e))
+      raise c_exc.ToolException(six.text_type(e))
 
     if creds.create_scoped_required():
       creds_type = creds.serialization_data['type']

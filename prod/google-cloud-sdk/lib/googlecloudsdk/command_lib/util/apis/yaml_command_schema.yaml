@@ -1,4 +1,4 @@
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -62,12 +62,14 @@ definitions:
     items:
       type: object
       additionalProperties: false
+      required: [arg_value]
       properties:
         # The choice as it appears on the command line
         # (should be lower-kebab-case).
         arg_value: {type: [string, number, boolean]}
         # The string representation of the API enum value that will be used
-        # when this choice is selected.
+        # when this choice is selected. Default is derived from arg_value by
+        # converting to upper case and replacing hyphens with underscores.
         enum_value: {type: string}
         # The help text to show next to the choice on the man page.
         help_text: {type: string}
@@ -111,6 +113,9 @@ definitions:
       fallthroughs:
         type: array
         items: {$ref: "#/definitions/fallthrough"}
+      # The module path to a class that implements remote completion
+      # for this resource.
+      completer: {$ref: "#/definitions/python_hook"}
       # The ID field of the return value in the response for completions.
       completion_id_field: {type: string}
       # Field names to use as static field values in any request to
@@ -307,7 +312,7 @@ required: [request, help_text, arguments]
 properties:
 
   # Determines whether the command is visible in help text or not.
-  is_hidden: {type: boolean}
+  hidden: {type: boolean}
 
   # Determines which release tracks this command implementation will apply to.
   release_tracks:
@@ -349,7 +354,7 @@ properties:
       .*: {type: string}
 
   # Attributes about the API request the command will make.
-  request:
+  request: &request
     description: Describes information about the API that this command calls
     type: object
     additionalProperties: false
@@ -372,6 +377,9 @@ properties:
       display_resource_type: {type: string}
       # The API version to use, defaults to API set as gcloud default.
       api_version: {type: string}
+      # If true, use google-auth library for authentication. Defaults to false and using
+      # the oauth2client library.
+      use_google_auth: {type: boolean}
       # The name of the method to call to perform the operation. Optional if
       # your command is one of the supported command types (not Generic).
       method: {type: string}
@@ -482,7 +490,7 @@ properties:
 
   # If present, indicates that this API method uses operations and the --async
   # flag will be set up.
-  async:
+  async: &async
     description: Describes how to poll and report the result of the operation
     type: object
     additionalProperties: false
@@ -495,6 +503,9 @@ properties:
       api_version: {type: string}
       # The API method to call to get the operation ('get' by default).
       method: {type: string}
+      # The message to print when the request is issued. The default depends on
+      # the command type.
+      request_issued_message: {type: string}
       # The field in the operation message that corresponds to the operation's
       # full name ('name' by default). Not used by Wait commands.
       response_name_field: {type: string}
@@ -515,6 +526,16 @@ properties:
       # extract_resource_result is False, this is an attribute on the
       # operation, if True it is on the resource itself.
       result_attribute: {$ref: "#/definitions/attribute"}
+      # The module path to a function to call to modify the API request
+      # before it is invoked. All registered arguments will be processed
+      # into the request, before this is called. This is a function
+      # that takes 3 arguments: a resource ref to the parsed resource,
+      # the parsed args namespace, and the created request. It must return
+      # an apitools request message that will be passed to the API method
+      # defined in this section.
+      modify_request_hooks:
+        type: array
+        items: {$ref: "#/definitions/python_hook"}
       state:
         type: object
         additionalProperties: false
@@ -623,6 +644,13 @@ properties:
       params:
         type: array
         items: {$ref: "#/definitions/argument"}
+      labels:
+        type: object
+        additionalProperties: false
+        description: Handles resource labels for resource create/update (go/api-label)
+        required: [api_field]
+        properties:
+          api_field: {type: string}
 
   # Information about how to collect input from the user.
   input:
@@ -641,7 +669,8 @@ properties:
     properties:
       # Corresponds to the default output format setting on the command.
       format: {type: string}
-
+      # Corresponds to the default output flatten setting on the command.
+      flatten: {type: array}
 
   # Additional information for handling the IAM Commands.
   iam:
@@ -662,6 +691,10 @@ properties:
       # The indicator for IAM condition. If True, the command can accept condition
       # as part of a IAM policy binding. Default is False.
       enable_condition: {type: boolean}
+      # Override policy version. Default is None.
+      policy_version: {type: number}
+      # Path to the policy_version field for APIs that use non-standard mapping.
+      get_iam_policy_version_path: {type: string}
 
   # Additional information for handling the update commands.
   update:
@@ -674,3 +707,26 @@ properties:
       # Disable the field mask auto generation in the update commands.
       # False by default.
       disable_auto_field_mask: {type: boolean}
+
+  # Additional information for handling the import commands.
+  import:
+    type: object
+    additionalProperties: false
+    properties:
+      # True when the import command should return early if it detects the imported resource
+      # has no changes from the resource on the service.
+      abort_if_equivalent: {type: boolean}
+      # True when the import command should create the resource if it does not already exist
+      # on the service.
+      create_if_not_exist: {type: boolean}
+      # Attributes about the create request the command will make if the resource does not already
+      # exist on the service. The create request will use all configuration from the parent
+      # request configuration unless explicitly specified here.
+      create_request: *request
+      # Attributes about the asynchronous behavior for the above create command. The create request
+      # will use all settings from the parent asynchronous configuration unless explicitly
+      # specified here.
+      create_async: *async
+      # If set, the create command will not use operations, and will not use the settings
+      # form the parent asynchronous configuration.
+      no_create_async: {type: boolean}

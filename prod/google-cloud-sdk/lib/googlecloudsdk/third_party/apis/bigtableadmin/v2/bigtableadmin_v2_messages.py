@@ -26,8 +26,7 @@ class AppProfile(_messages.Message):
       protection to apply. See
       [Wikipedia](https://en.wikipedia.org/wiki/HTTP_ETag) and [RFC
       7232](https://tools.ietf.org/html/rfc7232#section-2.3) for more details.
-    multiClusterRoutingUseAny: Use a multi-cluster routing policy that may
-      pick any cluster.
+    multiClusterRoutingUseAny: Use a multi-cluster routing policy.
     name: (`OutputOnly`) The unique name of the app profile. Values are of the
       form `projects/<project>/instances/<instance>/appProfiles/_a-zA-Z0-9*`.
     singleClusterRouting: Use a single-cluster routing policy.
@@ -51,16 +50,16 @@ class AuditConfig(_messages.Message):
   multiple AuditConfigs:      {       "audit_configs": [         {
   "service": "allServices"           "audit_log_configs": [             {
   "log_type": "DATA_READ",               "exempted_members": [
-  "user:foo@gmail.com"               ]             },             {
+  "user:jose@example.com"               ]             },             {
   "log_type": "DATA_WRITE",             },             {
   "log_type": "ADMIN_READ",             }           ]         },         {
-  "service": "fooservice.googleapis.com"           "audit_log_configs": [
+  "service": "sampleservice.googleapis.com"           "audit_log_configs": [
   {               "log_type": "DATA_READ",             },             {
   "log_type": "DATA_WRITE",               "exempted_members": [
-  "user:bar@gmail.com"               ]             }           ]         }
-  ]     }  For fooservice, this policy enables DATA_READ, DATA_WRITE and
-  ADMIN_READ logging. It also exempts foo@gmail.com from DATA_READ logging,
-  and bar@gmail.com from DATA_WRITE logging.
+  "user:aliya@example.com"               ]             }           ]         }
+  ]     }  For sampleservice, this policy enables DATA_READ, DATA_WRITE and
+  ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging,
+  and aliya@example.com from DATA_WRITE logging.
 
   Fields:
     auditLogConfigs: The configuration for logging of each type of permission.
@@ -76,10 +75,10 @@ class AuditConfig(_messages.Message):
 class AuditLogConfig(_messages.Message):
   r"""Provides the configuration for logging a type of permissions. Example:
   {       "audit_log_configs": [         {           "log_type": "DATA_READ",
-  "exempted_members": [             "user:foo@gmail.com"           ]
+  "exempted_members": [             "user:jose@example.com"           ]
   },         {           "log_type": "DATA_WRITE",         }       ]     }
   This enables 'DATA_READ' and 'DATA_WRITE' logging, while exempting
-  foo@gmail.com from DATA_READ logging.
+  jose@example.com from DATA_READ logging.
 
   Enums:
     LogTypeValueValuesEnum: The log type that this config enables.
@@ -106,6 +105,79 @@ class AuditLogConfig(_messages.Message):
 
   exemptedMembers = _messages.StringField(1, repeated=True)
   logType = _messages.EnumField('LogTypeValueValuesEnum', 2)
+
+
+class Backup(_messages.Message):
+  r"""A backup of a Cloud Bigtable table.
+
+  Enums:
+    StateValueValuesEnum: Output only. The current state of the backup.
+
+  Fields:
+    endTime: Output only. `end_time` is the time that the backup was finished.
+      The row data in the backup will be no newer than this timestamp.
+    expireTime: Required for the CreateBackup operation. The expiration time
+      of the backup, with microseconds granularity that must be at least 6
+      hours and at most 30 days from the time the request is received. Once
+      the `expire_time` has passed, Cloud Bigtable will delete the backup and
+      free the resources used by the backup.
+    name: Output only. A globally unique identifier for the backup which
+      cannot be changed. Values are of the form
+      `projects/<project>/instances/<instance>/clusters/<cluster>/    backups
+      /_a-zA-Z0-9*` The final segment of the name must be between 1 and 50
+      characters in length.  The backup is stored in the cluster identified by
+      the prefix of the backup name of the form
+      `projects/<project>/instances/<instance>/clusters/<cluster>`.
+    sizeBytes: Output only. Size of the backup in bytes.
+    sourceTable: Immutable. Required for the CreateBackup operation. Name of
+      the table from which this backup was created. This needs to be in the
+      same instance as the backup. Values are of the form
+      `projects/<project>/instances/<instance>/tables/<source_table>`.
+    startTime: Output only. `start_time` is the time that the backup was
+      started (i.e. approximately the time the CreateBackup request is
+      received).  The row data in this backup will be no older than this
+      timestamp.
+    state: Output only. The current state of the backup.
+  """
+
+  class StateValueValuesEnum(_messages.Enum):
+    r"""Output only. The current state of the backup.
+
+    Values:
+      STATE_UNSPECIFIED: Not specified.
+      CREATING: The pending backup is still being created. Operations on the
+        backup may fail with `FAILED_PRECONDITION` in this state.
+      READY: The backup is complete and ready for use.
+    """
+    STATE_UNSPECIFIED = 0
+    CREATING = 1
+    READY = 2
+
+  endTime = _messages.StringField(1)
+  expireTime = _messages.StringField(2)
+  name = _messages.StringField(3)
+  sizeBytes = _messages.IntegerField(4)
+  sourceTable = _messages.StringField(5)
+  startTime = _messages.StringField(6)
+  state = _messages.EnumField('StateValueValuesEnum', 7)
+
+
+class BackupInfo(_messages.Message):
+  r"""Information about a backup.
+
+  Fields:
+    backup: Output only. Name of the backup.
+    endTime: Output only. This time that the backup was finished. Row data in
+      the backup will be no newer than this timestamp.
+    sourceTable: Output only. Name of the table the backup was created from.
+    startTime: Output only. The time that the backup was started. Row data in
+      the backup will be no older than this timestamp.
+  """
+
+  backup = _messages.StringField(1)
+  endTime = _messages.StringField(2)
+  sourceTable = _messages.StringField(3)
+  startTime = _messages.StringField(4)
 
 
 class BigtableadminOperationsCancelRequest(_messages.Message):
@@ -159,14 +231,14 @@ class BigtableadminProjectsInstancesAppProfilesCreateRequest(_messages.Message):
 
   Fields:
     appProfile: A AppProfile resource to be passed as the request body.
-    appProfileId: The ID to be used when referring to the new app profile
-      within its instance, e.g., just `myprofile` rather than
+    appProfileId: Required. The ID to be used when referring to the new app
+      profile within its instance, e.g., just `myprofile` rather than
       `projects/myproject/instances/myinstance/appProfiles/myprofile`.
     ignoreWarnings: If true, ignore safety checks when creating the app
       profile.
-    parent: The unique name of the instance in which to create the new app
-      profile. Values are of the form
-      `projects/<project>/instances/<instance>`.
+    parent: Required. The unique name of the instance in which to create the
+      new app profile. Values are of the form
+      `projects/{project}/instances/{instance}`.
   """
 
   appProfile = _messages.MessageField('AppProfile', 1)
@@ -179,11 +251,11 @@ class BigtableadminProjectsInstancesAppProfilesDeleteRequest(_messages.Message):
   r"""A BigtableadminProjectsInstancesAppProfilesDeleteRequest object.
 
   Fields:
-    ignoreWarnings: If true, ignore safety checks when deleting the app
-      profile.
-    name: The unique name of the app profile to be deleted. Values are of the
-      form
-      `projects/<project>/instances/<instance>/appProfiles/<app_profile>`.
+    ignoreWarnings: Required. If true, ignore safety checks when deleting the
+      app profile.
+    name: Required. The unique name of the app profile to be deleted. Values
+      are of the form
+      `projects/{project}/instances/{instance}/appProfiles/{app_profile}`.
   """
 
   ignoreWarnings = _messages.BooleanField(1)
@@ -194,8 +266,9 @@ class BigtableadminProjectsInstancesAppProfilesGetRequest(_messages.Message):
   r"""A BigtableadminProjectsInstancesAppProfilesGetRequest object.
 
   Fields:
-    name: The unique name of the requested app profile. Values are of the form
-      `projects/<project>/instances/<instance>/appProfiles/<app_profile>`.
+    name: Required. The unique name of the requested app profile. Values are
+      of the form
+      `projects/{project}/instances/{instance}/appProfiles/{app_profile}`.
   """
 
   name = _messages.StringField(1, required=True)
@@ -205,12 +278,17 @@ class BigtableadminProjectsInstancesAppProfilesListRequest(_messages.Message):
   r"""A BigtableadminProjectsInstancesAppProfilesListRequest object.
 
   Fields:
-    pageSize: Maximum number of results per page. CURRENTLY UNIMPLEMENTED AND
-      IGNORED.
+    pageSize: Maximum number of results per page.  A page_size of zero lets
+      the server choose the number of items to return. A page_size which is
+      strictly positive will return at most that many items. A negative
+      page_size will cause an error.  Following the first request, subsequent
+      paginated calls are not required to pass a page_size. If a page_size is
+      set in subsequent calls, it must match the page_size given in the first
+      request.
     pageToken: The value of `next_page_token` returned by a previous call.
-    parent: The unique name of the instance for which a list of app profiles
-      is requested. Values are of the form
-      `projects/<project>/instances/<instance>`. Use `<instance> = '-'` to
+    parent: Required. The unique name of the instance for which a list of app
+      profiles is requested. Values are of the form
+      `projects/{project}/instances/{instance}`. Use `{instance} = '-'` to
       list AppProfiles for all Instances in a project, e.g.,
       `projects/myproject/instances/-`.
   """
@@ -229,8 +307,8 @@ class BigtableadminProjectsInstancesAppProfilesPatchRequest(_messages.Message):
       profile.
     name: (`OutputOnly`) The unique name of the app profile. Values are of the
       form `projects/<project>/instances/<instance>/appProfiles/_a-zA-Z0-9*`.
-    updateMask: The subset of app profile fields which should be replaced. If
-      unset, all fields will be replaced.
+    updateMask: Required. The subset of app profile fields which should be
+      replaced. If unset, all fields will be replaced.
   """
 
   appProfile = _messages.MessageField('AppProfile', 1)
@@ -239,17 +317,190 @@ class BigtableadminProjectsInstancesAppProfilesPatchRequest(_messages.Message):
   updateMask = _messages.StringField(4)
 
 
+class BigtableadminProjectsInstancesClustersBackupsCreateRequest(_messages.Message):
+  r"""A BigtableadminProjectsInstancesClustersBackupsCreateRequest object.
+
+  Fields:
+    backup: A Backup resource to be passed as the request body.
+    backupId: Required. The id of the backup to be created. The `backup_id`
+      along with the parent `parent` are combined as
+      <parent>/backups/<backup_id> to create the full backup name, of the
+      form: `projects/<project>/instances/<instance>/clusters/<cluster>/backup
+      s/<backup_id>`. This string must be between 1 and 50 characters in
+      length and match the regex _a-zA-Z0-9*.
+    parent: Required. This must be one of the clusters in the instance in
+      which this table is located. The backup will be stored in this cluster.
+      Values are of the form
+      `projects/<project>/instances/<instance>/clusters/<cluster>`.
+  """
+
+  backup = _messages.MessageField('Backup', 1)
+  backupId = _messages.StringField(2)
+  parent = _messages.StringField(3, required=True)
+
+
+class BigtableadminProjectsInstancesClustersBackupsDeleteRequest(_messages.Message):
+  r"""A BigtableadminProjectsInstancesClustersBackupsDeleteRequest object.
+
+  Fields:
+    name: Required. Name of the backup to delete. Values are of the form `proj
+      ects/<project>/instances/<instance>/clusters/<cluster>/backups/<backup>`
+      .
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class BigtableadminProjectsInstancesClustersBackupsGetIamPolicyRequest(_messages.Message):
+  r"""A BigtableadminProjectsInstancesClustersBackupsGetIamPolicyRequest
+  object.
+
+  Fields:
+    getIamPolicyRequest: A GetIamPolicyRequest resource to be passed as the
+      request body.
+    resource: REQUIRED: The resource for which the policy is being requested.
+      See the operation documentation for the appropriate value for this
+      field.
+  """
+
+  getIamPolicyRequest = _messages.MessageField('GetIamPolicyRequest', 1)
+  resource = _messages.StringField(2, required=True)
+
+
+class BigtableadminProjectsInstancesClustersBackupsGetRequest(_messages.Message):
+  r"""A BigtableadminProjectsInstancesClustersBackupsGetRequest object.
+
+  Fields:
+    name: Required. Name of the backup. Values are of the form `projects/<proj
+      ect>/instances/<instance>/clusters/<cluster>/backups/<backup>`.
+  """
+
+  name = _messages.StringField(1, required=True)
+
+
+class BigtableadminProjectsInstancesClustersBackupsListRequest(_messages.Message):
+  r"""A BigtableadminProjectsInstancesClustersBackupsListRequest object.
+
+  Fields:
+    filter: A filter expression that filters backups listed in the response.
+      The expression must specify the field name, a comparison operator, and
+      the value that you want to use for filtering. The value must be a
+      string, a number, or a boolean. The comparison operator must be <, >,
+      <=, >=, !=, =, or :. Colon ':' represents a HAS operator which is
+      roughly synonymous with equality. Filter rules are case insensitive.
+      The fields eligible for filtering are:   * `name`   * `source_table`   *
+      `state`   * `start_time` (and values are of the format YYYY-MM-
+      DDTHH:MM:SSZ)   * `end_time` (and values are of the format YYYY-MM-
+      DDTHH:MM:SSZ)   * `expire_time` (and values are of the format YYYY-MM-
+      DDTHH:MM:SSZ)   * `size_bytes`  To filter on multiple expressions,
+      provide each separate expression within parentheses. By default, each
+      expression is an AND expression. However, you can include AND, OR, and
+      NOT expressions explicitly.  Some examples of using filters are:    *
+      `name:"exact"` --> The backup's name is the string "exact".   *
+      `name:howl` --> The backup's name contains the string "howl".   *
+      `source_table:prod`          --> The source_table's name contains the
+      string "prod".   * `state:CREATING` --> The backup is pending creation.
+      * `state:READY` --> The backup is fully created and ready for use.   *
+      `(name:howl) AND (start_time < \"2018-03-28T14:50:00Z\")`          -->
+      The backup name contains the string "howl" and start_time
+      of the backup is before 2018-03-28T14:50:00Z.   * `size_bytes >
+      10000000000` --> The backup's size is greater than 10GB
+    orderBy: An expression for specifying the sort order of the results of the
+      request. The string value should specify one or more fields in Backup.
+      The full syntax is described at https://aip.dev/132#ordering.  Fields
+      supported are:    * name    * source_table    * expire_time    *
+      start_time    * end_time    * size_bytes    * state  For example,
+      "start_time". The default sorting order is ascending. To specify
+      descending order for the field, a suffix " desc" should be appended to
+      the field name. For example, "start_time desc". Redundant space
+      characters in the syntax are insigificant.  If order_by is empty,
+      results will be sorted by `start_time` in descending order starting from
+      the most recently created backup.
+    pageSize: Number of backups to be returned in the response. If 0 or less,
+      defaults to the server's maximum allowed page size.
+    pageToken: If non-empty, `page_token` should contain a next_page_token
+      from a previous ListBackupsResponse to the same `parent` and with the
+      same `filter`.
+    parent: Required. The cluster to list backups from.  Values are of the
+      form `projects/<project>/instances/<instance>/clusters/<cluster>`. Use
+      `<cluster> = '-'` to list backups for all clusters in an instance, e.g.,
+      `projects/<project>/instances/<instance>/clusters/-`.
+  """
+
+  filter = _messages.StringField(1)
+  orderBy = _messages.StringField(2)
+  pageSize = _messages.IntegerField(3, variant=_messages.Variant.INT32)
+  pageToken = _messages.StringField(4)
+  parent = _messages.StringField(5, required=True)
+
+
+class BigtableadminProjectsInstancesClustersBackupsPatchRequest(_messages.Message):
+  r"""A BigtableadminProjectsInstancesClustersBackupsPatchRequest object.
+
+  Fields:
+    backup: A Backup resource to be passed as the request body.
+    name: Output only. A globally unique identifier for the backup which
+      cannot be changed. Values are of the form
+      `projects/<project>/instances/<instance>/clusters/<cluster>/    backups
+      /_a-zA-Z0-9*` The final segment of the name must be between 1 and 50
+      characters in length.  The backup is stored in the cluster identified by
+      the prefix of the backup name of the form
+      `projects/<project>/instances/<instance>/clusters/<cluster>`.
+    updateMask: Required. A mask specifying which fields (e.g. `expire_time`)
+      in the Backup resource should be updated. This mask is relative to the
+      Backup resource, not to the request message. The field mask must always
+      be specified; this prevents any future fields from being erased
+      accidentally by clients that do not know about them.
+  """
+
+  backup = _messages.MessageField('Backup', 1)
+  name = _messages.StringField(2, required=True)
+  updateMask = _messages.StringField(3)
+
+
+class BigtableadminProjectsInstancesClustersBackupsSetIamPolicyRequest(_messages.Message):
+  r"""A BigtableadminProjectsInstancesClustersBackupsSetIamPolicyRequest
+  object.
+
+  Fields:
+    resource: REQUIRED: The resource for which the policy is being specified.
+      See the operation documentation for the appropriate value for this
+      field.
+    setIamPolicyRequest: A SetIamPolicyRequest resource to be passed as the
+      request body.
+  """
+
+  resource = _messages.StringField(1, required=True)
+  setIamPolicyRequest = _messages.MessageField('SetIamPolicyRequest', 2)
+
+
+class BigtableadminProjectsInstancesClustersBackupsTestIamPermissionsRequest(_messages.Message):
+  r"""A BigtableadminProjectsInstancesClustersBackupsTestIamPermissionsRequest
+  object.
+
+  Fields:
+    resource: REQUIRED: The resource for which the policy detail is being
+      requested. See the operation documentation for the appropriate value for
+      this field.
+    testIamPermissionsRequest: A TestIamPermissionsRequest resource to be
+      passed as the request body.
+  """
+
+  resource = _messages.StringField(1, required=True)
+  testIamPermissionsRequest = _messages.MessageField('TestIamPermissionsRequest', 2)
+
+
 class BigtableadminProjectsInstancesClustersCreateRequest(_messages.Message):
   r"""A BigtableadminProjectsInstancesClustersCreateRequest object.
 
   Fields:
     cluster: A Cluster resource to be passed as the request body.
-    clusterId: The ID to be used when referring to the new cluster within its
-      instance, e.g., just `mycluster` rather than
+    clusterId: Required. The ID to be used when referring to the new cluster
+      within its instance, e.g., just `mycluster` rather than
       `projects/myproject/instances/myinstance/clusters/mycluster`.
-    parent: The unique name of the instance in which to create the new
-      cluster. Values are of the form
-      `projects/<project>/instances/<instance>`.
+    parent: Required. The unique name of the instance in which to create the
+      new cluster. Values are of the form
+      `projects/{project}/instances/{instance}`.
   """
 
   cluster = _messages.MessageField('Cluster', 1)
@@ -261,8 +512,9 @@ class BigtableadminProjectsInstancesClustersDeleteRequest(_messages.Message):
   r"""A BigtableadminProjectsInstancesClustersDeleteRequest object.
 
   Fields:
-    name: The unique name of the cluster to be deleted. Values are of the form
-      `projects/<project>/instances/<instance>/clusters/<cluster>`.
+    name: Required. The unique name of the cluster to be deleted. Values are
+      of the form
+      `projects/{project}/instances/{instance}/clusters/{cluster}`.
   """
 
   name = _messages.StringField(1, required=True)
@@ -272,8 +524,8 @@ class BigtableadminProjectsInstancesClustersGetRequest(_messages.Message):
   r"""A BigtableadminProjectsInstancesClustersGetRequest object.
 
   Fields:
-    name: The unique name of the requested cluster. Values are of the form
-      `projects/<project>/instances/<instance>/clusters/<cluster>`.
+    name: Required. The unique name of the requested cluster. Values are of
+      the form `projects/{project}/instances/{instance}/clusters/{cluster}`.
   """
 
   name = _messages.StringField(1, required=True)
@@ -284,9 +536,9 @@ class BigtableadminProjectsInstancesClustersListRequest(_messages.Message):
 
   Fields:
     pageToken: DEPRECATED: This field is unused and ignored.
-    parent: The unique name of the instance for which a list of clusters is
-      requested. Values are of the form
-      `projects/<project>/instances/<instance>`. Use `<instance> = '-'` to
+    parent: Required. The unique name of the instance for which a list of
+      clusters is requested. Values are of the form
+      `projects/{project}/instances/{instance}`. Use `{instance} = '-'` to
       list Clusters for all Instances in a project, e.g.,
       `projects/myproject/instances/-`.
   """
@@ -299,8 +551,8 @@ class BigtableadminProjectsInstancesDeleteRequest(_messages.Message):
   r"""A BigtableadminProjectsInstancesDeleteRequest object.
 
   Fields:
-    name: The unique name of the instance to be deleted. Values are of the
-      form `projects/<project>/instances/<instance>`.
+    name: Required. The unique name of the instance to be deleted. Values are
+      of the form `projects/{project}/instances/{instance}`.
   """
 
   name = _messages.StringField(1, required=True)
@@ -325,8 +577,8 @@ class BigtableadminProjectsInstancesGetRequest(_messages.Message):
   r"""A BigtableadminProjectsInstancesGetRequest object.
 
   Fields:
-    name: The unique name of the requested instance. Values are of the form
-      `projects/<project>/instances/<instance>`.
+    name: Required. The unique name of the requested instance. Values are of
+      the form `projects/{project}/instances/{instance}`.
   """
 
   name = _messages.StringField(1, required=True)
@@ -337,8 +589,8 @@ class BigtableadminProjectsInstancesListRequest(_messages.Message):
 
   Fields:
     pageToken: DEPRECATED: This field is unused and ignored.
-    parent: The unique name of the project for which a list of instances is
-      requested. Values are of the form `projects/<project>`.
+    parent: Required. The unique name of the project for which a list of
+      instances is requested. Values are of the form `projects/{project}`.
   """
 
   pageToken = _messages.StringField(1)
@@ -350,10 +602,10 @@ class BigtableadminProjectsInstancesPartialUpdateInstanceRequest(_messages.Messa
 
   Fields:
     instance: A Instance resource to be passed as the request body.
-    name: (`OutputOnly`) The unique name of the instance. Values are of the
-      form `projects/<project>/instances/a-z+[a-z0-9]`.
-    updateMask: The subset of Instance fields which should be replaced. Must
-      be explicitly set.
+    name: Required. (`OutputOnly`) The unique name of the instance. Values are
+      of the form `projects/{project}/instances/a-z+[a-z0-9]`.
+    updateMask: Required. The subset of Instance fields which should be
+      replaced. Must be explicitly set.
   """
 
   instance = _messages.MessageField('Instance', 1)
@@ -382,9 +634,9 @@ class BigtableadminProjectsInstancesTablesCheckConsistencyRequest(_messages.Mess
   Fields:
     checkConsistencyRequest: A CheckConsistencyRequest resource to be passed
       as the request body.
-    name: The unique name of the Table for which to check replication
-      consistency. Values are of the form
-      `projects/<project>/instances/<instance>/tables/<table>`.
+    name: Required. The unique name of the Table for which to check
+      replication consistency. Values are of the form
+      `projects/{project}/instances/{instance}/tables/{table}`.
   """
 
   checkConsistencyRequest = _messages.MessageField('CheckConsistencyRequest', 1)
@@ -397,8 +649,8 @@ class BigtableadminProjectsInstancesTablesCreateRequest(_messages.Message):
   Fields:
     createTableRequest: A CreateTableRequest resource to be passed as the
       request body.
-    parent: The unique name of the instance in which to create the table.
-      Values are of the form `projects/<project>/instances/<instance>`.
+    parent: Required. The unique name of the instance in which to create the
+      table. Values are of the form `projects/{project}/instances/{instance}`.
   """
 
   createTableRequest = _messages.MessageField('CreateTableRequest', 1)
@@ -409,8 +661,8 @@ class BigtableadminProjectsInstancesTablesDeleteRequest(_messages.Message):
   r"""A BigtableadminProjectsInstancesTablesDeleteRequest object.
 
   Fields:
-    name: The unique name of the table to be deleted. Values are of the form
-      `projects/<project>/instances/<instance>/tables/<table>`.
+    name: Required. The unique name of the table to be deleted. Values are of
+      the form `projects/{project}/instances/{instance}/tables/{table}`.
   """
 
   name = _messages.StringField(1, required=True)
@@ -422,9 +674,9 @@ class BigtableadminProjectsInstancesTablesDropRowRangeRequest(_messages.Message)
   Fields:
     dropRowRangeRequest: A DropRowRangeRequest resource to be passed as the
       request body.
-    name: The unique name of the table on which to drop a range of rows.
-      Values are of the form
-      `projects/<project>/instances/<instance>/tables/<table>`.
+    name: Required. The unique name of the table on which to drop a range of
+      rows. Values are of the form
+      `projects/{project}/instances/{instance}/tables/{table}`.
   """
 
   dropRowRangeRequest = _messages.MessageField('DropRowRangeRequest', 1)
@@ -438,9 +690,9 @@ class BigtableadminProjectsInstancesTablesGenerateConsistencyTokenRequest(_messa
   Fields:
     generateConsistencyTokenRequest: A GenerateConsistencyTokenRequest
       resource to be passed as the request body.
-    name: The unique name of the Table for which to create a consistency
-      token. Values are of the form
-      `projects/<project>/instances/<instance>/tables/<table>`.
+    name: Required. The unique name of the Table for which to create a
+      consistency token. Values are of the form
+      `projects/{project}/instances/{instance}/tables/{table}`.
   """
 
   generateConsistencyTokenRequest = _messages.MessageField('GenerateConsistencyTokenRequest', 1)
@@ -470,8 +722,8 @@ class BigtableadminProjectsInstancesTablesGetRequest(_messages.Message):
       fields. Defaults to `SCHEMA_VIEW` if unspecified.
 
   Fields:
-    name: The unique name of the requested table. Values are of the form
-      `projects/<project>/instances/<instance>/tables/<table>`.
+    name: Required. The unique name of the requested table. Values are of the
+      form `projects/{project}/instances/{instance}/tables/{table}`.
     view: The view to be applied to the returned table's fields. Defaults to
       `SCHEMA_VIEW` if unspecified.
   """
@@ -502,7 +754,7 @@ class BigtableadminProjectsInstancesTablesListRequest(_messages.Message):
 
   Enums:
     ViewValueValuesEnum: The view to be applied to the returned tables'
-      fields. Defaults to `NAME_ONLY` if unspecified; no others are currently
+      fields. Only NAME_ONLY view (default) and REPLICATION_VIEW are
       supported.
 
   Fields:
@@ -514,15 +766,16 @@ class BigtableadminProjectsInstancesTablesListRequest(_messages.Message):
       set in subsequent calls, it must match the page_size given in the first
       request.
     pageToken: The value of `next_page_token` returned by a previous call.
-    parent: The unique name of the instance for which tables should be listed.
-      Values are of the form `projects/<project>/instances/<instance>`.
-    view: The view to be applied to the returned tables' fields. Defaults to
-      `NAME_ONLY` if unspecified; no others are currently supported.
+    parent: Required. The unique name of the instance for which tables should
+      be listed. Values are of the form
+      `projects/{project}/instances/{instance}`.
+    view: The view to be applied to the returned tables' fields. Only
+      NAME_ONLY view (default) and REPLICATION_VIEW are supported.
   """
 
   class ViewValueValuesEnum(_messages.Enum):
-    r"""The view to be applied to the returned tables' fields. Defaults to
-    `NAME_ONLY` if unspecified; no others are currently supported.
+    r"""The view to be applied to the returned tables' fields. Only NAME_ONLY
+    view (default) and REPLICATION_VIEW are supported.
 
     Values:
       VIEW_UNSPECIFIED: <no description>
@@ -550,13 +803,28 @@ class BigtableadminProjectsInstancesTablesModifyColumnFamiliesRequest(_messages.
   Fields:
     modifyColumnFamiliesRequest: A ModifyColumnFamiliesRequest resource to be
       passed as the request body.
-    name: The unique name of the table whose families should be modified.
-      Values are of the form
-      `projects/<project>/instances/<instance>/tables/<table>`.
+    name: Required. The unique name of the table whose families should be
+      modified. Values are of the form
+      `projects/{project}/instances/{instance}/tables/{table}`.
   """
 
   modifyColumnFamiliesRequest = _messages.MessageField('ModifyColumnFamiliesRequest', 1)
   name = _messages.StringField(2, required=True)
+
+
+class BigtableadminProjectsInstancesTablesRestoreRequest(_messages.Message):
+  r"""A BigtableadminProjectsInstancesTablesRestoreRequest object.
+
+  Fields:
+    parent: Required. The name of the instance in which to create the restored
+      table. This instance must be the parent of the source backup. Values are
+      of the form `projects/<project>/instances/<instance>`.
+    restoreTableRequest: A RestoreTableRequest resource to be passed as the
+      request body.
+  """
+
+  parent = _messages.StringField(1, required=True)
+  restoreTableRequest = _messages.MessageField('RestoreTableRequest', 2)
 
 
 class BigtableadminProjectsInstancesTablesSetIamPolicyRequest(_messages.Message):
@@ -644,13 +912,30 @@ class Binding(_messages.Message):
       with or without a Google account.  * `allAuthenticatedUsers`: A special
       identifier that represents anyone    who is authenticated with a Google
       account or a service account.  * `user:{emailid}`: An email address that
-      represents a specific Google    account. For example, `alice@gmail.com`
-      .   * `serviceAccount:{emailid}`: An email address that represents a
-      service    account. For example, `my-other-
+      represents a specific Google    account. For example,
+      `alice@example.com` .   * `serviceAccount:{emailid}`: An email address
+      that represents a service    account. For example, `my-other-
       app@appspot.gserviceaccount.com`.  * `group:{emailid}`: An email address
-      that represents a Google group.    For example, `admins@example.com`.
-      * `domain:{domain}`: The G Suite domain (primary) that represents all
-      the    users of that domain. For example, `google.com` or `example.com`.
+      that represents a Google group.    For example, `admins@example.com`.  *
+      `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique
+      identifier) representing a user that has been recently deleted. For
+      example, `alice@example.com?uid=123456789012345678901`. If the user is
+      recovered, this value reverts to `user:{emailid}` and the recovered user
+      retains the role in the binding.  *
+      `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address
+      (plus    unique identifier) representing a service account that has been
+      recently    deleted. For example,    `my-other-
+      app@appspot.gserviceaccount.com?uid=123456789012345678901`.    If the
+      service account is undeleted, this value reverts to
+      `serviceAccount:{emailid}` and the undeleted service account retains the
+      role in the binding.  * `deleted:group:{emailid}?uid={uniqueid}`: An
+      email address (plus unique    identifier) representing a Google group
+      that has been recently    deleted. For example,
+      `admins@example.com?uid=123456789012345678901`. If    the group is
+      recovered, this value reverts to `group:{emailid}` and the    recovered
+      group retains the role in the binding.   * `domain:{domain}`: The G
+      Suite domain (primary) that represents all the    users of that domain.
+      For example, `google.com` or `example.com`.
     role: Role that is assigned to `members`. For example, `roles/viewer`,
       `roles/editor`, or `roles/owner`.
   """
@@ -665,8 +950,8 @@ class CheckConsistencyRequest(_messages.Message):
   google.bigtable.admin.v2.BigtableTableAdmin.CheckConsistency
 
   Fields:
-    consistencyToken: The token created using GenerateConsistencyToken for the
-      Table.
+    consistencyToken: Required. The token created using
+      GenerateConsistencyToken for the Table.
   """
 
   consistencyToken = _messages.StringField(1)
@@ -702,11 +987,11 @@ class Cluster(_messages.Message):
     location: (`CreationOnly`) The location where this cluster's nodes and
       storage reside. For best performance, clients should be located as close
       as possible to this cluster. Currently only zones are supported, so
-      values should be of the form `projects/<project>/locations/<zone>`.
-    name: (`OutputOnly`) The unique name of the cluster. Values are of the
-      form `projects/<project>/instances/<instance>/clusters/a-z*`.
-    serveNodes: The number of nodes allocated to this cluster. More nodes
-      enable higher throughput and more consistent performance.
+      values should be of the form `projects/{project}/locations/{zone}`.
+    name: Required. (`OutputOnly`) The unique name of the cluster. Values are
+      of the form `projects/{project}/instances/{instance}/clusters/a-z*`.
+    serveNodes: Required. The number of nodes allocated to this cluster. More
+      nodes enable higher throughput and more consistent performance.
     state: (`OutputOnly`) The current state of the cluster.
   """
 
@@ -783,12 +1068,16 @@ class ClusterState(_messages.Message):
       READY: The table can serve Data API requests from this cluster.
         Depending on replication delay, reads may not immediately reflect the
         state of the table in other clusters.
+      READY_OPTIMIZING: The table is fully created and ready for use after a
+        restore, and is being optimized for performance. When optimizations
+        are complete, the table will transition to `READY` state.
     """
     STATE_NOT_KNOWN = 0
     INITIALIZING = 1
     PLANNED_MAINTENANCE = 2
     UNPLANNED_MAINTENANCE = 3
     READY = 4
+    READY_OPTIMIZING = 5
 
   replicationState = _messages.EnumField('ReplicationStateValueValuesEnum', 1)
 
@@ -804,6 +1093,23 @@ class ColumnFamily(_messages.Message):
   """
 
   gcRule = _messages.MessageField('GcRule', 1)
+
+
+class CreateBackupMetadata(_messages.Message):
+  r"""Metadata type for the operation returned by CreateBackup.
+
+  Fields:
+    endTime: If set, the time at which this operation finished or was
+      cancelled.
+    name: The name of the backup being created.
+    sourceTable: The name of the table the backup is created from.
+    startTime: The time at which this operation started.
+  """
+
+  endTime = _messages.StringField(1)
+  name = _messages.StringField(2)
+  sourceTable = _messages.StringField(3)
+  startTime = _messages.StringField(4)
 
 
 class CreateClusterMetadata(_messages.Message):
@@ -870,14 +1176,14 @@ class CreateClusterRequest(_messages.Message):
   r"""Request message for BigtableInstanceAdmin.CreateCluster.
 
   Fields:
-    cluster: The cluster to be created. Fields marked `OutputOnly` must be
-      left blank.
-    clusterId: The ID to be used when referring to the new cluster within its
-      instance, e.g., just `mycluster` rather than
+    cluster: Required. The cluster to be created. Fields marked `OutputOnly`
+      must be left blank.
+    clusterId: Required. The ID to be used when referring to the new cluster
+      within its instance, e.g., just `mycluster` rather than
       `projects/myproject/instances/myinstance/clusters/mycluster`.
-    parent: The unique name of the instance in which to create the new
-      cluster. Values are of the form
-      `projects/<project>/instances/<instance>`.
+    parent: Required. The unique name of the instance in which to create the
+      new cluster. Values are of the form
+      `projects/{project}/instances/{instance}`.
   """
 
   cluster = _messages.MessageField('Cluster', 1)
@@ -905,33 +1211,33 @@ class CreateInstanceRequest(_messages.Message):
   r"""Request message for BigtableInstanceAdmin.CreateInstance.
 
   Messages:
-    ClustersValue: The clusters to be created within the instance, mapped by
-      desired cluster ID, e.g., just `mycluster` rather than
+    ClustersValue: Required. The clusters to be created within the instance,
+      mapped by desired cluster ID, e.g., just `mycluster` rather than
       `projects/myproject/instances/myinstance/clusters/mycluster`. Fields
-      marked `OutputOnly` must be left blank. Currently, at most two clusters
+      marked `OutputOnly` must be left blank. Currently, at most four clusters
       can be specified.
 
   Fields:
-    clusters: The clusters to be created within the instance, mapped by
-      desired cluster ID, e.g., just `mycluster` rather than
+    clusters: Required. The clusters to be created within the instance, mapped
+      by desired cluster ID, e.g., just `mycluster` rather than
       `projects/myproject/instances/myinstance/clusters/mycluster`. Fields
-      marked `OutputOnly` must be left blank. Currently, at most two clusters
+      marked `OutputOnly` must be left blank. Currently, at most four clusters
       can be specified.
-    instance: The instance to create. Fields marked `OutputOnly` must be left
-      blank.
-    instanceId: The ID to be used when referring to the new instance within
-      its project, e.g., just `myinstance` rather than
+    instance: Required. The instance to create. Fields marked `OutputOnly`
+      must be left blank.
+    instanceId: Required. The ID to be used when referring to the new instance
+      within its project, e.g., just `myinstance` rather than
       `projects/myproject/instances/myinstance`.
-    parent: The unique name of the project in which to create the new
-      instance. Values are of the form `projects/<project>`.
+    parent: Required. The unique name of the project in which to create the
+      new instance. Values are of the form `projects/{project}`.
   """
 
   @encoding.MapUnrecognizedFields('additionalProperties')
   class ClustersValue(_messages.Message):
-    r"""The clusters to be created within the instance, mapped by desired
-    cluster ID, e.g., just `mycluster` rather than
+    r"""Required. The clusters to be created within the instance, mapped by
+    desired cluster ID, e.g., just `mycluster` rather than
     `projects/myproject/instances/myinstance/clusters/mycluster`. Fields
-    marked `OutputOnly` must be left blank. Currently, at most two clusters
+    marked `OutputOnly` must be left blank. Currently, at most four clusters
     can be specified.
 
     Messages:
@@ -977,9 +1283,10 @@ class CreateTableRequest(_messages.Message):
       customer_2) => {"customer_1"}.`     - Tablet 4 `[customer_2, other)
       => {"customer_2"}.`     - Tablet 5 `[other, )                =>
       {"other", "zz"}.`
-    table: The Table to create.
-    tableId: The name by which the new table should be referred to within the
-      parent instance, e.g., `foobar` rather than `<parent>/tables/foobar`.
+    table: Required. The Table to create.
+    tableId: Required. The name by which the new table should be referred to
+      within the parent instance, e.g., `foobar` rather than
+      `{parent}/tables/foobar`. Maximum 50 characters.
   """
 
   initialSplits = _messages.MessageField('Split', 1, repeated=True)
@@ -1013,21 +1320,33 @@ class Empty(_messages.Message):
 
 
 class Expr(_messages.Message):
-  r"""Represents an expression text. Example:      title: "User account
-  presence"     description: "Determines whether the request has a user
-  account"     expression: "size(request.user) > 0"
+  r"""Represents a textual expression in the Common Expression Language (CEL)
+  syntax. CEL is a C-like expression language. The syntax and semantics of CEL
+  are documented at https://github.com/google/cel-spec.  Example (Comparison):
+  title: "Summary size limit"     description: "Determines if a summary is
+  less than 100 chars"     expression: "document.summary.size() < 100"
+  Example (Equality):      title: "Requestor is owner"     description:
+  "Determines if requestor is the document owner"     expression:
+  "document.owner == request.auth.claims.email"  Example (Logic):      title:
+  "Public documents"     description: "Determine whether the document should
+  be publicly visible"     expression: "document.type != 'private' &&
+  document.type != 'internal'"  Example (Data Manipulation):      title:
+  "Notification string"     description: "Create a notification string with a
+  timestamp."     expression: "'New message received at ' +
+  string(document.create_time)"  The exact variables and functions that may be
+  referenced within an expression are determined by the service that evaluates
+  it. See the service documentation for additional information.
 
   Fields:
-    description: An optional description of the expression. This is a longer
+    description: Optional. Description of the expression. This is a longer
       text which describes the expression, e.g. when hovered over it in a UI.
     expression: Textual representation of an expression in Common Expression
-      Language syntax.  The application context of the containing message
-      determines which well-known feature set of CEL is supported.
-    location: An optional string indicating the location of the expression for
+      Language syntax.
+    location: Optional. String indicating the location of the expression for
       error reporting, e.g. a file name and a position in the file.
-    title: An optional title for the expression, i.e. a short string
-      describing its purpose. This can be used e.g. in UIs which allow to
-      enter the expression.
+    title: Optional. Title for the expression, i.e. a short string describing
+      its purpose. This can be used e.g. in UIs which allow to enter the
+      expression.
   """
 
   description = _messages.StringField(1)
@@ -1073,7 +1392,28 @@ class GenerateConsistencyTokenResponse(_messages.Message):
 
 
 class GetIamPolicyRequest(_messages.Message):
-  r"""Request message for `GetIamPolicy` method."""
+  r"""Request message for `GetIamPolicy` method.
+
+  Fields:
+    options: OPTIONAL: A `GetPolicyOptions` object for specifying options to
+      `GetIamPolicy`. This field is only used by Cloud IAM.
+  """
+
+  options = _messages.MessageField('GetPolicyOptions', 1)
+
+
+class GetPolicyOptions(_messages.Message):
+  r"""Encapsulates settings provided to GetIamPolicy.
+
+  Fields:
+    requestedPolicyVersion: Optional. The policy format version to be
+      returned.  Valid values are 0, 1, and 3. Requests specifying an invalid
+      value will be rejected.  Requests for policies with any conditional
+      bindings must specify version 3. Policies without any conditional
+      bindings may specify any valid value or leave the field unset.
+  """
+
+  requestedPolicyVersion = _messages.IntegerField(1, variant=_messages.Variant.INT32)
 
 
 class Instance(_messages.Message):
@@ -1082,10 +1422,11 @@ class Instance(_messages.Message):
 
   Enums:
     StateValueValuesEnum: (`OutputOnly`) The current state of the instance.
-    TypeValueValuesEnum: The type of the instance. Defaults to `PRODUCTION`.
+    TypeValueValuesEnum: Required. The type of the instance. Defaults to
+      `PRODUCTION`.
 
   Messages:
-    LabelsValue: Labels are a flexible and lightweight mechanism for
+    LabelsValue: Required. Labels are a flexible and lightweight mechanism for
       organizing cloud resources into groups that reflect a customer's
       organizational needs and deployment strategies. They can be used to
       filter resources and aggregate metrics.  * Label keys must be between 1
@@ -1097,22 +1438,23 @@ class Instance(_messages.Message):
       128 bytes.
 
   Fields:
-    displayName: The descriptive name for this instance as it appears in UIs.
-      Can be changed at any time, but should be kept globally unique to avoid
-      confusion.
-    labels: Labels are a flexible and lightweight mechanism for organizing
-      cloud resources into groups that reflect a customer's organizational
-      needs and deployment strategies. They can be used to filter resources
-      and aggregate metrics.  * Label keys must be between 1 and 63 characters
-      long and must conform to   the regular expression: `\p{Ll}\p{Lo}{0,62}`.
-      * Label values must be between 0 and 63 characters long and must conform
-      to   the regular expression: `[\p{Ll}\p{Lo}\p{N}_-]{0,63}`. * No more
-      than 64 labels can be associated with a given resource. * Keys and
-      values must both be under 128 bytes.
-    name: (`OutputOnly`) The unique name of the instance. Values are of the
-      form `projects/<project>/instances/a-z+[a-z0-9]`.
+    displayName: Required. The descriptive name for this instance as it
+      appears in UIs. Can be changed at any time, but should be kept globally
+      unique to avoid confusion.
+    labels: Required. Labels are a flexible and lightweight mechanism for
+      organizing cloud resources into groups that reflect a customer's
+      organizational needs and deployment strategies. They can be used to
+      filter resources and aggregate metrics.  * Label keys must be between 1
+      and 63 characters long and must conform to   the regular expression:
+      `\p{Ll}\p{Lo}{0,62}`. * Label values must be between 0 and 63 characters
+      long and must conform to   the regular expression:
+      `[\p{Ll}\p{Lo}\p{N}_-]{0,63}`. * No more than 64 labels can be
+      associated with a given resource. * Keys and values must both be under
+      128 bytes.
+    name: Required. (`OutputOnly`) The unique name of the instance. Values are
+      of the form `projects/{project}/instances/a-z+[a-z0-9]`.
     state: (`OutputOnly`) The current state of the instance.
-    type: The type of the instance. Defaults to `PRODUCTION`.
+    type: Required. The type of the instance. Defaults to `PRODUCTION`.
   """
 
   class StateValueValuesEnum(_messages.Enum):
@@ -1130,7 +1472,7 @@ class Instance(_messages.Message):
     CREATING = 2
 
   class TypeValueValuesEnum(_messages.Enum):
-    r"""The type of the instance. Defaults to `PRODUCTION`.
+    r"""Required. The type of the instance. Defaults to `PRODUCTION`.
 
     Values:
       TYPE_UNSPECIFIED: The type of the instance is unspecified. If set when
@@ -1152,15 +1494,15 @@ class Instance(_messages.Message):
 
   @encoding.MapUnrecognizedFields('additionalProperties')
   class LabelsValue(_messages.Message):
-    r"""Labels are a flexible and lightweight mechanism for organizing cloud
-    resources into groups that reflect a customer's organizational needs and
-    deployment strategies. They can be used to filter resources and aggregate
-    metrics.  * Label keys must be between 1 and 63 characters long and must
-    conform to   the regular expression: `\p{Ll}\p{Lo}{0,62}`. * Label values
-    must be between 0 and 63 characters long and must conform to   the regular
-    expression: `[\p{Ll}\p{Lo}\p{N}_-]{0,63}`. * No more than 64 labels can be
-    associated with a given resource. * Keys and values must both be under 128
-    bytes.
+    r"""Required. Labels are a flexible and lightweight mechanism for
+    organizing cloud resources into groups that reflect a customer's
+    organizational needs and deployment strategies. They can be used to filter
+    resources and aggregate metrics.  * Label keys must be between 1 and 63
+    characters long and must conform to   the regular expression:
+    `\p{Ll}\p{Lo}{0,62}`. * Label values must be between 0 and 63 characters
+    long and must conform to   the regular expression:
+    `[\p{Ll}\p{Lo}\p{N}_-]{0,63}`. * No more than 64 labels can be associated
+    with a given resource. * Keys and values must both be under 128 bytes.
 
     Messages:
       AdditionalProperty: An additional property for a LabelsValue object.
@@ -1217,6 +1559,19 @@ class ListAppProfilesResponse(_messages.Message):
   appProfiles = _messages.MessageField('AppProfile', 1, repeated=True)
   failedLocations = _messages.StringField(2, repeated=True)
   nextPageToken = _messages.StringField(3)
+
+
+class ListBackupsResponse(_messages.Message):
+  r"""The response for ListBackups.
+
+  Fields:
+    backups: The list of matching backups.
+    nextPageToken: `next_page_token` can be sent in a subsequent ListBackups
+      call to fetch more of the matching backups.
+  """
+
+  backups = _messages.MessageField('Backup', 1, repeated=True)
+  nextPageToken = _messages.StringField(2)
 
 
 class ListClustersResponse(_messages.Message):
@@ -1401,20 +1756,21 @@ class ModifyColumnFamiliesRequest(_messages.Message):
   google.bigtable.admin.v2.BigtableTableAdmin.ModifyColumnFamilies
 
   Fields:
-    modifications: Modifications to be atomically applied to the specified
-      table's families. Entries are applied in order, meaning that earlier
-      modifications can be masked by later ones (in the case of repeated
-      updates to the same family, for example).
+    modifications: Required. Modifications to be atomically applied to the
+      specified table's families. Entries are applied in order, meaning that
+      earlier modifications can be masked by later ones (in the case of
+      repeated updates to the same family, for example).
   """
 
   modifications = _messages.MessageField('Modification', 1, repeated=True)
 
 
 class MultiClusterRoutingUseAny(_messages.Message):
-  r"""Read/write requests may be routed to any cluster in the instance, and
-  will fail over to another cluster in the event of transient errors or
-  delays. Choosing this option sacrifices read-your-writes consistency to
-  improve availability.
+  r"""Read/write requests are routed to the nearest cluster in the instance,
+  and will fail over to the nearest cluster that is available in the event of
+  transient errors or delays. Clusters in a region are considered equidistant.
+  Choosing this option sacrifices read-your-writes consistency to improve
+  availability.
   """
 
 
@@ -1450,7 +1806,8 @@ class Operation(_messages.Message):
       if any.
     name: The server-assigned name, which is only unique within the same
       service that originally returns it. If you use the default HTTP mapping,
-      the `name` should have the format of `operations/some/unique/name`.
+      the `name` should be a resource name ending with
+      `operations/{unique_id}`.
     response: The normal response of the operation in case of success.  If the
       original method returns no data on success, such as `Delete`, the
       response is `google.protobuf.Empty`.  If the original method is standard
@@ -1526,13 +1883,46 @@ class Operation(_messages.Message):
   response = _messages.MessageField('ResponseValue', 5)
 
 
+class OperationProgress(_messages.Message):
+  r"""Encapsulates progress related information for a Cloud Bigtable long
+  running operation.
+
+  Fields:
+    endTime: If set, the time at which this operation failed or was completed
+      successfully.
+    progressPercent: Percent completion of the operation. Values are between 0
+      and 100 inclusive.
+    startTime: Time the request was received.
+  """
+
+  endTime = _messages.StringField(1)
+  progressPercent = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  startTime = _messages.StringField(3)
+
+
+class OptimizeRestoredTableMetadata(_messages.Message):
+  r"""Metadata type for the long-running operation used to track the progress
+  of optimizations performed on a newly restored table. This long-running
+  operation is automatically created by the system after the successful
+  completion of a table restore, and cannot be cancelled.
+
+  Fields:
+    name: Name of the restored table being optimized.
+    progress: The progress of the post-restore optimizations.
+  """
+
+  name = _messages.StringField(1)
+  progress = _messages.MessageField('OperationProgress', 2)
+
+
 class PartialUpdateInstanceRequest(_messages.Message):
   r"""Request message for BigtableInstanceAdmin.PartialUpdateInstance.
 
   Fields:
-    instance: The Instance which will (partially) replace the current value.
-    updateMask: The subset of Instance fields which should be replaced. Must
-      be explicitly set.
+    instance: Required. The Instance which will (partially) replace the
+      current value.
+    updateMask: Required. The subset of Instance fields which should be
+      replaced. Must be explicitly set.
   """
 
   instance = _messages.MessageField('Instance', 1)
@@ -1540,29 +1930,42 @@ class PartialUpdateInstanceRequest(_messages.Message):
 
 
 class Policy(_messages.Message):
-  r"""Defines an Identity and Access Management (IAM) policy. It is used to
-  specify access control policies for Cloud Platform resources.   A `Policy`
-  consists of a list of `bindings`. A `binding` binds a list of `members` to a
-  `role`, where the members can be user accounts, Google groups, Google
-  domains, and service accounts. A `role` is a named list of permissions
-  defined by IAM.  **JSON Example**      {       "bindings": [         {
-  "role": "roles/owner",           "members": [
+  r"""An Identity and Access Management (IAM) policy, which specifies access
+  controls for Google Cloud resources.   A `Policy` is a collection of
+  `bindings`. A `binding` binds one or more `members` to a single `role`.
+  Members can be user accounts, service accounts, Google groups, and domains
+  (such as G Suite). A `role` is a named list of permissions; each `role` can
+  be an IAM predefined role or a user-created custom role.  Optionally, a
+  `binding` can specify a `condition`, which is a logical expression that
+  allows access to a resource only if the expression evaluates to `true`. A
+  condition can add constraints based on attributes of the request, the
+  resource, or both.  **JSON example:**      {       "bindings": [         {
+  "role": "roles/resourcemanager.organizationAdmin",           "members": [
   "user:mike@example.com",             "group:admins@example.com",
-  "domain:google.com",             "serviceAccount:my-other-
-  app@appspot.gserviceaccount.com"           ]         },         {
-  "role": "roles/viewer",           "members": ["user:sean@example.com"]
-  }       ]     }  **YAML Example**      bindings:     - members:       -
-  user:mike@example.com       - group:admins@example.com       -
-  domain:google.com       - serviceAccount:my-other-
-  app@appspot.gserviceaccount.com       role: roles/owner     - members:
-  - user:sean@example.com       role: roles/viewer   For a description of IAM
-  and its features, see the [IAM developer's
-  guide](https://cloud.google.com/iam/docs).
+  "domain:google.com",             "serviceAccount:my-project-
+  id@appspot.gserviceaccount.com"           ]         },         {
+  "role": "roles/resourcemanager.organizationViewer",           "members":
+  ["user:eve@example.com"],           "condition": {             "title":
+  "expirable access",             "description": "Does not grant access after
+  Sep 2020",             "expression": "request.time <
+  timestamp('2020-10-01T00:00:00.000Z')",           }         }       ],
+  "etag": "BwWWja0YfJA=",       "version": 3     }  **YAML example:**
+  bindings:     - members:       - user:mike@example.com       -
+  group:admins@example.com       - domain:google.com       - serviceAccount
+  :my-project-id@appspot.gserviceaccount.com       role:
+  roles/resourcemanager.organizationAdmin     - members:       -
+  user:eve@example.com       role: roles/resourcemanager.organizationViewer
+  condition:         title: expirable access         description: Does not
+  grant access after Sep 2020         expression: request.time <
+  timestamp('2020-10-01T00:00:00.000Z')     - etag: BwWWja0YfJA=     -
+  version: 3  For a description of IAM and its features, see the [IAM
+  documentation](https://cloud.google.com/iam/docs/).
 
   Fields:
     auditConfigs: Specifies cloud audit logging configuration for this policy.
-    bindings: Associates a list of `members` to a `role`. `bindings` with no
-      members will result in an error.
+    bindings: Associates a list of `members` to a `role`. Optionally, may
+      specify a `condition` that determines how and when the `bindings` are
+      applied. Each of the `bindings` must contain at least one member.
     etag: `etag` is used for optimistic concurrency control as a way to help
       prevent simultaneous updates of a policy from overwriting each other. It
       is strongly suggested that systems make use of the `etag` in the read-
@@ -1570,15 +1973,111 @@ class Policy(_messages.Message):
       conditions: An `etag` is returned in the response to `getIamPolicy`, and
       systems are expected to put that etag in the request to `setIamPolicy`
       to ensure that their change will be applied to the same version of the
-      policy.  If no `etag` is provided in the call to `setIamPolicy`, then
-      the existing policy is overwritten blindly.
-    version: Deprecated.
+      policy.  **Important:** If you use IAM Conditions, you must include the
+      `etag` field whenever you call `setIamPolicy`. If you omit this field,
+      then IAM allows you to overwrite a version `3` policy with a version `1`
+      policy, and all of the conditions in the version `3` policy are lost.
+    version: Specifies the format of the policy.  Valid values are `0`, `1`,
+      and `3`. Requests that specify an invalid value are rejected.  Any
+      operation that affects conditional role bindings must specify version
+      `3`. This requirement applies to the following operations:  * Getting a
+      policy that includes a conditional role binding * Adding a conditional
+      role binding to a policy * Changing a conditional role binding in a
+      policy * Removing any role binding, with or without a condition, from a
+      policy   that includes conditions  **Important:** If you use IAM
+      Conditions, you must include the `etag` field whenever you call
+      `setIamPolicy`. If you omit this field, then IAM allows you to overwrite
+      a version `3` policy with a version `1` policy, and all of the
+      conditions in the version `3` policy are lost.  If a policy does not
+      include any conditions, operations on that policy may specify any valid
+      version or leave the field unset.
   """
 
   auditConfigs = _messages.MessageField('AuditConfig', 1, repeated=True)
   bindings = _messages.MessageField('Binding', 2, repeated=True)
   etag = _messages.BytesField(3)
   version = _messages.IntegerField(4, variant=_messages.Variant.INT32)
+
+
+class RestoreInfo(_messages.Message):
+  r"""Information about a table restore.
+
+  Enums:
+    SourceTypeValueValuesEnum: The type of the restore source.
+
+  Fields:
+    backupInfo: Information about the backup used to restore the table. The
+      backup may no longer exist.
+    sourceType: The type of the restore source.
+  """
+
+  class SourceTypeValueValuesEnum(_messages.Enum):
+    r"""The type of the restore source.
+
+    Values:
+      RESTORE_SOURCE_TYPE_UNSPECIFIED: No restore associated.
+      BACKUP: A backup was used as the source of the restore.
+    """
+    RESTORE_SOURCE_TYPE_UNSPECIFIED = 0
+    BACKUP = 1
+
+  backupInfo = _messages.MessageField('BackupInfo', 1)
+  sourceType = _messages.EnumField('SourceTypeValueValuesEnum', 2)
+
+
+class RestoreTableMetadata(_messages.Message):
+  r"""Metadata type for the long-running operation returned by RestoreTable.
+
+  Enums:
+    SourceTypeValueValuesEnum: The type of the restore source.
+
+  Fields:
+    backupInfo: A BackupInfo attribute.
+    name: Name of the table being created and restored to.
+    optimizeTableOperationName: If exists, the name of the long-running
+      operation that will be used to track the post-restore optimization
+      process to optimize the performance of the restored table. The metadata
+      type of the long-running operation is OptimizeRestoreTableMetadata. The
+      response type is Empty. This long-running operation may be automatically
+      created by the system if applicable after the RestoreTable long-running
+      operation completes successfully. This operation may not be created if
+      the table is already optimized or the restore was not successful.
+    progress: The progress of the RestoreTable operation.
+    sourceType: The type of the restore source.
+  """
+
+  class SourceTypeValueValuesEnum(_messages.Enum):
+    r"""The type of the restore source.
+
+    Values:
+      RESTORE_SOURCE_TYPE_UNSPECIFIED: No restore associated.
+      BACKUP: A backup was used as the source of the restore.
+    """
+    RESTORE_SOURCE_TYPE_UNSPECIFIED = 0
+    BACKUP = 1
+
+  backupInfo = _messages.MessageField('BackupInfo', 1)
+  name = _messages.StringField(2)
+  optimizeTableOperationName = _messages.StringField(3)
+  progress = _messages.MessageField('OperationProgress', 4)
+  sourceType = _messages.EnumField('SourceTypeValueValuesEnum', 5)
+
+
+class RestoreTableRequest(_messages.Message):
+  r"""The request for RestoreTable.
+
+  Fields:
+    backup: Name of the backup from which to restore.  Values are of the form
+      `projects/<project>/instances/<instance>/clusters/<cluster>/backups/<bac
+      kup>`.
+    tableId: Required. The id of the table to create and restore to. This
+      table must not already exist. The `table_id` appended to `parent` forms
+      the full table name of the form
+      `projects/<project>/instances/<instance>/tables/<table_id>`.
+  """
+
+  backup = _messages.StringField(1)
+  tableId = _messages.StringField(2)
 
 
 class SetIamPolicyRequest(_messages.Message):
@@ -1601,7 +2100,7 @@ class SetIamPolicyRequest(_messages.Message):
 
 class SingleClusterRouting(_messages.Message):
   r"""Unconditionally routes all read/write requests to a specific cluster.
-  This option preserves read-your-writes consistency, but does not improve
+  This option preserves read-your-writes consistency but does not improve
   availability.
 
   Fields:
@@ -1692,37 +2191,10 @@ class StandardQueryParameters(_messages.Message):
 class Status(_messages.Message):
   r"""The `Status` type defines a logical error model that is suitable for
   different programming environments, including REST APIs and RPC APIs. It is
-  used by [gRPC](https://github.com/grpc). The error model is designed to be:
-  - Simple to use and understand for most users - Flexible enough to meet
-  unexpected needs  # Overview  The `Status` message contains three pieces of
-  data: error code, error message, and error details. The error code should be
-  an enum value of google.rpc.Code, but it may accept additional error codes
-  if needed.  The error message should be a developer-facing English message
-  that helps developers *understand* and *resolve* the error. If a localized
-  user-facing error message is needed, put the localized message in the error
-  details or localize it in the client. The optional error details may contain
-  arbitrary information about the error. There is a predefined set of error
-  detail types in the package `google.rpc` that can be used for common error
-  conditions.  # Language mapping  The `Status` message is the logical
-  representation of the error model, but it is not necessarily the actual wire
-  format. When the `Status` message is exposed in different client libraries
-  and different wire protocols, it can be mapped differently. For example, it
-  will likely be mapped to some exceptions in Java, but more likely mapped to
-  some error codes in C.  # Other uses  The error model and the `Status`
-  message can be used in a variety of environments, either with or without
-  APIs, to provide a consistent developer experience across different
-  environments.  Example uses of this error model include:  - Partial errors.
-  If a service needs to return partial errors to the client,     it may embed
-  the `Status` in the normal response to indicate the partial     errors.  -
-  Workflow errors. A typical workflow has multiple steps. Each step may
-  have a `Status` message for error reporting.  - Batch operations. If a
-  client uses batch request and batch response, the     `Status` message
-  should be used directly inside batch response, one for     each error sub-
-  response.  - Asynchronous operations. If an API call embeds asynchronous
-  operation     results in its response, the status of those operations should
-  be     represented directly using the `Status` message.  - Logging. If some
-  API errors are stored in logs, the message `Status` could     be used
-  directly after any stripping needed for security/privacy reasons.
+  used by [gRPC](https://github.com/grpc). Each `Status` message contains
+  three pieces of data: error code, error message, and error details.  You can
+  find out more about this error model and how to work with it in the [API
+  Design Guide](https://cloud.google.com/apis/design/errors).
 
   Messages:
     DetailsValueListEntry: A DetailsValueListEntry object.
@@ -1801,6 +2273,9 @@ class Table(_messages.Message):
     name: Output only. The unique name of the table. Values are of the form
       `projects/<project>/instances/<instance>/tables/_a-zA-Z0-9*`. Views:
       `NAME_ONLY`, `SCHEMA_VIEW`, `REPLICATION_VIEW`, `FULL`
+    restoreInfo: Output only. If this table was restored from another data
+      source (e.g. a backup), this field will be populated with information
+      about the restore.
   """
 
   class GranularityValueValuesEnum(_messages.Enum):
@@ -1877,6 +2352,7 @@ class Table(_messages.Message):
   columnFamilies = _messages.MessageField('ColumnFamiliesValue', 2)
   granularity = _messages.EnumField('GranularityValueValuesEnum', 3)
   name = _messages.StringField(4)
+  restoreInfo = _messages.MessageField('RestoreInfo', 5)
 
 
 class TableProgress(_messages.Message):

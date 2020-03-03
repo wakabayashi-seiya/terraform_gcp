@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ from __future__ import unicode_literals
 
 from apitools.base.py import list_pager
 
-from googlecloudsdk.api_lib.util import apis
+from googlecloudsdk.api_lib.dns import util
 
 
 class Client(object):
@@ -36,7 +36,7 @@ class Client(object):
 
   @classmethod
   def FromApiVersion(cls, version):
-    return cls(version, apis.GetClientInstance('dns', version))
+    return cls(version, util.GetApiClient(version))
 
   def Get(self, key_ref):
     return self._service.Get(

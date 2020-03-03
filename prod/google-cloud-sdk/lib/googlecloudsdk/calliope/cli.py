@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -35,6 +35,7 @@ from googlecloudsdk.calliope import command_loading
 from googlecloudsdk.calliope import exceptions
 from googlecloudsdk.calliope import parser_errors
 from googlecloudsdk.calliope import parser_extensions
+from googlecloudsdk.core import argv_utils
 from googlecloudsdk.core import config
 from googlecloudsdk.core import log
 from googlecloudsdk.core import metrics
@@ -591,7 +592,7 @@ class CLILoader(object):
         help="""\
         The configuration to use for this command invocation. For more
         information on how to use configurations, run:
-        `gcloud topic configurations`.  You can also use the [{0}] environment
+        `gcloud topic configurations`.  You can also use the {0} environment
         variable to set the equivalent of this flag for a terminal
         session.""".format(config.CLOUDSDK_ACTIVE_CONFIG_NAME))
 
@@ -600,9 +601,7 @@ class CLILoader(object):
         choices=log.OrderedVerbosityNames(),
         default=log.DEFAULT_VERBOSITY_STRING,
         category=calliope_base.COMMONLY_USED_FLAGS,
-        help=('Override the default verbosity for this command with any of the '
-              'supported standard verbosity levels: {}.'.format(', '.join(
-                  ['`' + name + '`' for name in log.OrderedVerbosityNames()]))),
+        help='Override the default verbosity for this command.',
         action=actions.StoreProperty(properties.VALUES.core.verbosity))
 
     # This should be a pure Boolean flag, but the alternate true/false explicit
@@ -797,9 +796,6 @@ def _ArgComplete(ai, **kwargs):
   """Runs argcomplete.autocomplete on a calliope argument interceptor."""
   if '_ARGCOMPLETE' not in os.environ:
     return
-  if '_ARGCOMPLETE_COMP_WORDBREAKS' not in os.environ:
-    # The default would \ escape : and . -- bud tugley for GRIs.
-    os.environ['_ARGCOMPLETE_COMP_WORDBREAKS'] = '\t"\'@><;|&('
   mute_stderr = None
   namespace = None
   try:
@@ -934,7 +930,7 @@ class CLI(object):
       _ArgComplete(self.__top_element.ai)
 
     if not args:
-      args = sys.argv[1:]
+      args = argv_utils.GetDecodedArgv()[1:]
 
     # Look for a --configuration flag and update property state based on
     # that before proceeding to the main argparse parse step.

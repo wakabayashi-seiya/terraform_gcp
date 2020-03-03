@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -410,7 +410,8 @@ class AbstractRpcServer(object):
     """
     if email:
       user_id_digest = hashlib.md5(email.lower()).digest()
-      user_id = "1" + "".join(["%02d" % ord(x) for x in user_id_digest])[:20]
+      user_id = "1" + "".join(
+          ["%02d" % x for x in six_subset.iterbytes(user_id_digest)])[:20]
     else:
       user_id = ""
     return "%s:%s:%s" % (email, bool(admin), user_id)

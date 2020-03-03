@@ -9,6 +9,7 @@ class FileV1beta1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://file.googleapis.com/'
+  MTLS_BASE_URL = u'https://file.mtls.googleapis.com/'
 
   _PACKAGE = u'file'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform']
@@ -383,7 +384,7 @@ is the parent resource, without the operations collection id.
         method_id=u'file.projects.locations.list',
         ordered_params=[u'name'],
         path_params=[u'name'],
-        query_params=[u'filter', u'pageSize', u'pageToken'],
+        query_params=[u'filter', u'includeUnrevealedLocations', u'pageSize', u'pageToken'],
         relative_path=u'v1beta1/{+name}/locations',
         request_field='',
         request_type_name=u'FileProjectsLocationsListRequest',

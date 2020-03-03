@@ -21,6 +21,7 @@
   "baseUrl": "https://clouddebugger.googleapis.com/",
   "batchPath": "batch",
   "version_module": true,
+  "fullyEncodeReservedExpansion": true,
   "parameters": {
     "access_token": {
       "type": "string",
@@ -117,7 +118,7 @@
       "type": "object",
       "properties": {
         "debuggee": {
-          "description": "Debuggee information to register.\nThe fields `project`, `uniquifier`, `description` and `agent_version`\nof the debuggee must be set.",
+          "description": "Required. Debuggee information to register.\nThe fields `project`, `uniquifier`, `description` and `agent_version`\nof the debuggee must be set.",
           "$ref": "Debuggee"
         }
       }
@@ -660,7 +661,7 @@
       "type": "object",
       "properties": {
         "breakpoint": {
-          "description": "Updated breakpoint information.\nThe field `id` must be set.\nThe agent must echo all Breakpoint specification fields in the update.",
+          "description": "Required. Updated breakpoint information.\nThe field `id` must be set.\nThe agent must echo all Breakpoint specification fields in the update.",
           "$ref": "Breakpoint"
         }
       }
@@ -678,7 +679,7 @@
       "type": "object",
       "properties": {
         "breakpoint": {
-          "description": "Breakpoint resource.\nThe field `id` is guaranteed to be set (in addition to the echoed fileds).",
+          "description": "Breakpoint resource.\nThe field `id` is guaranteed to be set (in addition to the echoed fields).",
           "$ref": "Breakpoint"
         }
       }
@@ -772,7 +773,7 @@
                   "httpMethod": "GET",
                   "parameters": {
                     "debuggeeId": {
-                      "description": "Identifies the debuggee.",
+                      "description": "Required. Identifies the debuggee.",
                       "location": "path",
                       "required": true,
                       "type": "string"
@@ -807,7 +808,7 @@
                   "httpMethod": "PUT",
                   "parameters": {
                     "debuggeeId": {
-                      "description": "Identifies the debuggee being debugged.",
+                      "description": "Required. Identifies the debuggee being debugged.",
                       "location": "path",
                       "required": true,
                       "type": "string"
@@ -852,7 +853,7 @@
               "httpMethod": "GET",
               "parameters": {
                 "project": {
-                  "description": "Project number of a Google Cloud project whose debuggees to list.",
+                  "description": "Required. Project number of a Google Cloud project whose debuggees to list.",
                   "location": "query",
                   "type": "string"
                 },
@@ -862,7 +863,7 @@
                   "type": "boolean"
                 },
                 "clientVersion": {
-                  "description": "The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
+                  "description": "Required. The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
                   "location": "query",
                   "type": "string"
                 }
@@ -890,13 +891,13 @@
                   "httpMethod": "POST",
                   "parameters": {
                     "debuggeeId": {
-                      "description": "ID of the debuggee where the breakpoint is to be set.",
+                      "description": "Required. ID of the debuggee where the breakpoint is to be set.",
                       "location": "path",
                       "required": true,
                       "type": "string"
                     },
                     "clientVersion": {
-                      "description": "The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
+                      "description": "Required. The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
                       "location": "query",
                       "type": "string"
                     }
@@ -923,19 +924,19 @@
                   "httpMethod": "GET",
                   "parameters": {
                     "debuggeeId": {
-                      "description": "ID of the debuggee whose breakpoint to get.",
+                      "description": "Required. ID of the debuggee whose breakpoint to get.",
                       "location": "path",
                       "required": true,
                       "type": "string"
                     },
                     "breakpointId": {
-                      "description": "ID of the breakpoint to get.",
+                      "description": "Required. ID of the breakpoint to get.",
                       "location": "path",
                       "required": true,
                       "type": "string"
                     },
                     "clientVersion": {
-                      "description": "The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
+                      "description": "Required. The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
                       "location": "query",
                       "type": "string"
                     }
@@ -960,19 +961,19 @@
                   "httpMethod": "DELETE",
                   "parameters": {
                     "debuggeeId": {
-                      "description": "ID of the debuggee whose breakpoint to delete.",
+                      "description": "Required. ID of the debuggee whose breakpoint to delete.",
                       "location": "path",
                       "required": true,
                       "type": "string"
                     },
                     "breakpointId": {
-                      "description": "ID of the breakpoint to delete.",
+                      "description": "Required. ID of the breakpoint to delete.",
                       "location": "path",
                       "required": true,
                       "type": "string"
                     },
                     "clientVersion": {
-                      "description": "The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
+                      "description": "Required. The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
                       "location": "query",
                       "type": "string"
                     }
@@ -997,7 +998,7 @@
                   "httpMethod": "GET",
                   "parameters": {
                     "debuggeeId": {
-                      "description": "ID of the debuggee whose breakpoints to list.",
+                      "description": "Required. ID of the debuggee whose breakpoints to list.",
                       "location": "path",
                       "required": true,
                       "type": "string"
@@ -1032,7 +1033,7 @@
                       "type": "string"
                     },
                     "clientVersion": {
-                      "description": "The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
+                      "description": "Required. The client version making the call.\nSchema: `domain\/type\/version` (e.g., `google.com\/intellij\/v1`).",
                       "location": "query",
                       "type": "string"
                     }

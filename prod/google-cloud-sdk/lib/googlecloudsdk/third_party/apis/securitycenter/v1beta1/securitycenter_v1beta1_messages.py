@@ -29,7 +29,7 @@ class Asset(_messages.Message):
     createTime: The time at which the asset was created in Cloud SCC.
     name: The relative resource name of this asset. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Example: "organizations/123/assets/456".
+      me Example: "organizations/{organization_id}/assets/{asset_id}".
     resourceProperties: Resource managed properties. These properties are
       managed and defined by the GCP resource and cannot be modified by the
       user.
@@ -119,16 +119,16 @@ class AuditConfig(_messages.Message):
   multiple AuditConfigs:      {       "audit_configs": [         {
   "service": "allServices"           "audit_log_configs": [             {
   "log_type": "DATA_READ",               "exempted_members": [
-  "user:foo@gmail.com"               ]             },             {
+  "user:jose@example.com"               ]             },             {
   "log_type": "DATA_WRITE",             },             {
   "log_type": "ADMIN_READ",             }           ]         },         {
-  "service": "fooservice.googleapis.com"           "audit_log_configs": [
+  "service": "sampleservice.googleapis.com"           "audit_log_configs": [
   {               "log_type": "DATA_READ",             },             {
   "log_type": "DATA_WRITE",               "exempted_members": [
-  "user:bar@gmail.com"               ]             }           ]         }
-  ]     }  For fooservice, this policy enables DATA_READ, DATA_WRITE and
-  ADMIN_READ logging. It also exempts foo@gmail.com from DATA_READ logging,
-  and bar@gmail.com from DATA_WRITE logging.
+  "user:aliya@example.com"               ]             }           ]         }
+  ]     }  For sampleservice, this policy enables DATA_READ, DATA_WRITE and
+  ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging,
+  and aliya@example.com from DATA_WRITE logging.
 
   Fields:
     auditLogConfigs: The configuration for logging of each type of permission.
@@ -144,10 +144,10 @@ class AuditConfig(_messages.Message):
 class AuditLogConfig(_messages.Message):
   r"""Provides the configuration for logging a type of permissions. Example:
   {       "audit_log_configs": [         {           "log_type": "DATA_READ",
-  "exempted_members": [             "user:foo@gmail.com"           ]
+  "exempted_members": [             "user:jose@example.com"           ]
   },         {           "log_type": "DATA_WRITE",         }       ]     }
   This enables 'DATA_READ' and 'DATA_WRITE' logging, while exempting
-  foo@gmail.com from DATA_READ logging.
+  jose@example.com from DATA_READ logging.
 
   Enums:
     LogTypeValueValuesEnum: The log type that this config enables.
@@ -190,13 +190,30 @@ class Binding(_messages.Message):
       with or without a Google account.  * `allAuthenticatedUsers`: A special
       identifier that represents anyone    who is authenticated with a Google
       account or a service account.  * `user:{emailid}`: An email address that
-      represents a specific Google    account. For example, `alice@gmail.com`
-      .   * `serviceAccount:{emailid}`: An email address that represents a
-      service    account. For example, `my-other-
+      represents a specific Google    account. For example,
+      `alice@example.com` .   * `serviceAccount:{emailid}`: An email address
+      that represents a service    account. For example, `my-other-
       app@appspot.gserviceaccount.com`.  * `group:{emailid}`: An email address
-      that represents a Google group.    For example, `admins@example.com`.
-      * `domain:{domain}`: The G Suite domain (primary) that represents all
-      the    users of that domain. For example, `google.com` or `example.com`.
+      that represents a Google group.    For example, `admins@example.com`.  *
+      `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique
+      identifier) representing a user that has been recently deleted. For
+      example, `alice@example.com?uid=123456789012345678901`. If the user is
+      recovered, this value reverts to `user:{emailid}` and the recovered user
+      retains the role in the binding.  *
+      `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address
+      (plus    unique identifier) representing a service account that has been
+      recently    deleted. For example,    `my-other-
+      app@appspot.gserviceaccount.com?uid=123456789012345678901`.    If the
+      service account is undeleted, this value reverts to
+      `serviceAccount:{emailid}` and the undeleted service account retains the
+      role in the binding.  * `deleted:group:{emailid}?uid={uniqueid}`: An
+      email address (plus unique    identifier) representing a Google group
+      that has been recently    deleted. For example,
+      `admins@example.com?uid=123456789012345678901`. If    the group is
+      recovered, this value reverts to `group:{emailid}` and the    recovered
+      group retains the role in the binding.   * `domain:{domain}`: The G
+      Suite domain (primary) that represents all the    users of that domain.
+      For example, `google.com` or `example.com`.
     role: Role that is assigned to `members`. For example, `roles/viewer`,
       `roles/editor`, or `roles/owner`.
   """
@@ -221,21 +238,33 @@ class Empty(_messages.Message):
 
 
 class Expr(_messages.Message):
-  r"""Represents an expression text. Example:      title: "User account
-  presence"     description: "Determines whether the request has a user
-  account"     expression: "size(request.user) > 0"
+  r"""Represents a textual expression in the Common Expression Language (CEL)
+  syntax. CEL is a C-like expression language. The syntax and semantics of CEL
+  are documented at https://github.com/google/cel-spec.  Example (Comparison):
+  title: "Summary size limit"     description: "Determines if a summary is
+  less than 100 chars"     expression: "document.summary.size() < 100"
+  Example (Equality):      title: "Requestor is owner"     description:
+  "Determines if requestor is the document owner"     expression:
+  "document.owner == request.auth.claims.email"  Example (Logic):      title:
+  "Public documents"     description: "Determine whether the document should
+  be publicly visible"     expression: "document.type != 'private' &&
+  document.type != 'internal'"  Example (Data Manipulation):      title:
+  "Notification string"     description: "Create a notification string with a
+  timestamp."     expression: "'New message received at ' +
+  string(document.create_time)"  The exact variables and functions that may be
+  referenced within an expression are determined by the service that evaluates
+  it. See the service documentation for additional information.
 
   Fields:
-    description: An optional description of the expression. This is a longer
+    description: Optional. Description of the expression. This is a longer
       text which describes the expression, e.g. when hovered over it in a UI.
     expression: Textual representation of an expression in Common Expression
-      Language syntax.  The application context of the containing message
-      determines which well-known feature set of CEL is supported.
-    location: An optional string indicating the location of the expression for
+      Language syntax.
+    location: Optional. String indicating the location of the expression for
       error reporting, e.g. a file name and a position in the file.
-    title: An optional title for the expression, i.e. a short string
-      describing its purpose. This can be used e.g. in UIs which allow to
-      enter the expression.
+    title: Optional. Title for the expression, i.e. a short string describing
+      its purpose. This can be used e.g. in UIs which allow to enter the
+      expression.
   """
 
   description = _messages.StringField(1)
@@ -267,22 +296,26 @@ class Finding(_messages.Message):
       "XSS_FLASH_INJECTION"
     createTime: The time at which the finding was created in Cloud SCC.
     eventTime: The time at which the event took place. For example, if the
-      finding represents an open firewall it would capture the time the open
-      firewall was detected.
+      finding represents an open firewall it would capture the time the
+      detector believes the firewall became open. The accuracy is determined
+      by the detector.
     externalUri: The URI that, if available, points to a web page outside of
       Cloud SCC where additional information about the finding can be found.
       This field is guaranteed to be either empty or a well formed URL.
     name: The relative resource name of this finding. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Example: "organizations/123/sources/456/findings/789"
-    parent: The relative resource name of the source the finding belongs to.
-      See: https://cloud.google.com/apis/design/resource_names#relative_resour
-      ce_name This field is immutable after creation time. For example:
-      "organizations/123/sources/456"
-    resourceName: The full resource name of the Google Cloud Platform (GCP)
-      resource this finding is for. See:
+      me Example: "organizations/{organization_id}/sources/{source_id}/finding
+      s/{finding_id}"
+    parent: Immutable. The relative resource name of the source the finding
+      belongs to. See: https://cloud.google.com/apis/design/resource_names#rel
+      ative_resource_name This field is immutable after creation time. For
+      example: "organizations/{organization_id}/sources/{source_id}"
+    resourceName: For findings on Google Cloud Platform (GCP) resources, the
+      full resource name of the GCP resource this finding is for. See:
       https://cloud.google.com/apis/design/resource_names#full_resource_name
-      This field is immutable after creation time.
+      When the finding is for a non-GCP resource, the resourceName can be a
+      customer or partner defined string. This field is immutable after
+      creation time.
     securityMarks: Output only. User specified security marks. These marks are
       entirely managed by the user and come from the SecurityMarks resource
       that belongs to the finding.
@@ -349,7 +382,28 @@ class Finding(_messages.Message):
 
 
 class GetIamPolicyRequest(_messages.Message):
-  r"""Request message for `GetIamPolicy` method."""
+  r"""Request message for `GetIamPolicy` method.
+
+  Fields:
+    options: OPTIONAL: A `GetPolicyOptions` object for specifying options to
+      `GetIamPolicy`. This field is only used by Cloud IAM.
+  """
+
+  options = _messages.MessageField('GetPolicyOptions', 1)
+
+
+class GetPolicyOptions(_messages.Message):
+  r"""Encapsulates settings provided to GetIamPolicy.
+
+  Fields:
+    requestedPolicyVersion: Optional. The policy format version to be
+      returned.  Valid values are 0, 1, and 3. Requests specifying an invalid
+      value will be rejected.  Requests for policies with any conditional
+      bindings must specify version 3. Policies without any conditional
+      bindings may specify any valid value or leave the field unset.
+  """
+
+  requestedPolicyVersion = _messages.IntegerField(1, variant=_messages.Variant.INT32)
 
 
 class GoogleCloudSecuritycenterV1RunAssetDiscoveryResponse(_messages.Message):
@@ -414,6 +468,374 @@ class GoogleCloudSecuritycenterV1beta1RunAssetDiscoveryResponse(_messages.Messag
   state = _messages.EnumField('StateValueValuesEnum', 2)
 
 
+class GoogleCloudSecuritycenterV1p1beta1Asset(_messages.Message):
+  r"""Cloud Security Command Center's (Cloud SCC) representation of a Google
+  Cloud Platform (GCP) resource.  The Asset is a Cloud SCC resource that
+  captures information about a single GCP resource. All modifications to an
+  Asset are only within the context of Cloud SCC and don't affect the
+  referenced GCP resource.
+
+  Messages:
+    ResourcePropertiesValue: Resource managed properties. These properties are
+      managed and defined by the GCP resource and cannot be modified by the
+      user.
+
+  Fields:
+    createTime: The time at which the asset was created in Cloud SCC.
+    iamPolicy: IAM Policy information associated with the GCP resource
+      described by the Cloud SCC asset. This information is managed and
+      defined by the GCP resource and cannot be modified by the user.
+    name: The relative resource name of this asset. See:
+      https://cloud.google.com/apis/design/resource_names#relative_resource_na
+      me Example: "organizations/{organization_id}/assets/{asset_id}".
+    resourceProperties: Resource managed properties. These properties are
+      managed and defined by the GCP resource and cannot be modified by the
+      user.
+    securityCenterProperties: Cloud SCC managed properties. These properties
+      are managed by Cloud SCC and cannot be modified by the user.
+    securityMarks: User specified security marks. These marks are entirely
+      managed by the user and come from the SecurityMarks resource that
+      belongs to the asset.
+    updateTime: The time at which the asset was last updated, added, or
+      deleted in Cloud SCC.
+  """
+
+  @encoding.MapUnrecognizedFields('additionalProperties')
+  class ResourcePropertiesValue(_messages.Message):
+    r"""Resource managed properties. These properties are managed and defined
+    by the GCP resource and cannot be modified by the user.
+
+    Messages:
+      AdditionalProperty: An additional property for a ResourcePropertiesValue
+        object.
+
+    Fields:
+      additionalProperties: Additional properties of type
+        ResourcePropertiesValue
+    """
+
+    class AdditionalProperty(_messages.Message):
+      r"""An additional property for a ResourcePropertiesValue object.
+
+      Fields:
+        key: Name of the additional property.
+        value: A extra_types.JsonValue attribute.
+      """
+
+      key = _messages.StringField(1)
+      value = _messages.MessageField('extra_types.JsonValue', 2)
+
+    additionalProperties = _messages.MessageField('AdditionalProperty', 1, repeated=True)
+
+  createTime = _messages.StringField(1)
+  iamPolicy = _messages.MessageField('GoogleCloudSecuritycenterV1p1beta1IamPolicy', 2)
+  name = _messages.StringField(3)
+  resourceProperties = _messages.MessageField('ResourcePropertiesValue', 4)
+  securityCenterProperties = _messages.MessageField('GoogleCloudSecuritycenterV1p1beta1SecurityCenterProperties', 5)
+  securityMarks = _messages.MessageField('GoogleCloudSecuritycenterV1p1beta1SecurityMarks', 6)
+  updateTime = _messages.StringField(7)
+
+
+class GoogleCloudSecuritycenterV1p1beta1Finding(_messages.Message):
+  r"""Cloud Security Command Center (Cloud SCC) finding.  A finding is a
+  record of assessment data (security, risk, health or privacy) ingested into
+  Cloud SCC for presentation, notification, analysis, policy testing, and
+  enforcement. For example, an XSS vulnerability in an App Engine application
+  is a finding.
+
+  Enums:
+    StateValueValuesEnum: The state of the finding.
+
+  Messages:
+    SourcePropertiesValue: Source specific properties. These properties are
+      managed by the source that writes the finding. The key names in the
+      source_properties map must be between 1 and 255 characters, and must
+      start with a letter and contain alphanumeric characters or underscores
+      only.
+
+  Fields:
+    category: The additional taxonomy group within findings from a given
+      source. This field is immutable after creation time. Example:
+      "XSS_FLASH_INJECTION"
+    createTime: The time at which the finding was created in Cloud SCC.
+    eventTime: The time at which the event took place. For example, if the
+      finding represents an open firewall it would capture the time the
+      detector believes the firewall became open. The accuracy is determined
+      by the detector.
+    externalUri: The URI that, if available, points to a web page outside of
+      Cloud SCC where additional information about the finding can be found.
+      This field is guaranteed to be either empty or a well formed URL.
+    name: The relative resource name of this finding. See:
+      https://cloud.google.com/apis/design/resource_names#relative_resource_na
+      me Example: "organizations/{organization_id}/sources/{source_id}/finding
+      s/{finding_id}"
+    parent: The relative resource name of the source the finding belongs to.
+      See: https://cloud.google.com/apis/design/resource_names#relative_resour
+      ce_name This field is immutable after creation time. For example:
+      "organizations/{organization_id}/sources/{source_id}"
+    resourceName: For findings on Google Cloud Platform (GCP) resources, the
+      full resource name of the GCP resource this finding is for. See:
+      https://cloud.google.com/apis/design/resource_names#full_resource_name
+      When the finding is for a non-GCP resource, the resourceName can be a
+      customer or partner defined string. This field is immutable after
+      creation time.
+    securityMarks: Output only. User specified security marks. These marks are
+      entirely managed by the user and come from the SecurityMarks resource
+      that belongs to the finding.
+    sourceProperties: Source specific properties. These properties are managed
+      by the source that writes the finding. The key names in the
+      source_properties map must be between 1 and 255 characters, and must
+      start with a letter and contain alphanumeric characters or underscores
+      only.
+    state: The state of the finding.
+  """
+
+  class StateValueValuesEnum(_messages.Enum):
+    r"""The state of the finding.
+
+    Values:
+      STATE_UNSPECIFIED: Unspecified state.
+      ACTIVE: The finding requires attention and has not been addressed yet.
+      INACTIVE: The finding has been fixed, triaged as a non-issue or
+        otherwise addressed and is no longer active.
+    """
+    STATE_UNSPECIFIED = 0
+    ACTIVE = 1
+    INACTIVE = 2
+
+  @encoding.MapUnrecognizedFields('additionalProperties')
+  class SourcePropertiesValue(_messages.Message):
+    r"""Source specific properties. These properties are managed by the source
+    that writes the finding. The key names in the source_properties map must
+    be between 1 and 255 characters, and must start with a letter and contain
+    alphanumeric characters or underscores only.
+
+    Messages:
+      AdditionalProperty: An additional property for a SourcePropertiesValue
+        object.
+
+    Fields:
+      additionalProperties: Additional properties of type
+        SourcePropertiesValue
+    """
+
+    class AdditionalProperty(_messages.Message):
+      r"""An additional property for a SourcePropertiesValue object.
+
+      Fields:
+        key: Name of the additional property.
+        value: A extra_types.JsonValue attribute.
+      """
+
+      key = _messages.StringField(1)
+      value = _messages.MessageField('extra_types.JsonValue', 2)
+
+    additionalProperties = _messages.MessageField('AdditionalProperty', 1, repeated=True)
+
+  category = _messages.StringField(1)
+  createTime = _messages.StringField(2)
+  eventTime = _messages.StringField(3)
+  externalUri = _messages.StringField(4)
+  name = _messages.StringField(5)
+  parent = _messages.StringField(6)
+  resourceName = _messages.StringField(7)
+  securityMarks = _messages.MessageField('GoogleCloudSecuritycenterV1p1beta1SecurityMarks', 8)
+  sourceProperties = _messages.MessageField('SourcePropertiesValue', 9)
+  state = _messages.EnumField('StateValueValuesEnum', 10)
+
+
+class GoogleCloudSecuritycenterV1p1beta1IamPolicy(_messages.Message):
+  r"""IAM Policy information associated with the GCP resource described by the
+  Cloud SCC asset. This information is managed and defined by the GCP resource
+  and cannot be modified by the user.
+
+  Fields:
+    policyBlob: The JSON representation of the Policy associated with the
+      asset. See https://cloud.google.com/iam/reference/rest/v1p1beta1/Policy
+      for format details.
+  """
+
+  policyBlob = _messages.StringField(1)
+
+
+class GoogleCloudSecuritycenterV1p1beta1NotificationMessage(_messages.Message):
+  r"""Cloud SCC's Notification
+
+  Fields:
+    finding: If it's a Finding based notification config, this field will be
+      populated.
+    notificationConfigName: Name of the notification config that generated
+      current notification.
+    temporalAsset: If it's an asset based notification config, this field will
+      be populated.
+  """
+
+  finding = _messages.MessageField('GoogleCloudSecuritycenterV1p1beta1Finding', 1)
+  notificationConfigName = _messages.StringField(2)
+  temporalAsset = _messages.MessageField('GoogleCloudSecuritycenterV1p1beta1TemporalAsset', 3)
+
+
+class GoogleCloudSecuritycenterV1p1beta1RunAssetDiscoveryResponse(_messages.Message):
+  r"""Response of asset discovery run
+
+  Enums:
+    StateValueValuesEnum: The state of an asset discovery run.
+
+  Fields:
+    duration: The duration between asset discovery run start and end
+    state: The state of an asset discovery run.
+  """
+
+  class StateValueValuesEnum(_messages.Enum):
+    r"""The state of an asset discovery run.
+
+    Values:
+      STATE_UNSPECIFIED: Asset discovery run state was unspecified.
+      COMPLETED: Asset discovery run completed successfully.
+      SUPERSEDED: Asset discovery run was cancelled with tasks still pending,
+        as another run for the same organization was started with a higher
+        priority.
+      TERMINATED: Asset discovery run was killed and terminated.
+    """
+    STATE_UNSPECIFIED = 0
+    COMPLETED = 1
+    SUPERSEDED = 2
+    TERMINATED = 3
+
+  duration = _messages.StringField(1)
+  state = _messages.EnumField('StateValueValuesEnum', 2)
+
+
+class GoogleCloudSecuritycenterV1p1beta1SecurityCenterProperties(_messages.Message):
+  r"""Cloud SCC managed properties. These properties are managed by Cloud SCC
+  and cannot be modified by the user.
+
+  Fields:
+    resourceDisplayName: The user defined display name for this resource.
+    resourceName: The full resource name of the GCP resource this asset
+      represents. This field is immutable after create time. See:
+      https://cloud.google.com/apis/design/resource_names#full_resource_name
+    resourceOwners: Owners of the Google Cloud resource.
+    resourceParent: The full resource name of the immediate parent of the
+      resource. See:
+      https://cloud.google.com/apis/design/resource_names#full_resource_name
+    resourceParentDisplayName: The user defined display name for the parent of
+      this resource.
+    resourceProject: The full resource name of the project the resource
+      belongs to. See:
+      https://cloud.google.com/apis/design/resource_names#full_resource_name
+    resourceProjectDisplayName: The user defined display name for the project
+      of this resource.
+    resourceType: The type of the GCP resource. Examples include: APPLICATION,
+      PROJECT, and ORGANIZATION. This is a case insensitive field defined by
+      Cloud SCC and/or the producer of the resource and is immutable after
+      create time.
+  """
+
+  resourceDisplayName = _messages.StringField(1)
+  resourceName = _messages.StringField(2)
+  resourceOwners = _messages.StringField(3, repeated=True)
+  resourceParent = _messages.StringField(4)
+  resourceParentDisplayName = _messages.StringField(5)
+  resourceProject = _messages.StringField(6)
+  resourceProjectDisplayName = _messages.StringField(7)
+  resourceType = _messages.StringField(8)
+
+
+class GoogleCloudSecuritycenterV1p1beta1SecurityMarks(_messages.Message):
+  r"""User specified security marks that are attached to the parent Cloud
+  Security Command Center (Cloud SCC) resource. Security marks are scoped
+  within a Cloud SCC organization -- they can be modified and viewed by all
+  users who have proper permissions on the organization.
+
+  Messages:
+    MarksValue: Mutable user specified security marks belonging to the parent
+      resource. Constraints are as follows:    * Keys and values are treated
+      as case insensitive   * Keys must be between 1 - 256 characters
+      (inclusive)   * Keys must be letters, numbers, underscores, or dashes
+      * Values have leading and trailing whitespace trimmed, remaining
+      characters must be between 1 - 4096 characters (inclusive)
+
+  Fields:
+    marks: Mutable user specified security marks belonging to the parent
+      resource. Constraints are as follows:    * Keys and values are treated
+      as case insensitive   * Keys must be between 1 - 256 characters
+      (inclusive)   * Keys must be letters, numbers, underscores, or dashes
+      * Values have leading and trailing whitespace trimmed, remaining
+      characters must be between 1 - 4096 characters (inclusive)
+    name: The relative resource name of the SecurityMarks. See:
+      https://cloud.google.com/apis/design/resource_names#relative_resource_na
+      me Examples:
+      "organizations/{organization_id}/assets/{asset_id}/securityMarks" "organ
+      izations/{organization_id}/sources/{source_id}/findings/{finding_id}/sec
+      urityMarks".
+  """
+
+  @encoding.MapUnrecognizedFields('additionalProperties')
+  class MarksValue(_messages.Message):
+    r"""Mutable user specified security marks belonging to the parent
+    resource. Constraints are as follows:    * Keys and values are treated as
+    case insensitive   * Keys must be between 1 - 256 characters (inclusive)
+    * Keys must be letters, numbers, underscores, or dashes   * Values have
+    leading and trailing whitespace trimmed, remaining     characters must be
+    between 1 - 4096 characters (inclusive)
+
+    Messages:
+      AdditionalProperty: An additional property for a MarksValue object.
+
+    Fields:
+      additionalProperties: Additional properties of type MarksValue
+    """
+
+    class AdditionalProperty(_messages.Message):
+      r"""An additional property for a MarksValue object.
+
+      Fields:
+        key: Name of the additional property.
+        value: A string attribute.
+      """
+
+      key = _messages.StringField(1)
+      value = _messages.StringField(2)
+
+    additionalProperties = _messages.MessageField('AdditionalProperty', 1, repeated=True)
+
+  marks = _messages.MessageField('MarksValue', 1)
+  name = _messages.StringField(2)
+
+
+class GoogleCloudSecuritycenterV1p1beta1TemporalAsset(_messages.Message):
+  r"""Wrapper over asset object that also captures the state change for the
+  asset e.g. if it was a newly created asset vs updated or deleted asset.
+
+  Enums:
+    ChangeTypeValueValuesEnum: Represents if the asset was
+      created/updated/deleted.
+
+  Fields:
+    asset: Asset data that includes attributes, properties and marks about the
+      asset.
+    changeType: Represents if the asset was created/updated/deleted.
+  """
+
+  class ChangeTypeValueValuesEnum(_messages.Enum):
+    r"""Represents if the asset was created/updated/deleted.
+
+    Values:
+      CHANGE_TYPE_UNSPECIFIED: Unspecified or default.
+      CREATED: Newly created Asset
+      UPDATED: Asset was updated.
+      DELETED: Asset was deleted.
+    """
+    CHANGE_TYPE_UNSPECIFIED = 0
+    CREATED = 1
+    UPDATED = 2
+    DELETED = 3
+
+  asset = _messages.MessageField('GoogleCloudSecuritycenterV1p1beta1Asset', 1)
+  changeType = _messages.EnumField('ChangeTypeValueValuesEnum', 2)
+
+
 class GroupAssetsRequest(_messages.Message):
   r"""Request message for grouping by assets.
 
@@ -450,11 +872,11 @@ class GroupAssetsRequest(_messages.Message):
       literals without quotes. * boolean literals `true` and `false` without
       quotes.  For example, `resource_properties.size = 100` is a valid filter
       string.
-    groupBy: Expression that defines what assets fields to use for grouping.
-      The string value should follow SQL syntax: comma separated list of
-      fields. For example: "security_center_properties.resource_project,securi
-      ty_center_properties.project".  The following fields are supported when
-      compare_duration is not set:  *
+    groupBy: Required. Expression that defines what assets fields to use for
+      grouping. The string value should follow SQL syntax: comma separated
+      list of fields. For example: "security_center_properties.resource_projec
+      t,security_center_properties.project".  The following fields are
+      supported when compare_duration is not set:  *
       security_center_properties.resource_project *
       security_center_properties.resource_type *
       security_center_properties.resource_parent  The following fields are
@@ -513,11 +935,11 @@ class GroupFindingsRequest(_messages.Message):
       literals without quotes. * boolean literals `true` and `false` without
       quotes.  For example, `source_properties.size = 100` is a valid filter
       string.
-    groupBy: Expression that defines what assets fields to use for grouping
-      (including `state`). The string value should follow SQL syntax: comma
-      separated list of fields. For example: "parent,resource_name".  The
-      following fields are supported:  * resource_name * category * state *
-      parent
+    groupBy: Required. Expression that defines what assets fields to use for
+      grouping (including `state`). The string value should follow SQL syntax:
+      comma separated list of fields. For example: "parent,resource_name".
+      The following fields are supported:  * resource_name * category * state
+      * parent
     pageSize: The maximum number of results to return in a single response.
       Default is 10, minimum is 1, maximum is 1000.
     pageToken: The value returned by the last `GroupFindingsResponse`;
@@ -714,7 +1136,8 @@ class Operation(_messages.Message):
       if any.
     name: The server-assigned name, which is only unique within the same
       service that originally returns it. If you use the default HTTP mapping,
-      the `name` should have the format of `operations/some/unique/name`.
+      the `name` should be a resource name ending with
+      `operations/{unique_id}`.
     response: The normal response of the operation in case of success.  If the
       original method returns no data on success, such as `Delete`, the
       response is `google.protobuf.Empty`.  If the original method is standard
@@ -802,7 +1225,7 @@ class OrganizationSettings(_messages.Message):
       discovery of future assets will not occur.
     name: The relative resource name of the settings. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Example: "organizations/123/organizationSettings".
+      me Example: "organizations/{organization_id}/organizationSettings".
   """
 
   assetDiscoveryConfig = _messages.MessageField('AssetDiscoveryConfig', 1)
@@ -811,29 +1234,42 @@ class OrganizationSettings(_messages.Message):
 
 
 class Policy(_messages.Message):
-  r"""Defines an Identity and Access Management (IAM) policy. It is used to
-  specify access control policies for Cloud Platform resources.   A `Policy`
-  consists of a list of `bindings`. A `binding` binds a list of `members` to a
-  `role`, where the members can be user accounts, Google groups, Google
-  domains, and service accounts. A `role` is a named list of permissions
-  defined by IAM.  **JSON Example**      {       "bindings": [         {
-  "role": "roles/owner",           "members": [
+  r"""An Identity and Access Management (IAM) policy, which specifies access
+  controls for Google Cloud resources.   A `Policy` is a collection of
+  `bindings`. A `binding` binds one or more `members` to a single `role`.
+  Members can be user accounts, service accounts, Google groups, and domains
+  (such as G Suite). A `role` is a named list of permissions; each `role` can
+  be an IAM predefined role or a user-created custom role.  Optionally, a
+  `binding` can specify a `condition`, which is a logical expression that
+  allows access to a resource only if the expression evaluates to `true`. A
+  condition can add constraints based on attributes of the request, the
+  resource, or both.  **JSON example:**      {       "bindings": [         {
+  "role": "roles/resourcemanager.organizationAdmin",           "members": [
   "user:mike@example.com",             "group:admins@example.com",
-  "domain:google.com",             "serviceAccount:my-other-
-  app@appspot.gserviceaccount.com"           ]         },         {
-  "role": "roles/viewer",           "members": ["user:sean@example.com"]
-  }       ]     }  **YAML Example**      bindings:     - members:       -
-  user:mike@example.com       - group:admins@example.com       -
-  domain:google.com       - serviceAccount:my-other-
-  app@appspot.gserviceaccount.com       role: roles/owner     - members:
-  - user:sean@example.com       role: roles/viewer   For a description of IAM
-  and its features, see the [IAM developer's
-  guide](https://cloud.google.com/iam/docs).
+  "domain:google.com",             "serviceAccount:my-project-
+  id@appspot.gserviceaccount.com"           ]         },         {
+  "role": "roles/resourcemanager.organizationViewer",           "members":
+  ["user:eve@example.com"],           "condition": {             "title":
+  "expirable access",             "description": "Does not grant access after
+  Sep 2020",             "expression": "request.time <
+  timestamp('2020-10-01T00:00:00.000Z')",           }         }       ],
+  "etag": "BwWWja0YfJA=",       "version": 3     }  **YAML example:**
+  bindings:     - members:       - user:mike@example.com       -
+  group:admins@example.com       - domain:google.com       - serviceAccount
+  :my-project-id@appspot.gserviceaccount.com       role:
+  roles/resourcemanager.organizationAdmin     - members:       -
+  user:eve@example.com       role: roles/resourcemanager.organizationViewer
+  condition:         title: expirable access         description: Does not
+  grant access after Sep 2020         expression: request.time <
+  timestamp('2020-10-01T00:00:00.000Z')     - etag: BwWWja0YfJA=     -
+  version: 3  For a description of IAM and its features, see the [IAM
+  documentation](https://cloud.google.com/iam/docs/).
 
   Fields:
     auditConfigs: Specifies cloud audit logging configuration for this policy.
-    bindings: Associates a list of `members` to a `role`. `bindings` with no
-      members will result in an error.
+    bindings: Associates a list of `members` to a `role`. Optionally, may
+      specify a `condition` that determines how and when the `bindings` are
+      applied. Each of the `bindings` must contain at least one member.
     etag: `etag` is used for optimistic concurrency control as a way to help
       prevent simultaneous updates of a policy from overwriting each other. It
       is strongly suggested that systems make use of the `etag` in the read-
@@ -841,9 +1277,24 @@ class Policy(_messages.Message):
       conditions: An `etag` is returned in the response to `getIamPolicy`, and
       systems are expected to put that etag in the request to `setIamPolicy`
       to ensure that their change will be applied to the same version of the
-      policy.  If no `etag` is provided in the call to `setIamPolicy`, then
-      the existing policy is overwritten blindly.
-    version: Deprecated.
+      policy.  **Important:** If you use IAM Conditions, you must include the
+      `etag` field whenever you call `setIamPolicy`. If you omit this field,
+      then IAM allows you to overwrite a version `3` policy with a version `1`
+      policy, and all of the conditions in the version `3` policy are lost.
+    version: Specifies the format of the policy.  Valid values are `0`, `1`,
+      and `3`. Requests that specify an invalid value are rejected.  Any
+      operation that affects conditional role bindings must specify version
+      `3`. This requirement applies to the following operations:  * Getting a
+      policy that includes a conditional role binding * Adding a conditional
+      role binding to a policy * Changing a conditional role binding in a
+      policy * Removing any role binding, with or without a condition, from a
+      policy   that includes conditions  **Important:** If you use IAM
+      Conditions, you must include the `etag` field whenever you call
+      `setIamPolicy`. If you omit this field, then IAM allows you to overwrite
+      a version `3` policy with a version `1` policy, and all of the
+      conditions in the version `3` policy are lost.  If a policy does not
+      include any conditions, operations on that policy may specify any valid
+      version or leave the field unset.
   """
 
   auditConfigs = _messages.MessageField('AuditConfig', 1, repeated=True)
@@ -861,8 +1312,8 @@ class SecurityCenterProperties(_messages.Message):
   and cannot be modified by the user.
 
   Fields:
-    resourceName: The full resource name of the GCP resource this asset
-      represents. This field is immutable after create time. See:
+    resourceName: Immutable. The full resource name of the GCP resource this
+      asset represents. This field is immutable after create time. See:
       https://cloud.google.com/apis/design/resource_names#full_resource_name
     resourceOwners: Owners of the Google Cloud resource.
     resourceParent: The full resource name of the immediate parent of the
@@ -892,31 +1343,33 @@ class SecurityMarks(_messages.Message):
 
   Messages:
     MarksValue: Mutable user specified security marks belonging to the parent
-      resource. Constraints are as follows:   - Keys and values are treated as
-      case insensitive   - Keys must be between 1 - 256 characters (inclusive)
-      - Keys must be letters, numbers, underscores, or dashes   - Values have
-      leading and trailing whitespace trimmed, remaining     characters must
-      be between 1 - 4096 characters (inclusive)
+      resource. Constraints are as follows:    * Keys and values are treated
+      as case insensitive   * Keys must be between 1 - 256 characters
+      (inclusive)   * Keys must be letters, numbers, underscores, or dashes
+      * Values have leading and trailing whitespace trimmed, remaining
+      characters must be between 1 - 4096 characters (inclusive)
 
   Fields:
     marks: Mutable user specified security marks belonging to the parent
-      resource. Constraints are as follows:   - Keys and values are treated as
-      case insensitive   - Keys must be between 1 - 256 characters (inclusive)
-      - Keys must be letters, numbers, underscores, or dashes   - Values have
-      leading and trailing whitespace trimmed, remaining     characters must
-      be between 1 - 4096 characters (inclusive)
+      resource. Constraints are as follows:    * Keys and values are treated
+      as case insensitive   * Keys must be between 1 - 256 characters
+      (inclusive)   * Keys must be letters, numbers, underscores, or dashes
+      * Values have leading and trailing whitespace trimmed, remaining
+      characters must be between 1 - 4096 characters (inclusive)
     name: The relative resource name of the SecurityMarks. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Examples: "organizations/123/assets/456/securityMarks"
-      "organizations/123/sources/456/findings/789/securityMarks".
+      me Examples:
+      "organizations/{organization_id}/assets/{asset_id}/securityMarks" "organ
+      izations/{organization_id}/sources/{source_id}/findings/{finding_id}/sec
+      urityMarks".
   """
 
   @encoding.MapUnrecognizedFields('additionalProperties')
   class MarksValue(_messages.Message):
     r"""Mutable user specified security marks belonging to the parent
-    resource. Constraints are as follows:   - Keys and values are treated as
-    case insensitive   - Keys must be between 1 - 256 characters (inclusive)
-    - Keys must be letters, numbers, underscores, or dashes   - Values have
+    resource. Constraints are as follows:    * Keys and values are treated as
+    case insensitive   * Keys must be between 1 - 256 characters (inclusive)
+    * Keys must be letters, numbers, underscores, or dashes   * Values have
     leading and trailing whitespace trimmed, remaining     characters must be
     between 1 - 4096 characters (inclusive)
 
@@ -950,7 +1403,7 @@ class SecuritycenterOrganizationsAssetsGroupRequest(_messages.Message):
   Fields:
     groupAssetsRequest: A GroupAssetsRequest resource to be passed as the
       request body.
-    parent: Name of the organization to groupBy. Its format is
+    parent: Required. Name of the organization to groupBy. Its format is
       "organizations/[organization_id]".
   """
 
@@ -979,7 +1432,7 @@ class SecuritycenterOrganizationsAssetsListRequest(_messages.Message):
       defined by              compare_duration and read_time.  If
       compare_duration is not specified, then the only possible state is
       "UNUSED", which indicates that the asset is present at read_time.
-    fieldMask: Optional.  A field mask to specify the ListAssetsResult fields
+    fieldMask: Optional. A field mask to specify the ListAssetsResult fields
       to be listed in the response. An empty field mask will list all fields.
     filter: Expression that defines the filter to apply across assets. The
       expression is a list of zero or more restrictions combined via logical
@@ -1009,8 +1462,8 @@ class SecuritycenterOrganizationsAssetsListRequest(_messages.Message):
     pageToken: The value returned by the last `ListAssetsResponse`; indicates
       that this is a continuation of a prior `ListAssets` call, and that the
       system should return the next page of data.
-    parent: Name of the organization assets should belong to. Its format is
-      "organizations/[organization_id]".
+    parent: Required. Name of the organization assets should belong to. Its
+      format is "organizations/[organization_id]".
     readTime: Time used as a reference point when filtering assets. The filter
       is limited to assets existing at the supplied time and their values are
       those at that specific time. Absence of this field will default to the
@@ -1031,8 +1484,8 @@ class SecuritycenterOrganizationsAssetsRunDiscoveryRequest(_messages.Message):
   r"""A SecuritycenterOrganizationsAssetsRunDiscoveryRequest object.
 
   Fields:
-    parent: Name of the organization to run asset discovery for. Its format is
-      "organizations/[organization_id]".
+    parent: Required. Name of the organization to run asset discovery for. Its
+      format is "organizations/[organization_id]".
     runAssetDiscoveryRequest: A RunAssetDiscoveryRequest resource to be passed
       as the request body.
   """
@@ -1047,8 +1500,10 @@ class SecuritycenterOrganizationsAssetsUpdateSecurityMarksRequest(_messages.Mess
   Fields:
     name: The relative resource name of the SecurityMarks. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Examples: "organizations/123/assets/456/securityMarks"
-      "organizations/123/sources/456/findings/789/securityMarks".
+      me Examples:
+      "organizations/{organization_id}/assets/{asset_id}/securityMarks" "organ
+      izations/{organization_id}/sources/{source_id}/findings/{finding_id}/sec
+      urityMarks".
     securityMarks: A SecurityMarks resource to be passed as the request body.
     startTime: The time at which the updated SecurityMarks take effect.
     updateMask: The FieldMask to use when updating the security marks
@@ -1065,8 +1520,8 @@ class SecuritycenterOrganizationsGetOrganizationSettingsRequest(_messages.Messag
   r"""A SecuritycenterOrganizationsGetOrganizationSettingsRequest object.
 
   Fields:
-    name: Name of the organization to get organization settings for. Its
-      format is "organizations/[organization_id]/organizationSettings".
+    name: Required. Name of the organization to get organization settings for.
+      Its format is "organizations/[organization_id]/organizationSettings".
   """
 
   name = _messages.StringField(1, required=True)
@@ -1125,8 +1580,8 @@ class SecuritycenterOrganizationsSourcesCreateRequest(_messages.Message):
   r"""A SecuritycenterOrganizationsSourcesCreateRequest object.
 
   Fields:
-    parent: Resource name of the new source's parent. Its format should be
-      "organizations/[organization_id]".
+    parent: Required. Resource name of the new source's parent. Its format
+      should be "organizations/[organization_id]".
     source: A Source resource to be passed as the request body.
   """
 
@@ -1139,11 +1594,11 @@ class SecuritycenterOrganizationsSourcesFindingsCreateRequest(_messages.Message)
 
   Fields:
     finding: A Finding resource to be passed as the request body.
-    findingId: Unique identifier provided by the client within the parent
-      scope. It must be alphanumeric and less than or equal to 32 characters
-      and greater than 0 characters in length.
-    parent: Resource name of the new finding's parent. Its format should be
-      "organizations/[organization_id]/sources/[source_id]".
+    findingId: Required. Unique identifier provided by the client within the
+      parent scope. It must be alphanumeric and less than or equal to 32
+      characters and greater than 0 characters in length.
+    parent: Required. Resource name of the new finding's parent. Its format
+      should be "organizations/[organization_id]/sources/[source_id]".
   """
 
   finding = _messages.MessageField('Finding', 1)
@@ -1157,10 +1612,10 @@ class SecuritycenterOrganizationsSourcesFindingsGroupRequest(_messages.Message):
   Fields:
     groupFindingsRequest: A GroupFindingsRequest resource to be passed as the
       request body.
-    parent: Name of the source to groupBy. Its format is
+    parent: Required. Name of the source to groupBy. Its format is
       "organizations/[organization_id]/sources/[source_id]". To groupBy across
       all sources provide a source_id of `-`. For example:
-      organizations/123/sources/-
+      organizations/{organization_id}/sources/-
   """
 
   groupFindingsRequest = _messages.MessageField('GroupFindingsRequest', 1)
@@ -1171,7 +1626,7 @@ class SecuritycenterOrganizationsSourcesFindingsListRequest(_messages.Message):
   r"""A SecuritycenterOrganizationsSourcesFindingsListRequest object.
 
   Fields:
-    fieldMask: Optional.  A field mask to specify the Finding fields to be
+    fieldMask: Optional. A field mask to specify the Finding fields to be
       listed in the response. An empty field mask will list all fields.
     filter: Expression that defines the filter to apply across findings. The
       expression is a list of one or more restrictions combined via logical
@@ -1199,10 +1654,10 @@ class SecuritycenterOrganizationsSourcesFindingsListRequest(_messages.Message):
     pageToken: The value returned by the last `ListFindingsResponse`;
       indicates that this is a continuation of a prior `ListFindings` call,
       and that the system should return the next page of data.
-    parent: Name of the source the findings belong to. Its format is
+    parent: Required. Name of the source the findings belong to. Its format is
       "organizations/[organization_id]/sources/[source_id]". To list across
       all sources provide a source_id of `-`. For example:
-      organizations/123/sources/-
+      organizations/{organization_id}/sources/-
     readTime: Time used as a reference point when filtering findings. The
       filter is limited to findings existing at the supplied time and their
       values are those at that specific time. Absence of this field will
@@ -1225,7 +1680,8 @@ class SecuritycenterOrganizationsSourcesFindingsPatchRequest(_messages.Message):
     finding: A Finding resource to be passed as the request body.
     name: The relative resource name of this finding. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Example: "organizations/123/sources/456/findings/789"
+      me Example: "organizations/{organization_id}/sources/{source_id}/finding
+      s/{finding_id}"
     updateMask: The FieldMask to use when updating the finding resource. This
       field should not be specified when creating a finding.
   """
@@ -1239,9 +1695,10 @@ class SecuritycenterOrganizationsSourcesFindingsSetStateRequest(_messages.Messag
   r"""A SecuritycenterOrganizationsSourcesFindingsSetStateRequest object.
 
   Fields:
-    name: The relative resource name of the finding. See:
+    name: Required. The relative resource name of the finding. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Example: "organizations/123/sources/456/finding/789".
+      me Example: "organizations/{organization_id}/sources/{source_id}/finding
+      /{finding_id}".
     setFindingStateRequest: A SetFindingStateRequest resource to be passed as
       the request body.
   """
@@ -1257,8 +1714,10 @@ class SecuritycenterOrganizationsSourcesFindingsUpdateSecurityMarksRequest(_mess
   Fields:
     name: The relative resource name of the SecurityMarks. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Examples: "organizations/123/assets/456/securityMarks"
-      "organizations/123/sources/456/findings/789/securityMarks".
+      me Examples:
+      "organizations/{organization_id}/assets/{asset_id}/securityMarks" "organ
+      izations/{organization_id}/sources/{source_id}/findings/{finding_id}/sec
+      urityMarks".
     securityMarks: A SecurityMarks resource to be passed as the request body.
     startTime: The time at which the updated SecurityMarks take effect.
     updateMask: The FieldMask to use when updating the security marks
@@ -1290,7 +1749,7 @@ class SecuritycenterOrganizationsSourcesGetRequest(_messages.Message):
   r"""A SecuritycenterOrganizationsSourcesGetRequest object.
 
   Fields:
-    name: Relative resource name of the source. Its format is
+    name: Required. Relative resource name of the source. Its format is
       "organizations/[organization_id]/source/[source_id]".
   """
 
@@ -1306,8 +1765,8 @@ class SecuritycenterOrganizationsSourcesListRequest(_messages.Message):
     pageToken: The value returned by the last `ListSourcesResponse`; indicates
       that this is a continuation of a prior `ListSources` call, and that the
       system should return the next page of data.
-    parent: Resource name of the parent of sources to list. Its format should
-      be "organizations/[organization_id]".
+    parent: Required. Resource name of the parent of sources to list. Its
+      format should be "organizations/[organization_id]".
   """
 
   pageSize = _messages.IntegerField(1, variant=_messages.Variant.INT32)
@@ -1321,7 +1780,7 @@ class SecuritycenterOrganizationsSourcesPatchRequest(_messages.Message):
   Fields:
     name: The relative resource name of this source. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Example: "organizations/123/sources/456"
+      me Example: "organizations/{organization_id}/sources/{source_id}"
     source: A Source resource to be passed as the request body.
     updateMask: The FieldMask to use when updating the source resource.
   """
@@ -1367,7 +1826,7 @@ class SecuritycenterOrganizationsUpdateOrganizationSettingsRequest(_messages.Mes
   Fields:
     name: The relative resource name of the settings. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Example: "organizations/123/organizationSettings".
+      me Example: "organizations/{organization_id}/organizationSettings".
     organizationSettings: A OrganizationSettings resource to be passed as the
       request body.
     updateMask: The FieldMask to use when updating the settings resource.
@@ -1382,15 +1841,15 @@ class SetFindingStateRequest(_messages.Message):
   r"""Request message for updating a finding's state.
 
   Enums:
-    StateValueValuesEnum: The desired State of the finding.
+    StateValueValuesEnum: Required. The desired State of the finding.
 
   Fields:
-    startTime: The time at which the updated state takes effect.
-    state: The desired State of the finding.
+    startTime: Required. The time at which the updated state takes effect.
+    state: Required. The desired State of the finding.
   """
 
   class StateValueValuesEnum(_messages.Enum):
-    r"""The desired State of the finding.
+    r"""Required. The desired State of the finding.
 
     Values:
       STATE_UNSPECIFIED: Unspecified state.
@@ -1439,14 +1898,11 @@ class Source(_messages.Message):
       outdated/insecure libraries."
     displayName: The source's display name. A source's display name must be
       unique amongst its siblings, for example, two sources with the same
-      parent can't share the same display name. The display name must start
-      and end with a letter or digit, may contain letters, digits, spaces,
-      hyphens, and underscores, and can be no longer than 32 characters. This
-      is captured by the regular expression: [\p{L}\p{N}]({\p{L}\p{N}_-
-      ]{0,30}[\p{L}\p{N}])?.
+      parent can't share the same display name. The display name must have a
+      length between 1 and 64 characters (inclusive).
     name: The relative resource name of this source. See:
       https://cloud.google.com/apis/design/resource_names#relative_resource_na
-      me Example: "organizations/123/sources/456"
+      me Example: "organizations/{organization_id}/sources/{source_id}"
   """
 
   description = _messages.StringField(1)
@@ -1520,37 +1976,10 @@ class StandardQueryParameters(_messages.Message):
 class Status(_messages.Message):
   r"""The `Status` type defines a logical error model that is suitable for
   different programming environments, including REST APIs and RPC APIs. It is
-  used by [gRPC](https://github.com/grpc). The error model is designed to be:
-  - Simple to use and understand for most users - Flexible enough to meet
-  unexpected needs  # Overview  The `Status` message contains three pieces of
-  data: error code, error message, and error details. The error code should be
-  an enum value of google.rpc.Code, but it may accept additional error codes
-  if needed.  The error message should be a developer-facing English message
-  that helps developers *understand* and *resolve* the error. If a localized
-  user-facing error message is needed, put the localized message in the error
-  details or localize it in the client. The optional error details may contain
-  arbitrary information about the error. There is a predefined set of error
-  detail types in the package `google.rpc` that can be used for common error
-  conditions.  # Language mapping  The `Status` message is the logical
-  representation of the error model, but it is not necessarily the actual wire
-  format. When the `Status` message is exposed in different client libraries
-  and different wire protocols, it can be mapped differently. For example, it
-  will likely be mapped to some exceptions in Java, but more likely mapped to
-  some error codes in C.  # Other uses  The error model and the `Status`
-  message can be used in a variety of environments, either with or without
-  APIs, to provide a consistent developer experience across different
-  environments.  Example uses of this error model include:  - Partial errors.
-  If a service needs to return partial errors to the client,     it may embed
-  the `Status` in the normal response to indicate the partial     errors.  -
-  Workflow errors. A typical workflow has multiple steps. Each step may
-  have a `Status` message for error reporting.  - Batch operations. If a
-  client uses batch request and batch response, the     `Status` message
-  should be used directly inside batch response, one for     each error sub-
-  response.  - Asynchronous operations. If an API call embeds asynchronous
-  operation     results in its response, the status of those operations should
-  be     represented directly using the `Status` message.  - Logging. If some
-  API errors are stored in logs, the message `Status` could     be used
-  directly after any stripping needed for security/privacy reasons.
+  used by [gRPC](https://github.com/grpc). Each `Status` message contains
+  three pieces of data: error code, error message, and error details.  You can
+  find out more about this error model and how to work with it in the [API
+  Design Guide](https://cloud.google.com/apis/design/errors).
 
   Messages:
     DetailsValueListEntry: A DetailsValueListEntry object.

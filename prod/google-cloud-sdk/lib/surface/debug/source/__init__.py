@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ from googlecloudsdk.calliope import base
 
 
 class Source(base.Group):
-  """Commands to manage source information for Stackdriver tools.
+  """Commands to manage source information for Cloud Debugger.
 
-  This set of commands allows you to provide Stackdriver tools with source
-  code version information.
+  This set of commands allows you to provide Cloud Debugger with source code
+  version information.
   """

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ IP_ADDRESSES_ARG = compute_flags.ResourceArgument(
     required=False)
 
 DRAIN_NAT_IP_ADDRESSES_ARG = compute_flags.ResourceArgument(
-    name='--drain-nat-ips',
+    name='--nat-external-drain-ip-pool',
     detailed_help=textwrap.dedent("""\
        External IP Addresses to be drained
 
@@ -77,17 +77,14 @@ def AddNatNameArg(parser, operation_type='operate on', plural=False):
 
 
 def AddCommonNatArgs(parser,
-                     for_create=False,
-                     with_logging=False,
-                     with_drain_ips=False):
+                     for_create=False):
   """Adds common arguments for creating and updating NATs."""
   _AddIpAllocationArgs(parser, for_create)
   _AddSubnetworkArgs(parser, for_create)
   _AddTimeoutsArgs(parser, for_create)
   _AddMinPortsPerVmArg(parser, for_create)
-  if with_logging:
-    _AddLoggingArgs(parser)
-  if with_drain_ips and not for_create:
+  _AddLoggingArgs(parser)
+  if not for_create:
     _AddDrainNatIpsArgument(parser)
 
 
@@ -219,7 +216,7 @@ def _AddDrainNatIpsArgument(parser):
   drain_ips_group = parser.add_mutually_exclusive_group(required=False)
   DRAIN_NAT_IP_ADDRESSES_ARG.AddArgument(parser, mutex_group=drain_ips_group)
   drain_ips_group.add_argument(
-      '--clear-drain-nat-ips',
+      '--clear-nat-external-drain-ip-pool',
       action='store_true',
       default=False,
       help='Clear the drained NAT IPs')

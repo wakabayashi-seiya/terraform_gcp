@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,36 +21,74 @@ from __future__ import unicode_literals
 from googlecloudsdk.api_lib.compute import base_classes
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.compute import flags as compute_flags
+from googlecloudsdk.command_lib.compute import scope as compute_scope
 from googlecloudsdk.command_lib.compute.network_endpoint_groups import flags
 
+DETAILED_HELP = {
+    'EXAMPLES': """
+To describe a network endpoint group:
 
+  $ {command} my-neg --zone=us-central1-a
+""",
+}
+
+
+@base.ReleaseTracks(base.ReleaseTrack.GA)
 class Describe(base.DescribeCommand):
-  r"""Describes a Google Compute Engine network endpoint group.
+  """Describe a Google Compute Engine network endpoint group."""
 
-  ## EXAMPLES
+  detailed_help = DETAILED_HELP
+  support_global_scope = False
+  support_regional_scope = False
 
-  To describe a network endpoint group:
-
-    $ {command} my-neg --zone=us-central1-a
-  """
-
-  @staticmethod
-  def Args(parser):
-    flags.MakeNetworkEndpointGroupsArg().AddArgument(parser)
+  @classmethod
+  def Args(cls, parser):
+    flags.MakeNetworkEndpointGroupsArg(
+        support_global_scope=cls.support_global_scope,
+        support_regional_scope=cls.support_regional_scope).AddArgument(parser)
 
   def Run(self, args):
     holder = base_classes.ComputeApiHolder(self.ReleaseTrack())
     client = holder.client
 
-    neg_ref = flags.MakeNetworkEndpointGroupsArg().ResolveAsResource(
-        args, holder.resources,
-        scope_lister=compute_flags.GetDefaultScopeLister(holder.client))
+    neg_ref = flags.MakeNetworkEndpointGroupsArg(
+        support_global_scope=self.support_global_scope,
+        support_regional_scope=self.support_regional_scope).ResolveAsResource(
+            args,
+            holder.resources,
+            default_scope=compute_scope.ScopeEnum.ZONE,
+            scope_lister=compute_flags.GetDefaultScopeLister(holder.client))
 
     messages = holder.client.messages
-    request = messages.ComputeNetworkEndpointGroupsGetRequest(
-        networkEndpointGroup=neg_ref.Name(),
-        project=neg_ref.project,
-        zone=neg_ref.zone)
+    if hasattr(neg_ref, 'zone'):
+      request = messages.ComputeNetworkEndpointGroupsGetRequest(
+          networkEndpointGroup=neg_ref.Name(),
+          project=neg_ref.project,
+          zone=neg_ref.zone)
+      service = holder.client.apitools_client.networkEndpointGroups
+    elif hasattr(neg_ref, 'region'):
+      request = messages.ComputeRegionNetworkEndpointGroupsGetRequest(
+          networkEndpointGroup=neg_ref.Name(),
+          project=neg_ref.project,
+          region=neg_ref.region)
+      service = holder.client.apitools_client.regionNetworkEndpointGroups
+    else:
+      request = messages.ComputeGlobalNetworkEndpointGroupsGetRequest(
+          networkEndpointGroup=neg_ref.Name(), project=neg_ref.project)
+      service = holder.client.apitools_client.globalNetworkEndpointGroups
 
-    service = holder.client.apitools_client.networkEndpointGroups
     return client.MakeRequests([(service, 'Get', request)])[0]
+
+
+@base.ReleaseTracks(base.ReleaseTrack.BETA)
+class DescribeBeta(Describe):
+  """Describe a Google Compute Engine network endpoint group."""
+
+  support_global_scope = True
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class DescribeAlpha(DescribeBeta):
+  """Describe a Google Compute Engine network endpoint group."""
+
+  support_regional_scope = True

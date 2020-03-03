@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -450,7 +450,6 @@ def _GetCompleterCollectionInfo(resource_spec, attribute):
     # pylint: disable=protected-access
     full_collection_name = (
         resource_spec._collection_info.api_name + '.' + collection)
-    # TODO(b/109799172): add a unit test where api_version is not the default
     api_version = resource_spec._collection_info.api_version
   # The CloudResourceManager projects collection can be used for "synthetic"
   # project resources that don't have their own method.

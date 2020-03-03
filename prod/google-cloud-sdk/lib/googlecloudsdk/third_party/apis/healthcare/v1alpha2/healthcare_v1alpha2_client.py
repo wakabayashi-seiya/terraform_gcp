@@ -9,6 +9,7 @@ class HealthcareV1alpha2(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://healthcare.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'healthcare'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform']
@@ -35,173 +36,14 @@ class HealthcareV1alpha2(base_api.BaseApiClient):
         default_global_params=default_global_params,
         additional_http_headers=additional_http_headers,
         response_encoding=response_encoding)
-    self.projects_locations_datasets_annotationStores_annotations = self.ProjectsLocationsDatasetsAnnotationStoresAnnotationsService(self)
     self.projects_locations_datasets_annotationStores = self.ProjectsLocationsDatasetsAnnotationStoresService(self)
-    self.projects_locations_datasets_dicomStores_dicomWeb_studies_series_instances_frames = self.ProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesFramesService(self)
-    self.projects_locations_datasets_dicomStores_dicomWeb_studies_series_instances = self.ProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesService(self)
-    self.projects_locations_datasets_dicomStores_dicomWeb_studies_series = self.ProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesService(self)
-    self.projects_locations_datasets_dicomStores_dicomWeb_studies = self.ProjectsLocationsDatasetsDicomStoresDicomWebStudiesService(self)
-    self.projects_locations_datasets_dicomStores_dicomWeb = self.ProjectsLocationsDatasetsDicomStoresDicomWebService(self)
     self.projects_locations_datasets_dicomStores = self.ProjectsLocationsDatasetsDicomStoresService(self)
-    self.projects_locations_datasets_fhirStores_fhir = self.ProjectsLocationsDatasetsFhirStoresFhirService(self)
-    self.projects_locations_datasets_fhirStores_securityLabels = self.ProjectsLocationsDatasetsFhirStoresSecurityLabelsService(self)
     self.projects_locations_datasets_fhirStores = self.ProjectsLocationsDatasetsFhirStoresService(self)
-    self.projects_locations_datasets_hl7V2Stores_messages = self.ProjectsLocationsDatasetsHl7V2StoresMessagesService(self)
     self.projects_locations_datasets_hl7V2Stores = self.ProjectsLocationsDatasetsHl7V2StoresService(self)
     self.projects_locations_datasets_operations = self.ProjectsLocationsDatasetsOperationsService(self)
     self.projects_locations_datasets = self.ProjectsLocationsDatasetsService(self)
     self.projects_locations = self.ProjectsLocationsService(self)
     self.projects = self.ProjectsService(self)
-
-  class ProjectsLocationsDatasetsAnnotationStoresAnnotationsService(base_api.BaseApiService):
-    """Service class for the projects_locations_datasets_annotationStores_annotations resource."""
-
-    _NAME = u'projects_locations_datasets_annotationStores_annotations'
-
-    def __init__(self, client):
-      super(HealthcareV1alpha2.ProjectsLocationsDatasetsAnnotationStoresAnnotationsService, self).__init__(client)
-      self._upload_configs = {
-          }
-
-    def Create(self, request, global_params=None):
-      r"""Creates a new Annotation record. It is.
-valid to create Annotation objects for the same source more than once since
-a unique ID is assigned to each record by this service.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsCreateRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Annotation) The response message.
-      """
-      config = self.GetMethodConfig('Create')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Create.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/annotationStores/{annotationStoresId}/annotations',
-        http_method=u'POST',
-        method_id=u'healthcare.projects.locations.datasets.annotationStores.annotations.create',
-        ordered_params=[u'parent'],
-        path_params=[u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/annotations',
-        request_field=u'annotation',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsCreateRequest',
-        response_type_name=u'Annotation',
-        supports_download=False,
-    )
-
-    def Delete(self, request, global_params=None):
-      r"""Deletes an Annotation or returns.
-NOT_FOUND if it does not exist.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsDeleteRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Empty) The response message.
-      """
-      config = self.GetMethodConfig('Delete')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Delete.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/annotationStores/{annotationStoresId}/annotations/{annotationsId}',
-        http_method=u'DELETE',
-        method_id=u'healthcare.projects.locations.datasets.annotationStores.annotations.delete',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsDeleteRequest',
-        response_type_name=u'Empty',
-        supports_download=False,
-    )
-
-    def Get(self, request, global_params=None):
-      r"""Gets an Annotation.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsGetRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Annotation) The response message.
-      """
-      config = self.GetMethodConfig('Get')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Get.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/annotationStores/{annotationStoresId}/annotations/{annotationsId}',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.annotationStores.annotations.get',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsGetRequest',
-        response_type_name=u'Annotation',
-        supports_download=False,
-    )
-
-    def List(self, request, global_params=None):
-      r"""Lists the Annotations in the given.
-Annotation store for a source
-resource.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsListRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (ListAnnotationsResponse) The response message.
-      """
-      config = self.GetMethodConfig('List')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    List.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/annotationStores/{annotationStoresId}/annotations',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.annotationStores.annotations.list',
-        ordered_params=[u'parent'],
-        path_params=[u'parent'],
-        query_params=[u'filter', u'pageSize', u'pageToken'],
-        relative_path=u'v1alpha2/{+parent}/annotations',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsListRequest',
-        response_type_name=u'ListAnnotationsResponse',
-        supports_download=False,
-    )
-
-    def Patch(self, request, global_params=None):
-      r"""Updates the Annotation.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsPatchRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Annotation) The response message.
-      """
-      config = self.GetMethodConfig('Patch')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Patch.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/annotationStores/{annotationStoresId}/annotations/{annotationsId}',
-        http_method=u'PATCH',
-        method_id=u'healthcare.projects.locations.datasets.annotationStores.annotations.patch',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[u'updateMask'],
-        relative_path=u'v1alpha2/{+name}',
-        request_field=u'annotation',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresAnnotationsPatchRequest',
-        response_type_name=u'Annotation',
-        supports_download=False,
-    )
 
   class ProjectsLocationsDatasetsAnnotationStoresService(base_api.BaseApiService):
     """Service class for the projects_locations_datasets_annotationStores resource."""
@@ -268,6 +110,73 @@ contained within it.
         supports_download=False,
     )
 
+    def Evaluate(self, request, global_params=None):
+      r"""Evaluate an Annotation store against a.
+ground truth Annotation store.
+When the operation finishes successfully, a detailed response is returned
+of type EvaluateAnnotationStoreResponse, contained in the response. The metadata field type is
+OperationMetadata.
+
+      Args:
+        request: (HealthcareProjectsLocationsDatasetsAnnotationStoresEvaluateRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Evaluate')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Evaluate.method_config = lambda: base_api.ApiMethodInfo(
+        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/annotationStores/{annotationStoresId}:evaluate',
+        http_method=u'POST',
+        method_id=u'healthcare.projects.locations.datasets.annotationStores.evaluate',
+        ordered_params=[u'evalStore'],
+        path_params=[u'evalStore'],
+        query_params=[],
+        relative_path=u'v1alpha2/{+evalStore}:evaluate',
+        request_field=u'evaluateAnnotationStoreRequest',
+        request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresEvaluateRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def Export(self, request, global_params=None):
+      r"""Export.
+Annotations from
+the Annotation
+store.
+Errors are noted in the error
+field. Otherwise, a detailed response is returned of type
+ExportAnnotationsResponse, contained in the
+response field when the
+operation finishes. The metadata
+field type is OperationMetadata.
+
+      Args:
+        request: (HealthcareProjectsLocationsDatasetsAnnotationStoresExportRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Export')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Export.method_config = lambda: base_api.ApiMethodInfo(
+        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/annotationStores/{annotationStoresId}:export',
+        http_method=u'POST',
+        method_id=u'healthcare.projects.locations.datasets.annotationStores.export',
+        ordered_params=[u'annotationStore'],
+        path_params=[u'annotationStore'],
+        query_params=[],
+        relative_path=u'v1alpha2/{+annotationStore}:export',
+        request_field=u'exportAnnotationsRequest',
+        request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresExportRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
     def Get(self, request, global_params=None):
       r"""Gets the specified Annotation store or returns NOT_FOUND if it does not.
 exist.
@@ -297,12 +206,9 @@ exist.
     )
 
     def GetIamPolicy(self, request, global_params=None):
-      r"""Gets the access control policy for a resource. Returns NOT_FOUND error if.
-the resource does not exist. Returns an empty policy if the resource exists
-but does not have a policy set.
-
-Authorization requires the Google IAM permission
-`healthcare.AnnotationStores.getIamPolicy` on the specified resource
+      r"""Gets the access control policy for a resource.
+Returns an empty policy if the resource exists and does not have a policy
+set.
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsAnnotationStoresGetIamPolicyRequest) input message
@@ -316,15 +222,53 @@ Authorization requires the Google IAM permission
 
     GetIamPolicy.method_config = lambda: base_api.ApiMethodInfo(
         flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/annotationStores/{annotationStoresId}:getIamPolicy',
-        http_method=u'POST',
+        http_method=u'GET',
         method_id=u'healthcare.projects.locations.datasets.annotationStores.getIamPolicy',
         ordered_params=[u'resource'],
         path_params=[u'resource'],
-        query_params=[],
+        query_params=[u'options_requestedPolicyVersion'],
         relative_path=u'v1alpha2/{+resource}:getIamPolicy',
-        request_field=u'getIamPolicyRequest',
+        request_field='',
         request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresGetIamPolicyRequest',
         response_type_name=u'Policy',
+        supports_download=False,
+    )
+
+    def Import(self, request, global_params=None):
+      r"""Import.
+Annotations to
+the Annotation
+store by
+loading data from the specified sources.
+Errors are noted in the error
+field. Otherwise, a detailed response is returned as of type
+ImportAnnotationsResponse contained in the
+response field when the
+operation finishes.
+The metadata field type is
+OperationMetadata.
+
+      Args:
+        request: (HealthcareProjectsLocationsDatasetsAnnotationStoresImportRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Import')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Import.method_config = lambda: base_api.ApiMethodInfo(
+        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/annotationStores/{annotationStoresId}:import',
+        http_method=u'POST',
+        method_id=u'healthcare.projects.locations.datasets.annotationStores.import',
+        ordered_params=[u'annotationStore'],
+        path_params=[u'annotationStore'],
+        query_params=[],
+        relative_path=u'v1alpha2/{+annotationStore}:import',
+        request_field=u'importAnnotationsRequest',
+        request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresImportRequest',
+        response_type_name=u'Operation',
         supports_download=False,
     )
 
@@ -383,12 +327,10 @@ Authorization requires the Google IAM permission
     )
 
     def SetIamPolicy(self, request, global_params=None):
-      r"""POLICIES.
-Sets the access control policy for a resource. Replaces any existing
-policy.
+      r"""Sets the access control policy on the specified resource. Replaces any.
+existing policy.
 
-Authorization requires the Google IAM permission
-'healthcare.annotationStores.setIamPolicy' on the specified resource
+Can return Public Errors: NOT_FOUND, INVALID_ARGUMENT and PERMISSION_DENIED
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsAnnotationStoresSetIamPolicyRequest) input message
@@ -419,7 +361,9 @@ Authorization requires the Google IAM permission
 If the resource does not exist, this will return an empty set of
 permissions, not a NOT_FOUND error.
 
-There is no permission required to make this API call.
+Note: This operation is designed to be used for building permission-aware
+UIs and command-line tools, not for authorization checking. This operation
+may "fail open" without warning.
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsAnnotationStoresTestIamPermissionsRequest) input message
@@ -442,629 +386,6 @@ There is no permission required to make this API call.
         request_field=u'testIamPermissionsRequest',
         request_type_name=u'HealthcareProjectsLocationsDatasetsAnnotationStoresTestIamPermissionsRequest',
         response_type_name=u'TestIamPermissionsResponse',
-        supports_download=False,
-    )
-
-  class ProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesFramesService(base_api.BaseApiService):
-    """Service class for the projects_locations_datasets_dicomStores_dicomWeb_studies_series_instances_frames resource."""
-
-    _NAME = u'projects_locations_datasets_dicomStores_dicomWeb_studies_series_instances_frames'
-
-    def __init__(self, client):
-      super(HealthcareV1alpha2.ProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesFramesService, self).__init__(client)
-      self._upload_configs = {
-          }
-
-    def Rendered(self, request, global_params=None):
-      r"""RetrieveRenderedFrames returns instances associated with the given study,.
-series, SOP Instance UID and frame numbers in an acceptable Rendered Media
-Type. See
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.8.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesFramesRenderedRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Rendered')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Rendered.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}/instances/{instancesId}/frames/{framesId}/rendered',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.instances.frames.rendered',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesFramesRenderedRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def RetrieveFrames(self, request, global_params=None):
-      r"""RetrieveFrames returns instances associated with the given study, series,.
-SOP Instance UID and frame numbers. See
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.4.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesFramesRetrieveFramesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('RetrieveFrames')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    RetrieveFrames.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}/instances/{instancesId}/frames/{framesId}',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.instances.frames.retrieveFrames',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesFramesRetrieveFramesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-  class ProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesService(base_api.BaseApiService):
-    """Service class for the projects_locations_datasets_dicomStores_dicomWeb_studies_series_instances resource."""
-
-    _NAME = u'projects_locations_datasets_dicomStores_dicomWeb_studies_series_instances'
-
-    def __init__(self, client):
-      super(HealthcareV1alpha2.ProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesService, self).__init__(client)
-      self._upload_configs = {
-          }
-
-    def Delete(self, request, global_params=None):
-      r"""DeleteInstance deletes an instance associated with the given study, series,.
-and SOP Instance UID. Delete requests are equivalent to the GET requests
-specified in the WADO-RS standard.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesDeleteRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Empty) The response message.
-      """
-      config = self.GetMethodConfig('Delete')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Delete.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}/instances/{instancesId}',
-        http_method=u'DELETE',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.instances.delete',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesDeleteRequest',
-        response_type_name=u'Empty',
-        supports_download=False,
-    )
-
-    def Metadata(self, request, global_params=None):
-      r"""RetrieveInstanceMetadata returns instance associated with the given study,.
-series, and SOP Instance UID presented as metadata with the bulk data
-removed. See
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.6.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesMetadataRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Metadata')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Metadata.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}/instances/{instancesId}/metadata',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.instances.metadata',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesMetadataRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Rendered(self, request, global_params=None):
-      r"""RetrieveRenderedInstance returns instance associated with the given study,.
-series, and SOP Instance UID in an acceptable Rendered Media Type. See
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.8.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesRenderedRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Rendered')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Rendered.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}/instances/{instancesId}/rendered',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.instances.rendered',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesRenderedRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def RetrieveInstance(self, request, global_params=None):
-      r"""RetrieveInstance returns instance associated with the given study, series,.
-and SOP Instance UID. See
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.3.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesRetrieveInstanceRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('RetrieveInstance')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    RetrieveInstance.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}/instances/{instancesId}',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.instances.retrieveInstance',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesInstancesRetrieveInstanceRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-  class ProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesService(base_api.BaseApiService):
-    """Service class for the projects_locations_datasets_dicomStores_dicomWeb_studies_series resource."""
-
-    _NAME = u'projects_locations_datasets_dicomStores_dicomWeb_studies_series'
-
-    def __init__(self, client):
-      super(HealthcareV1alpha2.ProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesService, self).__init__(client)
-      self._upload_configs = {
-          }
-
-    def Delete(self, request, global_params=None):
-      r"""DeleteSeries deletes all instances within the given study and series.
-Delete requests are equivalent to the GET requests specified in the WADO-RS
-standard.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesDeleteRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Empty) The response message.
-      """
-      config = self.GetMethodConfig('Delete')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Delete.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}',
-        http_method=u'DELETE',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.delete',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesDeleteRequest',
-        response_type_name=u'Empty',
-        supports_download=False,
-    )
-
-    def Metadata(self, request, global_params=None):
-      r"""RetrieveSeriesMetadata returns instance associated with the given study and.
-series, presented as metadata with the bulk data removed. See
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.6.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesMetadataRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Metadata')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Metadata.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}/metadata',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.metadata',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesMetadataRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def RetrieveSeries(self, request, global_params=None):
-      r"""RetrieveSeries returns all instances within the given study and series. See.
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.2.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesRetrieveSeriesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('RetrieveSeries')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    RetrieveSeries.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.retrieveSeries',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesRetrieveSeriesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def SearchForInstances(self, request, global_params=None):
-      r"""SearchForInstances returns a list of matching instances. See.
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.7
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesSearchForInstancesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('SearchForInstances')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    SearchForInstances.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series/{seriesId}/instances',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.series.searchForInstances',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSeriesSearchForInstancesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-  class ProjectsLocationsDatasetsDicomStoresDicomWebStudiesService(base_api.BaseApiService):
-    """Service class for the projects_locations_datasets_dicomStores_dicomWeb_studies resource."""
-
-    _NAME = u'projects_locations_datasets_dicomStores_dicomWeb_studies'
-
-    def __init__(self, client):
-      super(HealthcareV1alpha2.ProjectsLocationsDatasetsDicomStoresDicomWebStudiesService, self).__init__(client)
-      self._upload_configs = {
-          }
-
-    def Delete(self, request, global_params=None):
-      r"""DeleteStudy deletes all instances within the given study. Delete requests.
-are equivalent to the GET requests specified in the WADO-RS standard.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesDeleteRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Empty) The response message.
-      """
-      config = self.GetMethodConfig('Delete')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Delete.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}',
-        http_method=u'DELETE',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.delete',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesDeleteRequest',
-        response_type_name=u'Empty',
-        supports_download=False,
-    )
-
-    def Metadata(self, request, global_params=None):
-      r"""RetrieveStudyMetadata returns instance associated with the given study.
-presented as metadata with the bulk data removed. See
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.6.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesMetadataRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Metadata')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Metadata.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/metadata',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.metadata',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesMetadataRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def RetrieveStudy(self, request, global_params=None):
-      r"""RetrieveStudy returns all instances within the given study. See.
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.5.1.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesRetrieveStudyRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('RetrieveStudy')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    RetrieveStudy.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.retrieveStudy',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesRetrieveStudyRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def SearchForInstances(self, request, global_params=None):
-      r"""SearchForInstances returns a list of matching instances. See.
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.7
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSearchForInstancesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('SearchForInstances')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    SearchForInstances.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/instances',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.searchForInstances',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSearchForInstancesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def SearchForSeries(self, request, global_params=None):
-      r"""SearchForSeries returns a list of matching series. See.
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.7
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSearchForSeriesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('SearchForSeries')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    SearchForSeries.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}/series',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.searchForSeries',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesSearchForSeriesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def StoreInstances(self, request, global_params=None):
-      r"""StoreInstances stores DICOM instances associated with study instance unique.
-identifiers (SUID). See
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.6.1.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesStoreInstancesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('StoreInstances')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    StoreInstances.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies/{studiesId}',
-        http_method=u'POST',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.studies.storeInstances',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field=u'httpBody',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStudiesStoreInstancesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-  class ProjectsLocationsDatasetsDicomStoresDicomWebService(base_api.BaseApiService):
-    """Service class for the projects_locations_datasets_dicomStores_dicomWeb resource."""
-
-    _NAME = u'projects_locations_datasets_dicomStores_dicomWeb'
-
-    def __init__(self, client):
-      super(HealthcareV1alpha2.ProjectsLocationsDatasetsDicomStoresDicomWebService, self).__init__(client)
-      self._upload_configs = {
-          }
-
-    def SearchForInstances(self, request, global_params=None):
-      r"""SearchForInstances returns a list of matching instances. See.
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.7
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebSearchForInstancesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('SearchForInstances')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    SearchForInstances.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/instances',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.searchForInstances',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebSearchForInstancesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def SearchForSeries(self, request, global_params=None):
-      r"""SearchForSeries returns a list of matching series. See.
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.7
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebSearchForSeriesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('SearchForSeries')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    SearchForSeries.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/series',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.searchForSeries',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebSearchForSeriesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def SearchForStudies(self, request, global_params=None):
-      r"""SearchForStudies returns a list of matching studies. See.
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.7
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebSearchForStudiesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('SearchForStudies')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    SearchForStudies.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.searchForStudies',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebSearchForStudiesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def StoreInstances(self, request, global_params=None):
-      r"""StoreInstances stores DICOM instances associated with study instance unique.
-identifiers (SUID). See
-http://dicom.nema.org/medical/dicom/current/output/html/part18.html#sect_6.6.1.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStoreInstancesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('StoreInstances')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    StoreInstances.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/dicomStores/{dicomStoresId}/dicomWeb/studies',
-        http_method=u'POST',
-        method_id=u'healthcare.projects.locations.datasets.dicomStores.dicomWeb.storeInstances',
-        ordered_params=[u'parent', u'dicomWebPath'],
-        path_params=[u'dicomWebPath', u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/dicomWeb/{+dicomWebPath}',
-        request_field=u'httpBody',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresDicomWebStoreInstancesRequest',
-        response_type_name=u'HttpBody',
         supports_download=False,
     )
 
@@ -1211,7 +532,7 @@ set.
         method_id=u'healthcare.projects.locations.datasets.dicomStores.getIamPolicy',
         ordered_params=[u'resource'],
         path_params=[u'resource'],
-        query_params=[],
+        query_params=[u'options_requestedPolicyVersion'],
         relative_path=u'v1alpha2/{+resource}:getIamPolicy',
         request_field='',
         request_type_name=u'HealthcareProjectsLocationsDatasetsDicomStoresGetIamPolicyRequest',
@@ -1221,9 +542,11 @@ set.
 
     def Import(self, request, global_params=None):
       r"""Imports data into the DICOM store by copying it from the specified source.
-For errors, the Operation will be populated with error details (in the form
-of ImportDicomDataErrorDetails in error.details), which will hold
-finer-grained error information.
+For errors, the Operation is populated with error details (in the form
+of ImportDicomDataErrorDetails in error.details), which holds
+finer-grained error information. Errors are also logged to Stackdriver
+Logging. For more information, see
+[Viewing logs](/healthcare/docs/how-tos/stackdriver-logging).
 The metadata field type is
 OperationMetadata.
 
@@ -1309,6 +632,8 @@ OperationMetadata.
       r"""Sets the access control policy on the specified resource. Replaces any.
 existing policy.
 
+Can return Public Errors: NOT_FOUND, INVALID_ARGUMENT and PERMISSION_DENIED
+
       Args:
         request: (HealthcareProjectsLocationsDatasetsDicomStoresSetIamPolicyRequest) input message
         global_params: (StandardQueryParameters, default: None) global arguments
@@ -1366,802 +691,6 @@ may "fail open" without warning.
         supports_download=False,
     )
 
-  class ProjectsLocationsDatasetsFhirStoresFhirService(base_api.BaseApiService):
-    """Service class for the projects_locations_datasets_fhirStores_fhir resource."""
-
-    _NAME = u'projects_locations_datasets_fhirStores_fhir'
-
-    def __init__(self, client):
-      super(HealthcareV1alpha2.ProjectsLocationsDatasetsFhirStoresFhirService, self).__init__(client)
-      self._upload_configs = {
-          }
-
-    def Observation_lastn(self, request, global_params=None):
-      r"""Retrieves the N most recent `Observation` resources for a subject matching.
-search criteria specified as query parameters, grouped by
-`Observation.code`, sorted from most recent to oldest.
-
-Implements the FHIR extended operation
-[Observation-lastn](http://hl7.org/implement/standards/fhir/STU3/observation-operations.html#lastn).
-
-Search terms are provided as query parameters following the same pattern as
-the search method. This operation accepts an additional
-query parameter `max`, which specifies N, the maximum number of
-Observations to return from each group, with a default of 1.
-
-On success, the response body will contain a JSON-encoded representation
-of a `Bundle` resource of type `searchset`, containing the results of the
-operation.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirObservationLastnRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Observation_lastn')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Observation_lastn.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/Observation/$lastn',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.Observation-lastn',
-        ordered_params=[u'parent'],
-        path_params=[u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/fhir/Observation/$lastn',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirObservationLastnRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Patient_everything(self, request, global_params=None):
-      r"""Retrieves all the resources in the patient compartment for a `Patient`.
-resource.
-
-Implements the FHIR extended operation
-[Patient-everything](http://hl7.org/implement/standards/fhir/STU3/patient-operations.html#everything).
-
-On success, the response body will contain a JSON-encoded representation
-of a `Bundle` resource of type `searchset`, containing the results of the
-operation.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirPatientEverythingRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Patient_everything')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Patient_everything.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/Patient/{PatientId}/$everything',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.Patient-everything',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[u'end', u'start'],
-        relative_path=u'v1alpha2/{+name}/$everything',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirPatientEverythingRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Resource_purge(self, request, global_params=None):
-      r"""Deletes all the historical versions of a resource (excluding the current.
-version) from the FHIR store. To remove all versions of a resource, first
-delete the current version and then call this method.
-
-This is not a FHIR standard operation.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirResourcePurgeRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Empty) The response message.
-      """
-      config = self.GetMethodConfig('Resource_purge')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Resource_purge.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}/{fhirId1}/$purge',
-        http_method=u'DELETE',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.Resource-purge',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}/$purge',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirResourcePurgeRequest',
-        response_type_name=u'Empty',
-        supports_download=False,
-    )
-
-    def Capabilities(self, request, global_params=None):
-      r"""Gets the FHIR [capability.
-statement](http://hl7.org/implement/standards/fhir/STU3/capabilitystatement.html)
-for the store, which contains a description of functionality supported by
-the server.
-
-Implements the FHIR standard [capabilities
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#capabilities).
-
-On success, the response body will contain a JSON-encoded representation
-of a `CapabilityStatement` resource.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirCapabilitiesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Capabilities')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Capabilities.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/metadata',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.capabilities',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}/fhir/metadata',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirCapabilitiesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def ConditionalDelete(self, request, global_params=None):
-      r"""Deletes FHIR resources that match a search query.
-
-Implements the FHIR standard [conditional delete
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#2.21.0.13.1).
-If multiple resources match, all of them will be deleted.
-
-Search terms are provided as query parameters following the same pattern as
-the search method.
-
-Note: Unless resource versioning is disabled by setting the
-disable_resource_versioning flag
-on the FHIR store, the deleted resources will be moved to a history
-repository that can still be retrieved through vread
-and related methods, unless they are removed by the
-purge method.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirConditionalDeleteRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Empty) The response message.
-      """
-      config = self.GetMethodConfig('ConditionalDelete')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    ConditionalDelete.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}',
-        http_method=u'DELETE',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.conditionalDelete',
-        ordered_params=[u'parent', u'type'],
-        path_params=[u'parent', u'type'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/fhir/{+type}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirConditionalDeleteRequest',
-        response_type_name=u'Empty',
-        supports_download=False,
-    )
-
-    def ConditionalPatch(self, request, global_params=None):
-      r"""If a resource is found based on the search criteria specified in the query.
-parameters, updates part of that resource by applying the operations
-specified in a [JSON Patch](http://jsonpatch.com/) document.
-
-Implements the FHIR standard [conditional patch
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#patch).
-
-Search terms are provided as query parameters following the same pattern as
-the search method.
-
-If the search criteria identify more than one match, the request will
-return a `412 Precondition Failed` error.
-
-The request body must contain a JSON Patch document, and the request
-headers must contain `Content-Type: application/json-patch+json`.
-
-On success, the response body will contain a JSON-encoded representation
-of the updated resource, including the server-assigned version ID.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirConditionalPatchRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('ConditionalPatch')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    ConditionalPatch.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}',
-        http_method=u'PATCH',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.conditionalPatch',
-        ordered_params=[u'parent', u'type'],
-        path_params=[u'parent', u'type'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/fhir/{+type}',
-        request_field=u'httpBody',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirConditionalPatchRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def ConditionalUpdate(self, request, global_params=None):
-      r"""If a resource is found based on the search criteria specified in the query.
-parameters, updates the entire contents of that resource.
-
-Implements the FHIR standard [conditional update
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#cond-update).
-
-Search terms are provided as query parameters following the same pattern as
-the search method.
-
-If the search criteria identify more than one match, the request will
-return a `412 Precondition Failed` error.
-If the search criteria identify zero matches, and the supplied resource
-body contains an `id`, and the FHIR store has
-enable_update_create set, creates the
-resource with the client-specified ID. If the search criteria identify zero
-matches, and the supplied resource body does not contain an `id`, the
-resource will be created with a server-assigned ID as per the
-create method.
-
-The request body must contain a JSON-encoded FHIR resource, and the request
-headers must contain `Content-Type: application/fhir+json`.
-
-On success, the response body will contain a JSON-encoded representation
-of the updated resource, including the server-assigned version ID.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirConditionalUpdateRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('ConditionalUpdate')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    ConditionalUpdate.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}',
-        http_method=u'PUT',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.conditionalUpdate',
-        ordered_params=[u'parent', u'type'],
-        path_params=[u'parent', u'type'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/fhir/{+type}',
-        request_field=u'httpBody',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirConditionalUpdateRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Create(self, request, global_params=None):
-      r"""Creates a FHIR resource.
-
-Implements the FHIR standard [create
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#create),
-which creates a new resource with a server-assigned resource ID.
-
-Also supports the FHIR standard [conditional create
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#ccreate),
-specified by supplying an `If-None-Exist` header containing a FHIR search
-query. If no resources match this search query, the server processes the
-create operation as normal.
-
-The request body must contain a JSON-encoded FHIR resource, and the request
-headers must contain `Content-Type: application/fhir+json`.
-
-On success, the response body will contain a JSON-encoded representation
-of the resource as it was created on the server, including the
-server-assigned resource ID and version ID.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirCreateRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Create')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Create.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}',
-        http_method=u'POST',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.create',
-        ordered_params=[u'parent', u'type'],
-        path_params=[u'parent', u'type'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/fhir/{+type}',
-        request_field=u'httpBody',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirCreateRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Delete(self, request, global_params=None):
-      r"""Deletes a FHIR resource.
-
-Implements the FHIR standard [delete
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#delete).
-
-Note: Unless resource versioning is disabled by setting the
-disable_resource_versioning flag
-on the FHIR store, the deleted resources will be moved to a history
-repository that can still be retrieved through vread
-and related methods, unless they are removed by the
-purge method.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirDeleteRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Delete')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Delete.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}/{fhirId1}',
-        http_method=u'DELETE',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.delete',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirDeleteRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def ExecuteBundle(self, request, global_params=None):
-      r"""Executes all the requests in the given Bundle.
-
-Implements the FHIR standard [batch/transaction
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#transaction).
-
-Supports all interactions within a bundle, except search. This method
-accepts Bundles of type `batch` and `transaction`, processing them
-according to the [batch processing
-rules](http://hl7.org/implement/standards/fhir/STU3/http.html#2.21.0.17.1)
-and [transaction processing
-rules](http://hl7.org/implement/standards/fhir/STU3/http.html#2.21.0.17.2).
-
-The request body must contain a JSON-encoded FHIR `Bundle` resource, and
-the request headers must contain `Content-Type: application/fhir+json`.
-
-For a batch bundle or a successful transaction the response body will
-contain a JSON-encoded representation of a `Bundle` resource of type
-`batch-response` or `transaction-response` containing one entry for each
-entry in the request, with the outcome of processing the entry. In the
-case of an error for a transaction bundle, the response body will contain
-a JSON-encoded `OperationOutcome` resource describing the reason for the
-error. If the request cannot be mapped to a valid API method on a FHIR
-store, a generic GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirExecuteBundleRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('ExecuteBundle')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    ExecuteBundle.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir',
-        http_method=u'POST',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.executeBundle',
-        ordered_params=[u'parent'],
-        path_params=[u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/fhir',
-        request_field=u'httpBody',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirExecuteBundleRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def History(self, request, global_params=None):
-      r"""Lists all the versions of a resource (including the current version and.
-deleted versions) from the FHIR store.
-
-Implements the per-resource form of the FHIR standard [history
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#history).
-
-On success, the response body will contain a JSON-encoded representation
-of a `Bundle` resource of type `history`, containing the version history
-sorted from most recent to oldest versions.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirHistoryRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('History')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    History.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}/{fhirId1}/_history',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.history',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[u'at', u'count', u'page', u'since'],
-        relative_path=u'v1alpha2/{+name}/_history',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirHistoryRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Patch(self, request, global_params=None):
-      r"""Updates part of an existing resource by applying the operations specified.
-in a [JSON Patch](http://jsonpatch.com/) document.
-
-Implements the FHIR standard [patch
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#patch).
-
-The request body must contain a JSON Patch document, and the request
-headers must contain `Content-Type: application/json-patch+json`.
-
-On success, the response body will contain a JSON-encoded representation
-of the updated resource, including the server-assigned version ID.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirPatchRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Patch')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Patch.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}/{fhirId1}',
-        http_method=u'PATCH',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.patch',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}',
-        request_field=u'httpBody',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirPatchRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Read(self, request, global_params=None):
-      r"""Gets the contents of a FHIR resource.
-
-Implements the FHIR standard [read
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#read).
-
-Also supports the FHIR standard [conditional read
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#cread)
-specified by supplying an `If-Modified-Since` header with a date/time value
-or an `If-None-Match` header with an ETag value.
-
-On success, the response body will contain a JSON-encoded representation
-of the resource.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirReadRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Read')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Read.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}/{fhirId1}',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.read',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirReadRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Search(self, request, global_params=None):
-      r"""Searches for resources in the given FHIR store according to criteria.
-specified as query parameters.
-
-Implements the FHIR standard [search
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#search)
-using the search semantics described in the [FHIR Search
-specification](http://hl7.org/implement/standards/fhir/STU3/search.html).
-
-Supports three methods of search defined by the specification:
-
-*  `GET [base]?[parameters]` to search across all resources.
-*  `GET [base]/[type]?[parameters]` to search resources of a specified
-type.
-*  `POST [base]/[type]/_search?[parameters]` as an alternate form having
-the same semantics as the `GET` method.
-
-The `GET` methods do not support compartment searches. The `POST` method
-does not support `application/x-www-form-urlencoded` search parameters.
-
-On success, the response body will contain a JSON-encoded representation
-of a `Bundle` resource of type `searchset`, containing the results of the
-search.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-# Search Parameters
-
-The server's capability statement, retrieved through
-capabilities, indicates what search parameters
-are supported on each FHIR resource. A list of all search parameters
-defined by the specification can be found in the [FHIR Search Parameter
-Registry](http://hl7.org/implement/standards/fhir/STU3/searchparameter-registry.html).
-
-# Search Modifiers
-
-Modifier   | Supported
------------ | ---------
-`:missing`  | Yes
-`:exact`    | Yes
-`:contains` | Yes
-`:text`     | Yes
-`:in`       | Yes
-`:not-in`   | Yes
-`:above`    | Yes
-`:below`    | Yes
-`:[type]`   | Yes
-`:not`      | Yes
-`:recurse`  | No
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirSearchRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Search')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Search.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/_search',
-        http_method=u'POST',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.search',
-        ordered_params=[u'parent'],
-        path_params=[u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/fhir/_search',
-        request_field=u'searchResourcesRequest',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirSearchRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Update(self, request, global_params=None):
-      r"""Updates the entire contents of a resource.
-
-Implements the FHIR standard [update
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#update).
-
-If the specified resource does
-not exist and the FHIR store has
-enable_update_create set, creates the
-resource with the client-specified ID.
-
-The request body must contain a JSON-encoded FHIR resource, and the request
-headers must contain `Content-Type: application/fhir+json`. The resource
-must contain an `id` element having an identical value to the ID in the
-REST path of the request.
-
-On success, the response body will contain a JSON-encoded representation
-of the updated resource, including the server-assigned version ID.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirUpdateRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Update')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Update.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}/{fhirId1}',
-        http_method=u'PUT',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.update',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}',
-        request_field=u'httpBody',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirUpdateRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-    def Vread(self, request, global_params=None):
-      r"""Gets the contents of a version (current or historical) of a FHIR resource.
-by version ID.
-
-Implements the FHIR standard [vread
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#vread).
-
-On success, the response body will contain a JSON-encoded representation
-of the resource.
-Errors generated by the FHIR store will contain a JSON-encoded
-`OperationOutcome` resource describing the reason for the error. If the
-request cannot be mapped to a valid API method on a FHIR store, a generic
-GCP error might be returned instead.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresFhirVreadRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Vread')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Vread.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/fhir/{fhirId}/{fhirId1}/_history/{_historyId}',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.fhir.vread',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresFhirVreadRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
-
-  class ProjectsLocationsDatasetsFhirStoresSecurityLabelsService(base_api.BaseApiService):
-    """Service class for the projects_locations_datasets_fhirStores_securityLabels resource."""
-
-    _NAME = u'projects_locations_datasets_fhirStores_securityLabels'
-
-    def __init__(self, client):
-      super(HealthcareV1alpha2.ProjectsLocationsDatasetsFhirStoresSecurityLabelsService, self).__init__(client)
-      self._upload_configs = {
-          }
-
-    def GetIamPolicy(self, request, global_params=None):
-      r"""Gets the access control policy for a FHIR store or security label within a.
-FHIR store. Returns NOT_FOUND error if the resource does not exist. Returns
-an empty policy if the resource exists but does not have a policy set.
-
-Authorization requires the Google IAM permission
-'healthcare.fhirStores.getIamPolicy' for a FHIR store or
-'healthcare.securityLabels.getIamPolicy' for a security label
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresSecurityLabelsGetIamPolicyRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Policy) The response message.
-      """
-      config = self.GetMethodConfig('GetIamPolicy')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    GetIamPolicy.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/securityLabels/{securityLabelsId}:getIamPolicy',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.securityLabels.getIamPolicy',
-        ordered_params=[u'resource'],
-        path_params=[u'resource'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+resource}:getIamPolicy',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresSecurityLabelsGetIamPolicyRequest',
-        response_type_name=u'Policy',
-        supports_download=False,
-    )
-
-    def SetIamPolicy(self, request, global_params=None):
-      r"""Sets the access control policy for a FHIR store or security label within a.
-FHIR store. Replaces any existing policy.
-
-Authorization requires the Google IAM permission
-'healthcare.fhirStores.setIamPolicy' for a FHIR store or
-'healthcare.securityLabels.setIamPolicy' for a security label
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresSecurityLabelsSetIamPolicyRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Policy) The response message.
-      """
-      config = self.GetMethodConfig('SetIamPolicy')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    SetIamPolicy.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/securityLabels/{securityLabelsId}:setIamPolicy',
-        http_method=u'POST',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.securityLabels.setIamPolicy',
-        ordered_params=[u'resource'],
-        path_params=[u'resource'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+resource}:setIamPolicy',
-        request_field=u'setIamPolicyRequest',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresSecurityLabelsSetIamPolicyRequest',
-        response_type_name=u'Policy',
-        supports_download=False,
-    )
-
   class ProjectsLocationsDatasetsFhirStoresService(base_api.BaseApiService):
     """Service class for the projects_locations_datasets_fhirStores resource."""
 
@@ -2171,42 +700,6 @@ Authorization requires the Google IAM permission
       super(HealthcareV1alpha2.ProjectsLocationsDatasetsFhirStoresService, self).__init__(client)
       self._upload_configs = {
           }
-
-    def Capabilities(self, request, global_params=None):
-      r"""Gets the FHIR [capability.
-statement](http://hl7.org/implement/standards/fhir/STU3/capabilitystatement.html)
-for the store, which contains a description of functionality supported by
-the server.
-
-Implements the FHIR standard [capabilities
-interaction](http://hl7.org/implement/standards/fhir/STU3/http.html#capabilities).
-
-On success, the response body will contain a JSON-encoded representation
-of a `CapabilityStatement` resource.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsFhirStoresCapabilitiesRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (HttpBody) The response message.
-      """
-      config = self.GetMethodConfig('Capabilities')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Capabilities.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/fhirStores/{fhirStoresId}/metadata',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.fhirStores.capabilities',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}/metadata',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresCapabilitiesRequest',
-        response_type_name=u'HttpBody',
-        supports_download=False,
-    )
 
     def Create(self, request, global_params=None):
       r"""Creates a new FHIR store within the parent dataset.
@@ -2270,7 +763,9 @@ be used to track the status of the export by calling
 GetOperation.
 
 Immediate fatal errors appear in the
-error field.
+error field, errors are also logged
+to Stackdriver (see [Viewing
+logs](/healthcare/docs/how-tos/stackdriver-logging)).
 Otherwise, when the operation finishes, a detailed response of type
 ExportResourcesResponse is returned in the
 response field.
@@ -2329,13 +824,9 @@ operation is OperationMetadata.
     )
 
     def GetIamPolicy(self, request, global_params=None):
-      r"""Gets the access control policy for a FHIR store or security label within a.
-FHIR store. Returns NOT_FOUND error if the resource does not exist. Returns
-an empty policy if the resource exists but does not have a policy set.
-
-Authorization requires the Google IAM permission
-'healthcare.fhirStores.getIamPolicy' for a FHIR store or
-'healthcare.securityLabels.getIamPolicy' for a security label
+      r"""Gets the access control policy for a resource.
+Returns an empty policy if the resource exists and does not have a policy
+set.
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsFhirStoresGetIamPolicyRequest) input message
@@ -2353,7 +844,7 @@ Authorization requires the Google IAM permission
         method_id=u'healthcare.projects.locations.datasets.fhirStores.getIamPolicy',
         ordered_params=[u'resource'],
         path_params=[u'resource'],
-        query_params=[],
+        query_params=[u'options_requestedPolicyVersion'],
         relative_path=u'v1alpha2/{+resource}:getIamPolicy',
         request_field='',
         request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresGetIamPolicyRequest',
@@ -2363,31 +854,72 @@ Authorization requires the Google IAM permission
 
     def Import(self, request, global_params=None):
       r"""Import resources to the FHIR store by loading data from the specified.
-sources. Each resource must have a client-supplied ID, which is retained
-by the server.
+sources. This method is optimized to load large quantities of data using
+import semantics that ignore some FHIR store configuration options and are
+not suitable for all use cases. It is primarily intended to load data into
+an empty FHIR store that is not being used by other clients. In cases
+where this method is not appropriate, consider using ExecuteBundle to
+load data.
 
-The import operation is idempotent. Upon retry, the most recent data
-(matching the client-supplied ID) is overwritten, without creating a new
-resource version. If partial failures occur during the import, successful
-changes are not rolled back.
+Every resource in the input must contain a client-supplied ID and is
+stored using that ID regardless of the
+enable_update_create setting on the FHIR
+store.
 
-If history imports are enabled
-(enable_history_import is set in the
-FHIR store's configuration), you can import historical versions of a
-resource by supplying a bundle of type `history`. The historical versions
-in the bundle must have `lastUpdated` timestamps. If a current or
-historical version with the supplied resource ID already exists, the
-bundle is rejected.
+The import process does not enforce referential integrity, regardless of
+the
+disable_referential_integrity
+setting on the FHIR store. This allows the import of resources with
+arbitrary interdependencies without considering grouping or ordering, but
+if the input data contains invalid references or if some resources fail to
+be imported, the FHIR store might be left in a state that violates
+referential integrity.
+
+If a resource with the specified ID already exists, the most recent
+version of the resource is overwritten without creating a new historical
+version, regardless of the
+disable_resource_versioning
+setting on the FHIR store. If transient failures occur during the import,
+successfully imported resources could be overwritten more than once.
+
+The import operation is idempotent unless the input data contains multiple
+valid resources with the same ID but different contents. In that case,
+after the import completes, the store contains exactly one resource
+with that ID but there is no ordering guarantee on which version of the
+contents it has. The operation result counters do not count
+duplicate IDs as an error and count one success for each resource in
+the input, which might result in a success count larger than the number
+of resources in the FHIR store. This often occurs when importing data
+organized in bundles produced by Patient-everything
+where each bundle contains its own copy of a resource such as Practitioner
+that might be referred to by many patients.
+
+If some resources fail to import, for example due to parsing errors,
+successfully imported resources are not rolled back.
+
+The location and format of the input data is specified by the parameters
+below. Note that if no format is specified, this method assumes the
+`BUNDLE` format. When using the `BUNDLE` format this method ignores the
+`Bundle.type` field, except that `history` bundles are rejected, and does
+not apply any of the bundle processing semantics for batch or transaction
+bundles. Unlike in ExecuteBundle, transaction bundles are not executed
+as a single transaction and bundle-internal references are not rewritten.
+The bundle is treated as a collection of resources to be written as
+provided in `Bundle.entry.resource`, ignoring `Bundle.entry.request`. As
+an example, this allows the import of `searchset` bundles produced by a
+FHIR search or
+Patient-everything operation.
 
 This method returns an Operation that can
 be used to track the status of the import by calling
 GetOperation.
 
 Immediate fatal errors appear in the
-error field.
-Otherwise, when the operation finishes, a detailed response of type
-ImportResourcesResponse is returned in the
-response field.
+error field, errors are also logged
+to Stackdriver (see [Viewing
+logs](/healthcare/docs/how-tos/stackdriver-logging)). Otherwise, when the
+operation finishes, a detailed response of type ImportResourcesResponse
+is returned in the response field.
 The metadata field type for this
 operation is OperationMetadata.
 
@@ -2470,12 +1002,10 @@ operation is OperationMetadata.
     )
 
     def SetIamPolicy(self, request, global_params=None):
-      r"""Sets the access control policy for a FHIR store or security label within a.
-FHIR store. Replaces any existing policy.
+      r"""Sets the access control policy on the specified resource. Replaces any.
+existing policy.
 
-Authorization requires the Google IAM permission
-'healthcare.fhirStores.setIamPolicy' for a FHIR store or
-'healthcare.securityLabels.setIamPolicy' for a security label
+Can return Public Errors: NOT_FOUND, INVALID_ARGUMENT and PERMISSION_DENIED
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsFhirStoresSetIamPolicyRequest) input message
@@ -2502,11 +1032,13 @@ Authorization requires the Google IAM permission
     )
 
     def TestIamPermissions(self, request, global_params=None):
-      r"""Returns permissions that a caller has on the specified resource.  If the.
-resource does not exist, this will return an empty set of permissions, not
-a NOT_FOUND error.
+      r"""Returns permissions that a caller has on the specified resource.
+If the resource does not exist, this will return an empty set of
+permissions, not a NOT_FOUND error.
 
-There is no permission required to make this API call.
+Note: This operation is designed to be used for building permission-aware
+UIs and command-line tools, not for authorization checking. This operation
+may "fail open" without warning.
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsFhirStoresTestIamPermissionsRequest) input message
@@ -2529,187 +1061,6 @@ There is no permission required to make this API call.
         request_field=u'testIamPermissionsRequest',
         request_type_name=u'HealthcareProjectsLocationsDatasetsFhirStoresTestIamPermissionsRequest',
         response_type_name=u'TestIamPermissionsResponse',
-        supports_download=False,
-    )
-
-  class ProjectsLocationsDatasetsHl7V2StoresMessagesService(base_api.BaseApiService):
-    """Service class for the projects_locations_datasets_hl7V2Stores_messages resource."""
-
-    _NAME = u'projects_locations_datasets_hl7V2Stores_messages'
-
-    def __init__(self, client):
-      super(HealthcareV1alpha2.ProjectsLocationsDatasetsHl7V2StoresMessagesService, self).__init__(client)
-      self._upload_configs = {
-          }
-
-    def Create(self, request, global_params=None):
-      r"""Creates a message and sends a notification to the Cloud Pub/Sub topic. If.
-configured, the MLLP adapter listens to messages created by this method and
-sends those back to the hospital. A successful response indicates the
-message has been persisted to storage and a Cloud Pub/Sub notification has
-been sent. Sending to the hospital by the MLLP adapter happens
-asynchronously.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesCreateRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Message) The response message.
-      """
-      config = self.GetMethodConfig('Create')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Create.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/hl7V2Stores/{hl7V2StoresId}/messages',
-        http_method=u'POST',
-        method_id=u'healthcare.projects.locations.datasets.hl7V2Stores.messages.create',
-        ordered_params=[u'parent'],
-        path_params=[u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/messages',
-        request_field=u'createMessageRequest',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesCreateRequest',
-        response_type_name=u'Message',
-        supports_download=False,
-    )
-
-    def Delete(self, request, global_params=None):
-      r"""Deletes an HL7v2 message.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesDeleteRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Empty) The response message.
-      """
-      config = self.GetMethodConfig('Delete')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Delete.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/hl7V2Stores/{hl7V2StoresId}/messages/{messagesId}',
-        http_method=u'DELETE',
-        method_id=u'healthcare.projects.locations.datasets.hl7V2Stores.messages.delete',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+name}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesDeleteRequest',
-        response_type_name=u'Empty',
-        supports_download=False,
-    )
-
-    def Get(self, request, global_params=None):
-      r"""Gets an HL7v2 message.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesGetRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Message) The response message.
-      """
-      config = self.GetMethodConfig('Get')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Get.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/hl7V2Stores/{hl7V2StoresId}/messages/{messagesId}',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.hl7V2Stores.messages.get',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[u'view'],
-        relative_path=u'v1alpha2/{+name}',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesGetRequest',
-        response_type_name=u'Message',
-        supports_download=False,
-    )
-
-    def Ingest(self, request, global_params=None):
-      r"""Ingests a new HL7v2 message from the hospital and sends a notification to.
-the Cloud Pub/Sub topic. Return is an HL7v2 ACK message if the message was
-successfully stored. Otherwise an error is returned.  If an identical
-HL7v2 message is created twice only one resource is created on the server
-and no error is reported.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesIngestRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (IngestMessageResponse) The response message.
-      """
-      config = self.GetMethodConfig('Ingest')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Ingest.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/hl7V2Stores/{hl7V2StoresId}/messages:ingest',
-        http_method=u'POST',
-        method_id=u'healthcare.projects.locations.datasets.hl7V2Stores.messages.ingest',
-        ordered_params=[u'parent'],
-        path_params=[u'parent'],
-        query_params=[],
-        relative_path=u'v1alpha2/{+parent}/messages:ingest',
-        request_field=u'ingestMessageRequest',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesIngestRequest',
-        response_type_name=u'IngestMessageResponse',
-        supports_download=False,
-    )
-
-    def List(self, request, global_params=None):
-      r"""Lists all the messages in the given HL7v2 store with support for filtering.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesListRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (ListMessagesResponse) The response message.
-      """
-      config = self.GetMethodConfig('List')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    List.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/hl7V2Stores/{hl7V2StoresId}/messages',
-        http_method=u'GET',
-        method_id=u'healthcare.projects.locations.datasets.hl7V2Stores.messages.list',
-        ordered_params=[u'parent'],
-        path_params=[u'parent'],
-        query_params=[u'filter', u'orderBy', u'pageSize', u'pageToken'],
-        relative_path=u'v1alpha2/{+parent}/messages',
-        request_field='',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesListRequest',
-        response_type_name=u'ListMessagesResponse',
-        supports_download=False,
-    )
-
-    def Patch(self, request, global_params=None):
-      r"""Update the message.
-
-      Args:
-        request: (HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesPatchRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (Message) The response message.
-      """
-      config = self.GetMethodConfig('Patch')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    Patch.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1alpha2/projects/{projectsId}/locations/{locationsId}/datasets/{datasetsId}/hl7V2Stores/{hl7V2StoresId}/messages/{messagesId}',
-        http_method=u'PATCH',
-        method_id=u'healthcare.projects.locations.datasets.hl7V2Stores.messages.patch',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[u'updateMask'],
-        relative_path=u'v1alpha2/{+name}',
-        request_field=u'message',
-        request_type_name=u'HealthcareProjectsLocationsDatasetsHl7V2StoresMessagesPatchRequest',
-        response_type_name=u'Message',
         supports_download=False,
     )
 
@@ -2826,7 +1177,7 @@ set.
         method_id=u'healthcare.projects.locations.datasets.hl7V2Stores.getIamPolicy',
         ordered_params=[u'resource'],
         path_params=[u'resource'],
-        query_params=[],
+        query_params=[u'options_requestedPolicyVersion'],
         relative_path=u'v1alpha2/{+resource}:getIamPolicy',
         request_field='',
         request_type_name=u'HealthcareProjectsLocationsDatasetsHl7V2StoresGetIamPolicyRequest',
@@ -2891,6 +1242,8 @@ set.
     def SetIamPolicy(self, request, global_params=None):
       r"""Sets the access control policy on the specified resource. Replaces any.
 existing policy.
+
+Can return Public Errors: NOT_FOUND, INVALID_ARGUMENT and PERMISSION_DENIED
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsHl7V2StoresSetIamPolicyRequest) input message
@@ -3040,6 +1393,8 @@ Operation interface which returns either an
 `Operation.response` which contains a Dataset or
 `Operation.error`. The metadata
 field type is OperationMetadata.
+A Google Cloud Platform project can contain up to 500 datasets across all
+regions.
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsCreateRequest) input message
@@ -3072,9 +1427,12 @@ is OperationMetadata.
 If the request is successful, the
 response field type is
 DeidentifySummary.
-If errors occur,
+If errors occur, the
+error
 details field type is
 DeidentifyErrorDetails.
+Errors are also logged to Stackdriver Logging. For more information, see
+[Viewing logs](/healthcare/docs/how-tos/stackdriver-logging).
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsDeidentifyRequest) input message
@@ -3177,7 +1535,7 @@ set.
         method_id=u'healthcare.projects.locations.datasets.getIamPolicy',
         ordered_params=[u'resource'],
         path_params=[u'resource'],
-        query_params=[],
+        query_params=[u'options_requestedPolicyVersion'],
         relative_path=u'v1alpha2/{+resource}:getIamPolicy',
         request_field='',
         request_type_name=u'HealthcareProjectsLocationsDatasetsGetIamPolicyRequest',
@@ -3242,6 +1600,8 @@ set.
     def SetIamPolicy(self, request, global_params=None):
       r"""Sets the access control policy on the specified resource. Replaces any.
 existing policy.
+
+Can return Public Errors: NOT_FOUND, INVALID_ARGUMENT and PERMISSION_DENIED
 
       Args:
         request: (HealthcareProjectsLocationsDatasetsSetIamPolicyRequest) input message

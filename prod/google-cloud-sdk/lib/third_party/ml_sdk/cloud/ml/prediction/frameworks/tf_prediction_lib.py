@@ -29,15 +29,39 @@ import numpy as np
 from ..prediction_utils import PredictionError
 import six
 
-import tensorflow.contrib  # pylint: disable=unused-import
+import tensorflow as tf
 
-from tensorflow.python.client import session as tf_session
-from tensorflow.python.framework import dtypes
-from tensorflow.python.lib.io import file_io
-from tensorflow.python.saved_model import loader
-from tensorflow.python.saved_model import signature_constants
-from tensorflow.python.saved_model import tag_constants
-from tensorflow.python.util import compat
+# pylint: disable=g-import-not-at-top
+if tf.__version__.startswith("2."):
+  import tensorflow.compat.v1 as tf
+  from tensorflow import dtypes
+  from tensorflow import compat
+  SERVING = tf.saved_model.SERVING
+  DEFAULT_SERVING_SIGNATURE_DEF_KEY = (
+      tf.saved_model.DEFAULT_SERVING_SIGNATURE_DEF_KEY)
+  tf.disable_v2_behavior()
+else:
+  # tf.dtypes and tf.compat weren't added until later versions of TF.
+  # These imports and constants work for all TF 1.X.
+  from tensorflow.python.util import compat  # pylint: disable=g-direct-tensorflow-import
+  from tensorflow.python.framework import dtypes  # pylint: disable=g-direct-tensorflow-import
+  SERVING = tf.saved_model.tag_constants.SERVING
+  DEFAULT_SERVING_SIGNATURE_DEF_KEY = (
+      tf.saved_model.signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY)
+
+  # Force Tensorflow contrib to load in order to provide access to all the
+  # libraries in contrib to batch prediction (also, when using SESSION_RUN
+  # instead of MODEL_SERVER for online prediction, which we no longer do).
+  # However, contrib is no longer a part of TensorFlow 2.0, so check for its
+  # existence first.
+  try:
+    import tensorflow.contrib  # pylint: disable=unused-import
+    # TF 1.15 introduced lazy loading for tensorflow.contrib, but doing
+    # a dir forces it to load.
+    dir(tensorflow.contrib)
+  except:  # pylint: disable=bare-except
+    pass
+# pylint: enable=g-import-not-at-top
 
 # --------------------------
 # prediction.frameworks.tf_prediction_lib
@@ -123,7 +147,7 @@ def rowify(columns):
         "sizes in the batch (outer) dimension. See the outputs and their "
         "size: %s. Check your model for bugs that effect the size of the "
         "outputs." % sizes_dict)
-  # Pick an arbitrary value in the map to get it's size.
+  # Pick an arbitrary value in the map to get its size.
   num_instances = len(next(six.itervalues(columns)))
   for row in six.moves.xrange(num_instances):
     yield {
@@ -180,7 +204,9 @@ def canonicalize_single_tensor_input(instances, tensor_name):
 
 # TODO(b/34686738): when we no longer load the model to get the signature
 # consider making this a named constructor on SessionClient.
-def load_tf_model(model_path, tags=(tag_constants.SERVING,), config=None):
+def load_tf_model(model_path,
+                  tags=(SERVING,),
+                  config=None):
   """Loads the model at the specified path.
 
   Args:
@@ -195,23 +221,22 @@ def load_tf_model(model_path, tags=(tag_constants.SERVING,), config=None):
     PredictionError: if the model could not be loaded.
   """
   _load_tf_custom_op(model_path)
-  if loader.maybe_saved_model_directory(model_path):
+  if tf.saved_model.loader.maybe_saved_model_directory(model_path):
     try:
       logging.info("Importing tensorflow.contrib in load_tf_model")
 
-      # pylint: disable=g-import-not-at-top
-      import tensorflow as tf
-      from tensorflow.python.framework.ops import Graph
-      # pylint: enable=g-import-not-at-top
       if tf.__version__.startswith("1.0"):
-        session = tf_session.Session(target="", graph=None, config=config)
+        session = tf.Session(target="", graph=None, config=config)
       else:
-        session = tf_session.Session(target="", graph=Graph(), config=config)
-      meta_graph = loader.load(session, tags=list(tags), export_dir=model_path)
+        session = tf.Session(target="", graph=tf.Graph(), config=config)
+      meta_graph = tf.saved_model.loader.load(
+          session, tags=list(tags), export_dir=model_path)
     except Exception as e:  # pylint: disable=broad-except
+      msg = ("Failed to load the model due to bad model data. "
+             "tags: %s" % (list(tags),))
+      logging.exception(msg)
       raise PredictionError(PredictionError.FAILED_TO_LOAD_MODEL,
-                            "Failed to load the model due to bad model data."
-                            " tags: %s\n%s" % (list(tags), str(e)))
+                            "%s\n%s" % (msg, str(e)))
   else:
     raise PredictionError(PredictionError.FAILED_TO_LOAD_MODEL,
                           "Cloud ML only supports TF 1.0 or above and models "
@@ -304,8 +329,7 @@ class TensorFlowClient(PredictionClient):
       return (list(self.signature_map.keys())[0],
               list(self.signature_map.values())[0])
 
-    key = (signature_name or
-           signature_constants.DEFAULT_SERVING_SIGNATURE_DEF_KEY)
+    key = (signature_name or DEFAULT_SERVING_SIGNATURE_DEF_KEY)
     if key in self.signature_map:
       return key, self.signature_map[key]
     else:
@@ -348,7 +372,8 @@ class SessionClient(TensorFlowClient):
             signature.inputs[key].name: val
             for key, val in six.iteritems(inputs)
         }
-      except Exception as e:
+      except Exception as e:  # pylint: disable=broad-except
+        logging.exception("Input mismatch.")
         raise PredictionError(PredictionError.INVALID_INPUTS,
                               "Input mismatch: " + str(e))
 
@@ -357,8 +382,8 @@ class SessionClient(TensorFlowClient):
         # TODO(b/33849399): measure the actual session.run() time, even in the
         # case of ModelServer.
         outputs = self._session.run(fetches=fetches, feed_dict=unaliased)
-      except Exception as e:
-        logging.error("Exception during running the graph: %s", e)
+      except Exception as e:  # pylint: disable=broad=except
+        logging.exception("Exception running the graph.")
         raise PredictionError(PredictionError.FAILED_TO_RUN_MODEL,
                               "Exception during running the graph: " + str(e))
 
@@ -490,20 +515,19 @@ class TensorFlowModel(prediction_utils.BaseModel):
         postprocessed_outputs = encode_base64(
             postprocessed_outputs, signature.outputs)
       except PredictionError as e:
-        logging.error("Encode base64 failed: %s", e)
+        logging.exception("Encode base64 failed.")
         raise PredictionError(PredictionError.INVALID_OUTPUTS,
                               "Prediction failed during encoding instances: {0}"
                               .format(e.error_detail))
       except ValueError as e:
-        logging.error("Encode base64 failed: %s", e)
+        logging.exception("Encode base64 failed.")
         raise PredictionError(PredictionError.INVALID_OUTPUTS,
                               "Prediction failed during encoding instances: {0}"
                               .format(e))
       except Exception as e:  # pylint: disable=broad-except
-        logging.error("Encode base64 failed: %s", e)
+        logging.exception("Encode base64 failed.")
         raise PredictionError(PredictionError.INVALID_OUTPUTS,
                               "Prediction failed during encoding instances")
-
       return postprocessed_outputs
 
   @classmethod
@@ -516,7 +540,8 @@ class TensorFlowModel(prediction_utils.BaseModel):
     return self._client.signature_map
 
 
-def create_tf_session_client(model_dir, tags=(tag_constants.SERVING,),
+def create_tf_session_client(model_dir,
+                             tags=(SERVING,),
                              config=None):
 
   return SessionClient(*load_tf_model(model_dir, tags, config))
@@ -579,10 +604,9 @@ def _encode_str_tensor(data, tensor_name):
 def _load_tf_custom_op(model_path):
   """Loads a custom TF OP (in .so format) from /assets.extra directory."""
   assets_dir = os.path.join(model_path, _CUSTOM_OP_DIRECTORY_NAME)
-  if file_io.is_directory(assets_dir):
+  if tf.gfile.IsDirectory(assets_dir):
     custom_ops_pattern = os.path.join(assets_dir, _CUSTOM_OP_SUFFIX)
-    for custom_op_path_original in file_io.get_matching_files(
-        custom_ops_pattern):
+    for custom_op_path_original in tf.gfile.Glob(custom_ops_pattern):
       logging.info("Found custom op file: %s", custom_op_path_original)
       if custom_op_path_original.startswith("gs://"):
         if not os.path.isdir(_CUSTOM_OP_LOCAL_DIR):
@@ -591,11 +615,10 @@ def _load_tf_custom_op(model_path):
             _CUSTOM_OP_LOCAL_DIR, os.path.basename(custom_op_path_original))
         logging.info("Copying custop op from: %s to: %s",
                      custom_op_path_original, custom_op_path_local)
-        file_io.copy(custom_op_path_original, custom_op_path_local, True)
+        tf.gfile.Copy(custom_op_path_original, custom_op_path_local, True)
       else:
         custom_op_path_local = custom_op_path_original
       try:
-        import tensorflow as tf  # pylint: disable=g-import-not-at-top
         logging.info("Loading custom op: %s", custom_op_path_local)
         logging.info("TF Version: %s", tf.__version__)
         tf.load_op_library(custom_op_path_local)

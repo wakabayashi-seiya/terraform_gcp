@@ -1,5 +1,5 @@
 #
-# Copyright 2006 Google Inc.
+# Copyright 2006 Google LLC.
 # All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -79,6 +79,9 @@ class EventListenerError(Error):
       # in to a string.
       Error.__init__(self, str(cause))
     self.cause = cause
+
+  def __str__(self):
+    return str(self.cause)
 
 
 class EventListenerYAMLError(EventListenerError):

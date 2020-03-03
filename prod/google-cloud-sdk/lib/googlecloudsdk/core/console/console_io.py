@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -51,6 +51,16 @@ from six.moves import range  # pylint: disable=redefined-builtin
 class Error(exceptions.Error):
   """Base exception for the module."""
   pass
+
+
+class RequiredPromptError(Error):
+  """An exception for when a prompt cannot silenced with the --quiet flag."""
+
+  def __init__(self):
+    super(RequiredPromptError, self).__init__(
+        'This prompt could not be answered because you are not in an '
+        'interactive session.  Please re-run the command without the --quiet '
+        'flag to respond to the prompts.')
 
 
 class UnattendedPromptError(Error):
@@ -449,7 +459,8 @@ def _PrintOptions(options, write, limit=None):
   """
   limited_options = options if limit is None else options[:limit]
   for i, option in enumerate(limited_options):
-    write(' [{index}] {option}\n'.format(index=i + 1, option=str(option)))
+    write(' [{index}] {option}\n'.format(
+        index=i + 1, option=six.text_type(option)))
 
 
 # This defines the point at which, in a PromptChoice, the options
@@ -464,8 +475,8 @@ def PromptChoice(options, default=None, message=None,
   """Prompt the user to select a choice from a list of items.
 
   Args:
-    options:  [object], A list of objects to print as choices.  Their str()
-      method will be used to display them.
+    options:  [object], A list of objects to print as choices.  Their
+      six.text_type() method will be used to display them.
     default: int, The default index to return if prompting is disabled or if
       they do not enter a choice.
     message: str, An optional message to print before the choices are displayed.

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,6 +23,12 @@ from googlecloudsdk.calliope.concepts import deps
 from googlecloudsdk.command_lib.util.concepts import concept_parsers
 from googlecloudsdk.command_lib.util.concepts import presentation_specs
 from googlecloudsdk.core import properties
+
+
+def KeyVersionAttributeConfig():
+  return concepts.ResourceParameterAttributeConfig(
+      name='kms-key-version',
+      help_text='The KMS key version of the {resource}.')
 
 
 def KeyAttributeConfig():
@@ -50,6 +56,18 @@ def ProjectAttributeConfig():
       name='kms-project',
       help_text='The Cloud project for the {resource}.',
       fallthroughs=[deps.PropertyFallthrough(properties.VALUES.core.project)])
+
+
+def GetKmsKeyVersionResourceSpec():
+  return concepts.ResourceSpec(
+      'cloudkms.projects.locations.keyRings.cryptoKeys.cryptoKeyVersions',
+      resource_name='key version',
+      cryptoKeyVersionsId=KeyVersionAttributeConfig(),
+      cryptoKeysId=KeyAttributeConfig(),
+      keyRingsId=KeyringAttributeConfig(),
+      locationsId=LocationAttributeConfig(),
+      projectsId=ProjectAttributeConfig(),
+      disable_auto_completers=False)
 
 
 def GetKmsKeyResourceSpec(region_fallthrough=False):

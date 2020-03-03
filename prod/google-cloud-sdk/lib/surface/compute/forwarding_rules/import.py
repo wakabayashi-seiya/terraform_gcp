@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,17 +30,26 @@ from googlecloudsdk.core import yaml_validator
 from googlecloudsdk.core.console import console_io
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
-class Import(base.UpdateCommand):
-  """Import a forwarding rule.
+DETAILED_HELP = {
+    'DESCRIPTION':
+        """\
+          Imports a forwarding rule's configuration from a file.
+          """,
+    'EXAMPLES':
+        """\
+          Import a forwarding rule by running:
 
-  If the specified forwarding rule already exists, it will be overwritten.
-  Otherwise, a new forwarding rule will be created.
-  To edit a forwarding rule you can export the forwarding rule to a file,
-  edit its configuration, and then import the new configuration.
-  """
+            $ {command} NAME --source=<path-to-file>
+          """
+}
+
+
+@base.ReleaseTracks(base.ReleaseTrack.GA)
+class Import(base.UpdateCommand):
+  """Import a forwarding rule."""
 
   FORWARDING_RULE_ARG = None
+  detailed_help = DETAILED_HELP
 
   @classmethod
   def GetApiVersion(cls):
@@ -65,19 +74,10 @@ class Import(base.UpdateCommand):
 
   def SendPatchRequest(self, client, forwarding_rule_ref, replacement):
     """Create forwarding rule patch request."""
-    if forwarding_rule_ref.Collection() == 'compute.forwardingRules':
-      return client.apitools_client.forwardingRules.Patch(
-          client.messages.ComputeForwardingRulesPatchRequest(
-              project=forwarding_rule_ref.project,
-              region=forwarding_rule_ref.region,
-              forwardingRule=forwarding_rule_ref.Name(),
-              forwardingRuleResource=replacement))
-
-    return client.apitools_client.globalForwardingRules.Patch(
-        client.messages.ComputeGlobalForwardingRulesPatchRequest(
-            project=forwarding_rule_ref.project,
-            forwardingRule=forwarding_rule_ref.Name(),
-            forwardingRuleResource=replacement))
+    console_message = (
+        'Forwarding Rule [{0}] cannot be updated in version v1'.format(
+            forwarding_rule_ref.Name()))
+    raise NotImplementedError(console_message)
 
   def SendInsertRequest(self, client, forwarding_rule_ref, forwarding_rule):
     """Send forwarding rule insert request."""
@@ -137,3 +137,31 @@ class Import(base.UpdateCommand):
     forwarding_rule.fingerprint = forwarding_rule_old.fingerprint
 
     return self.SendPatchRequest(client, forwarding_rule_ref, forwarding_rule)
+
+
+@base.ReleaseTracks(base.ReleaseTrack.BETA)
+class ImportBeta(Import):
+  """Import a forwarding rule."""
+
+  def SendPatchRequest(self, client, forwarding_rule_ref, replacement):
+    """Create forwarding rule patch request."""
+
+    if forwarding_rule_ref.Collection() == 'compute.forwardingRules':
+      return client.apitools_client.forwardingRules.Patch(
+          client.messages.ComputeForwardingRulesPatchRequest(
+              project=forwarding_rule_ref.project,
+              region=forwarding_rule_ref.region,
+              forwardingRule=forwarding_rule_ref.Name(),
+              forwardingRuleResource=replacement))
+
+    return client.apitools_client.globalForwardingRules.Patch(
+        client.messages.ComputeGlobalForwardingRulesPatchRequest(
+            project=forwarding_rule_ref.project,
+            forwardingRule=forwarding_rule_ref.Name(),
+            forwardingRuleResource=replacement))
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class ImportAlpha(ImportBeta):
+  """Import a forwarding rule."""
+  pass

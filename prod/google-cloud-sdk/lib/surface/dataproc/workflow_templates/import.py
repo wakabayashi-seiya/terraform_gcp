@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,9 +42,7 @@ class Import(base.UpdateCommand):
   @classmethod
   def GetApiVersion(cls):
     """Returns the API version based on the release track."""
-    if cls.ReleaseTrack() == base.ReleaseTrack.BETA:
-      return 'v1beta2'
-    return 'v1'
+    return dp.Dataproc(cls.ReleaseTrack()).api_version
 
   @classmethod
   def GetSchemaPath(cls, for_help=False):

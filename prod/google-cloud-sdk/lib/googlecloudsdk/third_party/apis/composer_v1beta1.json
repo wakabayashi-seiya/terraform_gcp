@@ -17,6 +17,7 @@
   "documentationLink": "https://cloud.google.com/composer/",
   "protocol": "rest",
   "rootUrl": "https://composer.googleapis.com/",
+  "mtlsRootUrl": "https://composer.mtls.googleapis.com/",
   "servicePath": "",
   "baseUrl": "https://composer.googleapis.com/",
   "batchPath": "batch",
@@ -133,7 +134,7 @@
       "type": "object",
       "properties": {
         "name": {
-          "description": "The server-assigned name, which is only unique within the same service that\noriginally returns it. If you use the default HTTP mapping, the\n`name` should have the format of `operations\/some\/unique\/name`.",
+          "description": "The server-assigned name, which is only unique within the same service that\noriginally returns it. If you use the default HTTP mapping, the\n`name` should be a resource name ending with `operations\/{unique_id}`.",
           "type": "string"
         },
         "metadata": {
@@ -164,7 +165,7 @@
     },
     "Status": {
       "id": "Status",
-      "description": "The `Status` type defines a logical error model that is suitable for\ndifferent programming environments, including REST APIs and RPC APIs. It is\nused by [gRPC](https:\/\/github.com\/grpc). The error model is designed to be:\n\n- Simple to use and understand for most users\n- Flexible enough to meet unexpected needs\n\n# Overview\n\nThe `Status` message contains three pieces of data: error code, error\nmessage, and error details. The error code should be an enum value of\ngoogle.rpc.Code, but it may accept additional error codes if needed.  The\nerror message should be a developer-facing English message that helps\ndevelopers *understand* and *resolve* the error. If a localized user-facing\nerror message is needed, put the localized message in the error details or\nlocalize it in the client. The optional error details may contain arbitrary\ninformation about the error. There is a predefined set of error detail types\nin the package `google.rpc` that can be used for common error conditions.\n\n# Language mapping\n\nThe `Status` message is the logical representation of the error model, but it\nis not necessarily the actual wire format. When the `Status` message is\nexposed in different client libraries and different wire protocols, it can be\nmapped differently. For example, it will likely be mapped to some exceptions\nin Java, but more likely mapped to some error codes in C.\n\n# Other uses\n\nThe error model and the `Status` message can be used in a variety of\nenvironments, either with or without APIs, to provide a\nconsistent developer experience across different environments.\n\nExample uses of this error model include:\n\n- Partial errors. If a service needs to return partial errors to the client,\n    it may embed the `Status` in the normal response to indicate the partial\n    errors.\n\n- Workflow errors. A typical workflow has multiple steps. Each step may\n    have a `Status` message for error reporting.\n\n- Batch operations. If a client uses batch request and batch response, the\n    `Status` message should be used directly inside batch response, one for\n    each error sub-response.\n\n- Asynchronous operations. If an API call embeds asynchronous operation\n    results in its response, the status of those operations should be\n    represented directly using the `Status` message.\n\n- Logging. If some API errors are stored in logs, the message `Status` could\n    be used directly after any stripping needed for security\/privacy reasons.",
+      "description": "The `Status` type defines a logical error model that is suitable for\ndifferent programming environments, including REST APIs and RPC APIs. It is\nused by [gRPC](https:\/\/github.com\/grpc). Each `Status` message contains\nthree pieces of data: error code, error message, and error details.\n\nYou can find out more about this error model and how to work with it in the\n[API Design Guide](https:\/\/cloud.google.com\/apis\/design\/errors).",
       "type": "object",
       "properties": {
         "code": {
@@ -202,7 +203,7 @@
       "type": "object",
       "properties": {
         "name": {
-          "description": "The resource name of the environment, in the form:\n\"projects\/{projectId}\/locations\/{locationId}\/environments\/{environmentId}\"",
+          "description": "The resource name of the environment, in the form:\n\"projects\/{projectId}\/locations\/{locationId}\/environments\/{environmentId}\"\n\nEnvironmentId must start with a lowercase letter followed by up to 63\nlowercase letters, numbers, or hyphens, and cannot end with a hyphen.",
           "type": "string"
         },
         "config": {
@@ -210,7 +211,7 @@
           "$ref": "EnvironmentConfig"
         },
         "uuid": {
-          "description": "Output only.\nThe UUID (Universally Unique IDentifier) associated with this environment.\nThis value is generated when the environment is created.",
+          "description": "Output only. The UUID (Universally Unique IDentifier) associated with this environment.\nThis value is generated when the environment is created.",
           "type": "string"
         },
         "state": {
@@ -234,12 +235,12 @@
           ]
         },
         "createTime": {
-          "description": "Output only.\nThe time at which this environment was created.",
+          "description": "Output only. The time at which this environment was created.",
           "type": "string",
           "format": "google-datetime"
         },
         "updateTime": {
-          "description": "Output only.\nThe time at which this environment was last modified.",
+          "description": "Output only. The time at which this environment was last modified.",
           "type": "string",
           "format": "google-datetime"
         },
@@ -258,11 +259,11 @@
       "type": "object",
       "properties": {
         "gkeCluster": {
-          "description": "Output only.\nThe Kubernetes Engine cluster used to run this environment.",
+          "description": "Output only. The Kubernetes Engine cluster used to run this environment.",
           "type": "string"
         },
         "dagGcsPrefix": {
-          "description": "Output only.\nThe Cloud Storage prefix of the DAGs for this environment. Although Cloud\nStorage objects reside in a flat namespace, a hierarchical file tree\ncan be simulated using \"\/\"-delimited object name prefixes. DAG objects for\nthis environment reside in a simulated directory with the given prefix.",
+          "description": "Output only. The Cloud Storage prefix of the DAGs for this environment. Although Cloud\nStorage objects reside in a flat namespace, a hierarchical file tree\ncan be simulated using \"\/\"-delimited object name prefixes. DAG objects for\nthis environment reside in a simulated directory with the given prefix.",
           "type": "string"
         },
         "nodeCount": {
@@ -282,8 +283,12 @@
           "description": "The configuration used for the Private IP Cloud Composer environment.",
           "$ref": "PrivateEnvironmentConfig"
         },
+        "webServerNetworkAccessControl": {
+          "description": "Optional. The network-level access control policy for the Airflow web server. If\nunspecified, no network-level access restrictions will be applied.",
+          "$ref": "WebServerNetworkAccessControl"
+        },
         "airflowUri": {
-          "description": "Output only.\nThe URI of the Apache Airflow Web UI hosted within this environment (see\n[Airflow web\ninterface](\/composer\/docs\/how-to\/accessing\/airflow-web-interface)).",
+          "description": "Output only. The URI of the Apache Airflow Web UI hosted within this environment (see\n[Airflow web\ninterface](\/composer\/docs\/how-to\/accessing\/airflow-web-interface)).",
           "type": "string"
         }
       }
@@ -334,7 +339,7 @@
           "type": "string"
         },
         "machineType": {
-          "description": "Optional. The Compute Engine\n[machine type](\/compute\/docs\/machine-types) used for cluster instances,\nspecified as a\n[relative resource\nname](\/apis\/design\/resource_names#relative_resource_name). For example:\n\"projects\/{projectId}\/zones\/{zoneId}\/machineTypes\/{machineTypeId}\".\n\nThe `machineType` must belong to the enclosing environment's project and\nlocation. If both this field and `nodeConfig.location` are specified,\nthis `machineType` must belong to the `nodeConfig.location`; if both are\nunspecified, the service will pick a zone in the Compute Engine region\ncorresponding to the Cloud Composer location, and propagate that choice to\nboth fields. If exactly one of this field and `nodeConfig.location` is\nspecified, the location information from the specified field will be\npropagated to the unspecified field.\n\nIf this field is unspecified, the `machineTypeId` defaults\nto \"n1-standard-1\".",
+          "description": "Optional. The Compute Engine\n[machine type](\/compute\/docs\/machine-types) used for cluster instances,\nspecified as a\n[relative resource\nname](\/apis\/design\/resource_names#relative_resource_name). For example:\n\"projects\/{projectId}\/zones\/{zoneId}\/machineTypes\/{machineTypeId}\".\n\nThe `machineType` must belong to the enclosing environment's project and\nlocation. If both this field and `nodeConfig.location` are specified,\nthis `machineType` must belong to the `nodeConfig.location`; if both are\nunspecified, the service will pick a zone in the Compute Engine region\ncorresponding to the Cloud Composer location, and propagate that choice to\nboth fields. If exactly one of this field and `nodeConfig.location` is\nspecified, the location information from the specified field will be\npropagated to the unspecified field.\n\nThe `machineTypeId` must not be a [shared-core machine\ntype](\/compute\/docs\/machine-types#sharedcore).\n\nIf this field is unspecified, the `machineTypeId` defaults\nto \"n1-standard-1\".",
           "type": "string"
         },
         "network": {
@@ -413,6 +418,10 @@
         "privateClusterConfig": {
           "description": "Optional. Configuration for the private GKE cluster for a Private IP\nCloud Composer environment.",
           "$ref": "PrivateClusterConfig"
+        },
+        "webServerIpv4ReservedRange": {
+          "description": "Output only. The IP range reserved for the tenant project's App Engine VMs.",
+          "type": "string"
         }
       }
     },
@@ -426,7 +435,36 @@
           "type": "boolean"
         },
         "masterIpv4CidrBlock": {
-          "description": "The IP range in CIDR notation to use for the hosted master network. This\nrange is used for assigning internal IP addresses to the cluster\nmaster or set of masters and to the internal load balancer virtual IP.\nThis range must not overlap with any other ranges in use\nwithin the cluster's network. If left blank, the default value of\n'172.16.0.0\/28' is used.",
+          "description": "Optional. The CIDR block from which IPv4 range for GKE master will be reserved. If\nleft blank, the default value of '172.16.0.0\/23' is used.",
+          "type": "string"
+        }
+      }
+    },
+    "WebServerNetworkAccessControl": {
+      "id": "WebServerNetworkAccessControl",
+      "description": "Network-level access control policy for the Airflow web server.",
+      "type": "object",
+      "properties": {
+        "allowedIpRanges": {
+          "description": "A collection of allowed IP ranges with descriptions.",
+          "type": "array",
+          "items": {
+            "$ref": "AllowedIpRange"
+          }
+        }
+      }
+    },
+    "AllowedIpRange": {
+      "id": "AllowedIpRange",
+      "description": "Allowed IP range with user-provided description.",
+      "type": "object",
+      "properties": {
+        "value": {
+          "description": "IP address or range, defined using CIDR notation, of requests that this\nrule applies to. You can use the wildcard character \"*\" to match all IPs\nequivalent to \"0\/0\" and \"::\/0\" together.\nExamples: `192.168.1.1` or `192.168.0.0\/16` or `2001:db8::\/32`\n          or `2001:0db8:0000:0042:0000:8a2e:0370:7334`.\n\n\n<p>IP range prefixes should be properly truncated. For example,\n`1.2.3.4\/24` should be truncated to `1.2.3.0\/24`. Similarly, for IPv6,\n`2001:db8::1\/32` should be truncated to `2001:db8::\/32`.",
+          "type": "string"
+        },
+        "description": {
+          "description": "Optional. User-provided description. It must contain at most 300 characters.",
           "type": "string"
         }
       }
@@ -495,7 +533,7 @@
       "type": "object",
       "properties": {
         "state": {
-          "description": "Output only.\nThe current operation state.",
+          "description": "Output only. The current operation state.",
           "enumDescriptions": [
             "Unused.",
             "The operation has been created but is not yet started.",
@@ -513,7 +551,7 @@
           ]
         },
         "operationType": {
-          "description": "Output only.\nThe type of operation being performed.",
+          "description": "Output only. The type of operation being performed.",
           "enumDescriptions": [
             "Unused.",
             "A resource creation operation.",
@@ -529,20 +567,20 @@
           ]
         },
         "resource": {
-          "description": "Output only.\nThe resource being operated on, as a [relative resource name](\n\/apis\/design\/resource_names#relative_resource_name).",
+          "description": "Output only. The resource being operated on, as a [relative resource name](\n\/apis\/design\/resource_names#relative_resource_name).",
           "type": "string"
         },
         "resourceUuid": {
-          "description": "Output only.\nThe UUID of the resource being operated on.",
+          "description": "Output only. The UUID of the resource being operated on.",
           "type": "string"
         },
         "createTime": {
-          "description": "Output only.\nThe time the operation was submitted to the server.",
+          "description": "Output only. The time the operation was submitted to the server.",
           "type": "string",
           "format": "google-datetime"
         },
         "endTime": {
-          "description": "Output only.\nThe time when the operation terminated, regardless of its success.\nThis field is unset if the operation is still ongoing.",
+          "description": "Output only. The time when the operation terminated, regardless of its success.\nThis field is unset if the operation is still ongoing.",
           "type": "string",
           "format": "google-datetime"
         }

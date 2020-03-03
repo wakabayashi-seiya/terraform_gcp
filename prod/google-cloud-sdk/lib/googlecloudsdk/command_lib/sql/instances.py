@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import getpass
 
 from googlecloudsdk.api_lib.sql import constants
 from googlecloudsdk.api_lib.sql import instance_prop_reducers as reducers
-from googlecloudsdk.api_lib.sql import instances as api_util
 from googlecloudsdk.api_lib.sql import validate
 from googlecloudsdk.calliope import base
 from googlecloudsdk.calliope import exceptions
@@ -31,6 +30,7 @@ from googlecloudsdk.command_lib.util.args import labels_util
 from googlecloudsdk.core import execution_utils
 from googlecloudsdk.core import log
 from googlecloudsdk.core import properties
+from googlecloudsdk.core.console import console_io
 
 DEFAULT_RELEASE_TRACK = base.ReleaseTrack.GA
 
@@ -70,6 +70,23 @@ def ConnectToInstance(cmd_args, sql_user):
     log.Print(info_holder.InfoHolder())
 
 
+def _GetAndValidateCmekKeyName(args):
+  """Parses the CMEK resource arg, makes sure the key format was correct."""
+  kms_ref = args.CONCEPTS.kms_key.Parse()
+  if kms_ref:
+    _ShowCmekPrompt()
+    return kms_ref.RelativeName()
+  else:
+    # Check for partially specified disk-encryption-key.
+    for keyword in [
+        'disk-encryption-key', 'disk-encryption-key-keyring',
+        'disk-encryption-key-location', 'disk-encryption-key-project'
+    ]:
+      if getattr(args, keyword.replace('-', '_'), None):
+        raise exceptions.InvalidArgumentException('--disk-encryption-key',
+                                                  'not fully specified.')
+
+
 def _GetZone(args):
   return args.zone or args.gce_zone
 
@@ -82,8 +99,46 @@ def _IsBetaOrNewer(release_track):
   return release_track == base.ReleaseTrack.BETA or _IsAlpha(release_track)
 
 
-def _ParseActivationPolicy(policy):
-  return policy.replace('-', '_').upper() if policy else None
+def _ParseActivationPolicy(sql_messages, policy):
+  if policy:
+    return sql_messages.Settings.ActivationPolicyValueValuesEnum.lookup_by_name(
+        policy.replace('-', '_').upper())
+  return None
+
+
+def _ParseAvailabilityType(sql_messages, availability_type):
+  if availability_type:
+    return sql_messages.Settings.AvailabilityTypeValueValuesEnum.lookup_by_name(
+        availability_type.upper())
+  return None
+
+
+def _ParseDatabaseVersion(sql_messages, database_version):
+  if database_version:
+    return sql_messages.DatabaseInstance.DatabaseVersionValueValuesEnum.lookup_by_name(
+        database_version.upper())
+  return None
+
+
+def _ParsePricingPlan(sql_messages, pricing_plan):
+  if pricing_plan:
+    return sql_messages.Settings.PricingPlanValueValuesEnum.lookup_by_name(
+        pricing_plan.upper())
+  return None
+
+
+def _ParseReplicationType(sql_messages, replication):
+  if replication:
+    return sql_messages.Settings.ReplicationTypeValueValuesEnum.lookup_by_name(
+        replication.upper())
+  return None
+
+
+def _ParseStorageType(sql_messages, storage_type):
+  if storage_type:
+    return sql_messages.Settings.DataDiskTypeValueValuesEnum.lookup_by_name(
+        storage_type.upper())
+  return None
 
 
 # TODO(b/122660263): Remove when V1 instances are no longer supported.
@@ -102,8 +157,7 @@ def ShowZoneDeprecationWarnings(args):
   """Show warnings if both region and zone are specified or neither is.
 
   Args:
-      args: argparse.Namespace, The arguments that the command was invoked
-          with.
+      args: argparse.Namespace, The arguments that the command was invoked with.
   """
 
   region_specified = args.IsSpecified('region')
@@ -113,6 +167,21 @@ def ShowZoneDeprecationWarnings(args):
   if not (region_specified or zone_specified):
     log.warning('Starting with release 233.0.0, you will need to specify '
                 'either a region or a zone to create an instance.')
+
+
+def ShowCmekWarning(resource_type_label, instance_type_label):
+  log.warning(
+      'Your {} will be encrypted with {}\'s customer-managed encryption key. '
+      'If anyone destroys this key, all data encrypted with it will be '
+      'permanently lost.'.format(resource_type_label, instance_type_label))
+
+
+def _ShowCmekPrompt():
+  log.warning(
+      'You are creating a Cloud SQL instance encrypted with a customer-managed '
+      'key. If anyone destroys a customer-managed key, all data encrypted with '
+      'it will be permanently lost.\n')
+  console_io.PromptContinue(cancel_on_no=True)
 
 
 class _BaseInstances(object):
@@ -129,11 +198,11 @@ class _BaseInstances(object):
     Args:
       sql_messages: module, The messages module that should be used.
       args: argparse.Namespace, The arguments that this command was invoked
-          with.
+        with.
       instance: sql_messages.DatabaseInstance, The original instance, for
-          settings that depend on the previous state.
+        settings that depend on the previous state.
       release_track: base.ReleaseTrack, the release track that this was run
-          under.
+        under.
 
     Returns:
       A settings object representing the instance settings.
@@ -142,11 +211,23 @@ class _BaseInstances(object):
       ToolException: An error other than http error occurred while executing the
           command.
     """
+
+    # This code is shared by create and patch, but these args don't exist in
+    # create anymore, so insert them here to avoid regressions below.
+    if 'authorized_gae_apps' not in args:
+      args.authorized_gae_apps = None
+    if 'follow_gae_app' not in args:
+      args.follow_gae_app = None
+    if 'pricing_plan' not in args:
+      args.pricing_plan = 'PER_USE'
+
     settings = sql_messages.Settings(
+        kind='sql#settings',
         tier=reducers.MachineType(instance, args.tier, args.memory, args.cpu),
-        pricingPlan=args.pricing_plan,
-        replicationType=args.replication,
-        activationPolicy=_ParseActivationPolicy(args.activation_policy))
+        pricingPlan=_ParsePricingPlan(sql_messages, args.pricing_plan),
+        replicationType=_ParseReplicationType(sql_messages, args.replication),
+        activationPolicy=_ParseActivationPolicy(sql_messages,
+                                                args.activation_policy))
 
     if args.authorized_gae_apps:
       settings.authorizedGaeApplications = args.authorized_gae_apps
@@ -168,7 +249,9 @@ class _BaseInstances(object):
 
     if any([args.follow_gae_app, _GetZone(args)]):
       settings.locationPreference = sql_messages.LocationPreference(
-          followGaeApplication=args.follow_gae_app, zone=_GetZone(args))
+          kind='sql#locationPreference',
+          followGaeApplication=args.follow_gae_app,
+          zone=_GetZone(args))
 
     if args.storage_size:
       settings.dataDiskSizeGb = int(args.storage_size / constants.BYTES_TO_GB)
@@ -177,7 +260,8 @@ class _BaseInstances(object):
       settings.storageAutoResize = args.storage_auto_increase
 
     if args.IsSpecified('availability_type'):
-      settings.availabilityType = args.availability_type.upper()
+      settings.availabilityType = _ParseAvailabilityType(
+          sql_messages, args.availability_type)
 
     # BETA args.
     if _IsBetaOrNewer(release_track):
@@ -188,8 +272,8 @@ class _BaseInstances(object):
             args.storage_auto_increase):
           # If the limit is set to None, we want it to be set to 0. This is a
           # backend requirement.
-          settings.storageAutoResizeLimit = (args.storage_auto_increase_limit or
-                                             0)
+          settings.storageAutoResizeLimit = (
+              args.storage_auto_increase_limit or 0)
         else:
           raise exceptions.RequiredArgumentException(
               '--storage-auto-increase', 'To set the storage capacity limit '
@@ -214,36 +298,38 @@ class _BaseInstances(object):
     original_settings = instance.settings if instance else None
     settings = cls._ConstructBaseSettingsFromArgs(sql_messages, args, instance,
                                                   release_track)
+    if _IsAlpha(release_track):
+      enable_point_in_time_recovery = args.enable_point_in_time_recovery
+    else:
+      enable_point_in_time_recovery = None
 
-    backup_configuration = (reducers.BackupConfiguration(
-        sql_messages,
-        instance,
-        backup=args.backup,
-        backup_start_time=args.backup_start_time,
-        enable_bin_log=args.enable_bin_log))
+    backup_configuration = (
+        reducers.BackupConfiguration(
+            sql_messages,
+            instance,
+            backup=args.backup,
+            backup_start_time=args.backup_start_time,
+            enable_bin_log=args.enable_bin_log,
+            enable_point_in_time_recovery=enable_point_in_time_recovery))
     if backup_configuration:
       cls.AddBackupConfigToSettings(settings, backup_configuration)
 
-    settings.databaseFlags = (reducers.DatabaseFlags(
-        sql_messages, original_settings, database_flags=args.database_flags))
+    settings.databaseFlags = (
+        reducers.DatabaseFlags(
+            sql_messages, original_settings,
+            database_flags=args.database_flags))
 
-    settings.maintenanceWindow = (reducers.MaintenanceWindow(
-        sql_messages,
-        instance,
-        maintenance_release_channel=args.maintenance_release_channel,
-        maintenance_window_day=args.maintenance_window_day,
-        maintenance_window_hour=args.maintenance_window_hour))
+    settings.maintenanceWindow = (
+        reducers.MaintenanceWindow(
+            sql_messages,
+            instance,
+            maintenance_release_channel=args.maintenance_release_channel,
+            maintenance_window_day=args.maintenance_window_day,
+            maintenance_window_hour=args.maintenance_window_hour))
 
     if args.storage_type:
-      settings.dataDiskType = STORAGE_TYPE_PREFIX + args.storage_type
-
-    # Check that availability type is only specified if this is Postgres.
-    if (args.IsSpecified('availability_type') and
-        not api_util.InstancesV1Beta4.IsPostgresDatabaseVersion(
-            args.database_version)):
-      raise exceptions.InvalidArgumentException(
-          '--availability-type', 'Cannot set [--availability-type] on a '
-          'non-Postgres instance.')
+      settings.dataDiskType = _ParseStorageType(
+          sql_messages, STORAGE_TYPE_PREFIX + args.storage_type)
 
     # BETA args.
     if _IsBetaOrNewer(release_track):
@@ -268,7 +354,9 @@ class _BaseInstances(object):
 
     if any([args.follow_gae_app, _GetZone(args)]):
       settings.locationPreference = sql_messages.LocationPreference(
-          followGaeApplication=args.follow_gae_app, zone=_GetZone(args))
+          kind='sql#locationPreference',
+          followGaeApplication=args.follow_gae_app,
+          zone=_GetZone(args))
 
     if args.clear_authorized_networks:
       if not settings.ipConfiguration:
@@ -278,33 +366,42 @@ class _BaseInstances(object):
     if args.enable_database_replication is not None:
       settings.databaseReplicationEnabled = args.enable_database_replication
 
-    backup_configuration = (reducers.BackupConfiguration(
-        sql_messages,
-        instance,
-        no_backup=args.no_backup,
-        backup_start_time=args.backup_start_time,
-        enable_bin_log=args.enable_bin_log))
+    if _IsAlpha(release_track):
+      enable_point_in_time_recovery = args.enable_point_in_time_recovery
+    else:
+      enable_point_in_time_recovery = None
+
+    backup_configuration = (
+        reducers.BackupConfiguration(
+            sql_messages,
+            instance,
+            no_backup=args.no_backup,
+            backup_start_time=args.backup_start_time,
+            enable_bin_log=args.enable_bin_log,
+            enable_point_in_time_recovery=enable_point_in_time_recovery))
     if backup_configuration:
       cls.AddBackupConfigToSettings(settings, backup_configuration)
 
-    settings.databaseFlags = (reducers.DatabaseFlags(
-        sql_messages,
-        original_settings,
-        database_flags=args.database_flags,
-        clear_database_flags=args.clear_database_flags))
+    settings.databaseFlags = (
+        reducers.DatabaseFlags(
+            sql_messages,
+            original_settings,
+            database_flags=args.database_flags,
+            clear_database_flags=args.clear_database_flags))
 
-    settings.maintenanceWindow = (reducers.MaintenanceWindow(
-        sql_messages,
-        instance,
-        maintenance_release_channel=args.maintenance_release_channel,
-        maintenance_window_day=args.maintenance_window_day,
-        maintenance_window_hour=args.maintenance_window_hour))
+    settings.maintenanceWindow = (
+        reducers.MaintenanceWindow(
+            sql_messages,
+            instance,
+            maintenance_release_channel=args.maintenance_release_channel,
+            maintenance_window_day=args.maintenance_window_day,
+            maintenance_window_hour=args.maintenance_window_hour))
 
     # BETA args.
     if _IsBetaOrNewer(release_track):
       labels_diff = labels_util.ExplicitNullificationDiff.FromUpdateArgs(args)
-      labels_update = labels_diff.Apply(
-          sql_messages.Settings.UserLabelsValue, instance.settings.userLabels)
+      labels_update = labels_diff.Apply(sql_messages.Settings.UserLabelsValue,
+                                        instance.settings.userLabels)
       if labels_update.needs_update:
         settings.userLabels = labels_update.labels
 
@@ -323,11 +420,11 @@ class _BaseInstances(object):
       sql_messages: module, The messages module that should be used.
       args: argparse.Namespace, The CLI arg namespace.
       original: sql_messages.DatabaseInstance, The original instance, if some of
-          it might be used to fill fields in the new one.
+        it might be used to fill fields in the new one.
       instance_ref: reference to DatabaseInstance object, used to fill project
-          and instance information.
+        and instance information.
       release_track: base.ReleaseTrack, the release track that this was run
-          under.
+        under.
 
     Returns:
       sql_messages.DatabaseInstance, The constructed (and possibly partial)
@@ -338,7 +435,7 @@ class _BaseInstances(object):
           command.
     """
     del args, original, release_track  # Currently unused in base function.
-    instance_resource = sql_messages.DatabaseInstance()
+    instance_resource = sql_messages.DatabaseInstance(kind='sql#instance')
 
     if instance_ref:
       cls.SetProjectAndInstanceFromRef(instance_resource, instance_ref)
@@ -358,7 +455,8 @@ class _BaseInstances(object):
         sql_messages, args, original, instance_ref)
 
     instance_resource.region = reducers.Region(args.region, _GetZone(args))
-    instance_resource.databaseVersion = args.database_version
+    instance_resource.databaseVersion = _ParseDatabaseVersion(
+        sql_messages, args.database_version)
     instance_resource.masterInstanceName = args.master_instance_name
     instance_resource.rootPassword = args.root_password
 
@@ -373,12 +471,14 @@ class _BaseInstances(object):
         sql_messages, args, original, release_track)
 
     if args.master_instance_name:
-      replication = 'ASYNCHRONOUS'
+      replication = sql_messages.Settings.ReplicationTypeValueValuesEnum.ASYNCHRONOUS
       if args.replica_type == 'FAILOVER':
         instance_resource.replicaConfiguration = (
-            sql_messages.ReplicaConfiguration(failoverTarget=True))
+            sql_messages.ReplicaConfiguration(
+                kind='sql#demoteMasterMysqlReplicaConfiguration',
+                failoverTarget=True))
     else:
-      replication = 'SYNCHRONOUS'
+      replication = sql_messages.Settings.ReplicationTypeValueValuesEnum.SYNCHRONOUS
     if not args.replication:
       instance_resource.settings.replicationType = replication
 
@@ -413,6 +513,12 @@ class _BaseInstances(object):
           args.master_dump_file_path, args.master_ca_certificate_path,
           args.client_certificate_path, args.client_key_path)
 
+    key_name = _GetAndValidateCmekKeyName(args)
+    if key_name:
+      config = sql_messages.DiskEncryptionConfiguration(
+          kind='sql#diskEncryptionConfiguration', kmsKeyName=key_name)
+      instance_resource.diskEncryptionConfiguration = config
+
     return instance_resource
 
   @classmethod
@@ -430,28 +536,6 @@ class _BaseInstances(object):
         sql_messages, args, original, release_track)
 
     return instance_resource
-
-
-class InstancesV1Beta3(_BaseInstances):
-  """Common utility functions for sql instances V1Beta3."""
-
-  @staticmethod
-  def SetProjectAndInstanceFromRef(instance_resource, instance_ref):
-    instance_resource.project = instance_ref.project
-    instance_resource.instance = instance_ref.instance
-
-  @staticmethod
-  def AddBackupConfigToSettings(settings, backup_config):
-    settings.backupConfiguration = [backup_config]
-
-  @staticmethod
-  def SetIpConfigurationEnabled(settings, assign_ip):
-    settings.ipConfiguration.enabled = assign_ip
-
-  @staticmethod
-  def SetAuthorizedNetworks(settings, authorized_networks, acl_entry_value):
-    del acl_entry_value  # Unused in v1beta3
-    settings.ipConfiguration.authorizedNetworks = authorized_networks
 
 
 class InstancesV1Beta4(_BaseInstances):
@@ -473,5 +557,6 @@ class InstancesV1Beta4(_BaseInstances):
   @staticmethod
   def SetAuthorizedNetworks(settings, authorized_networks, acl_entry_value):
     settings.ipConfiguration.authorizedNetworks = [
-        acl_entry_value(value=n) for n in authorized_networks
+        acl_entry_value(kind='sql#aclEntry', value=n)
+        for n in authorized_networks
     ]

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -33,23 +33,49 @@ def MakeResourcePolicyArg():
       region_explanation=compute_flags.REGION_PROPERTY_EXPLANATION)
 
 
+def AddMaintenanceParentGroup(parser):
+  return parser.add_argument_group('Maintenance configuration.',
+                                   required=True,
+                                   mutex=True)
+
+
+def AddConcurrentControlGroupArgs(parent_group):
+  concurrent_group = parent_group.add_argument_group("""\
+  Concurrent Maintenance Controls Group. Defines a group config that, when
+  attached to an instance, recognizes that instance as a part of a group of
+  instances where only up the configured amount of instances in that group can
+  undergo simultaneous maintenance.
+  """)
+  concurrent_group.add_argument('--concurrency-limit-percent', type=int,
+                                help="""\
+  Defines the max percentage of instances in a concurrency group that go to
+  maintenance simultaneously. Value must be greater or equal to 1 and less or
+  equal to 100.
+  Usage examples:
+  `--concurrency-limit=1` sets to 1%.
+  `--concurrency-limit=55` sets to 55%.""")
+
+
 def AddCycleFrequencyArgs(parser, flag_suffix, start_time_help,
                           cadence_help, supports_hourly=False,
                           has_restricted_start_times=False,
-                          supports_weekly=False):
+                          supports_weekly=False, parent_group=None):
   """Add Cycle Frequency args for Resource Policies."""
-  freq_group = parser.add_argument_group(
-      'Cycle Frequency Group.', required=True, mutex=True)
+  if parent_group:
+    freq_group = parent_group.add_argument_group(
+        'Cycle Frequency Group.', mutex=True)
+  else:
+    freq_group = parser.add_argument_group(
+        'Cycle Frequency Group.', required=True, mutex=True)
   if has_restricted_start_times:
     start_time_help += """\
-        Valid choices are 00:00, 04:00, 08:00,12:00,
-        16:00 and 20:00 UTC. For example, `--start-time="03:00-05"`
-        (which gets converted to 08:00 UTC)."""
+        Valid choices are 00:00, 04:00, 08:00, 12:00,
+        16:00 and 20:00 UTC. For example, `--start-time="08:00"`."""
   freq_flags_group = freq_group.add_group(
       'From flags:' if supports_weekly else '')
   freq_flags_group.add_argument(
       '--start-time', required=True,
-      type=arg_parsers.Datetime.Parse,
+      type=arg_parsers.Datetime.ParseUtcTime,
       help=start_time_help)
   cadence_group = freq_flags_group.add_group(mutex=True, required=True)
   cadence_group.add_argument(
@@ -79,7 +105,7 @@ def AddCycleFrequencyArgs(parser, flag_suffix, start_time_help,
     freq_file_group.add_argument(
         '--weekly-{}-from-file'.format(flag_suffix),
         dest='weekly_cycle_from_file',
-        type=arg_parsers.BufferedFileInput(),
+        type=arg_parsers.FileContents(),
         help="""\
         A JSON/YAML file which specifies a weekly schedule. It should be a
         list of objects with the following fields:
@@ -88,6 +114,18 @@ def AddCycleFrequencyArgs(parser, flag_suffix, start_time_help,
         startTime: Start time of the snapshot schedule with the same format
             as --start-time.
         """.format(flag_suffix))
+
+
+def AddMaxPercentArg(parser):
+  parser.add_argument(
+      '--max-percent',
+      help='Sets maximum percentage of instances in the group that can '
+           'undergo simultaneous maintenance. If this flag is not specified '
+           'default value of 1% will be set. Usage example: `--max-percent=10` '
+           'sets to 10%.',
+      type=arg_parsers.BoundedInt(lower_bound=1, upper_bound=100),
+      default=1
+  )
 
 
 def AddCommonArgs(parser):
@@ -134,6 +172,38 @@ def AddSnapshotScheduleArgs(parser, messages):
       help='Create an application consistent snapshot by informing the OS to '
            'prepare for the snapshot process.')
   compute_flags.AddStorageLocationFlag(snapshot_properties_group, 'snapshot')
+
+
+def AddGroupPlacementArgs(parser, messages):
+  """Adds flags specific to snapshot schedule resource policies."""
+  parser.add_argument(
+      '--vm-count',
+      required=True,
+      type=arg_parsers.BoundedInt(lower_bound=1),
+      help='Number of instances targeted by the group placement policy.')
+  parser.add_argument(
+      '--availability-domain-count',
+      type=arg_parsers.BoundedInt(lower_bound=1),
+      help='Number of availability domain in the group placement policy.')
+  GetCollocationFlagMapper(messages).choice_arg.AddToParser(parser)
+
+
+def GetCollocationFlagMapper(messages):
+  return arg_utils.ChoiceEnumMapper(
+      '--collocation',
+      messages.ResourcePolicyGroupPlacementPolicy.CollocationValueValuesEnum,
+      custom_mappings={
+          'UNSPECIFIED_COLLOCATION':
+              ('unspecified-collocation',
+               'Unspecified network latency between VMs placed on the same'
+               'availability domain. This is the default behavior.'),
+          'COLLOCATED': ('collocated',
+                         'Low network latency between VMs placed on the same'
+                         'availability domain.')
+      },
+      default=None,
+      help_str='Collocation specifies whether to place VMs inside the same'
+      'availability domain on the same low-latency network.')
 
 
 def AddResourcePoliciesArgs(parser, action, resource, required=False):

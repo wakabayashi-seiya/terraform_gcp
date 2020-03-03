@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -665,7 +665,7 @@ class _LogManager(object):
                                       DAY_DIR_FORMAT)
 
   def AddLogsDir(self, logs_dir):
-    """Adds a new logging directory to the logging config.
+    """Adds a new logging directory and configures file logging.
 
     Args:
       logs_dir: str, Path to a directory to store log files under.  This method
@@ -674,13 +674,19 @@ class _LogManager(object):
     """
     if not logs_dir or logs_dir in self._logs_dirs:
       return
-    self._logs_dirs.append(logs_dir)
 
+    self._logs_dirs.append(logs_dir)
     # If logs cleanup has been enabled, try to delete old log files
     # in the given directory. Continue normally if we try to delete log files
     # that do not exist. This can happen when two gcloud instances are cleaning
     # up logs in parallel.
     self._CleanUpLogs(logs_dir)
+
+    # If the user has disabled file logging, return early here to avoid setting
+    # up the file handler. Note that this should happen after cleaning up the
+    # logs directory so that log retention settings are still respected.
+    if properties.VALUES.core.disable_file_logging.GetBool():
+      return
 
     # A handler to write DEBUG and above to log files in the given directory
     try:
@@ -848,7 +854,7 @@ def Print(*msg):
 
 
 def WriteToFileOrStdout(path, content, overwrite=True, binary=False,
-                        private=False):
+                        private=False, create_path=False):
   """Writes content to the specified file or stdout if path is '-'.
 
   Args:
@@ -857,6 +863,7 @@ def WriteToFileOrStdout(path, content, overwrite=True, binary=False,
     overwrite: bool, Whether or not to overwrite the file if it exists.
     binary: bool, True to open the file in binary mode.
     private: bool, Whether to write the file in private mode.
+    create_path: bool, True to create intermediate directories, if needed.
 
   Raises:
     Error: If the file cannot be written.
@@ -868,9 +875,14 @@ def WriteToFileOrStdout(path, content, overwrite=True, binary=False,
       out.write(content)
   elif binary:
     files.WriteBinaryFileContents(path, content, overwrite=overwrite,
-                                  private=private)
+                                  private=private, create_path=create_path)
   else:
-    files.WriteFileContents(path, content, overwrite=overwrite, private=private)
+    files.WriteFileContents(
+        path,
+        content,
+        overwrite=overwrite,
+        private=private,
+        create_path=create_path)
 
 
 def Reset(stdout=None, stderr=None):
@@ -1065,7 +1077,6 @@ def GetLogFilePath():
   return _log_manager.current_log_file
 
 
-# TODO(b/117488015): Remove this in favor of console.style.log
 def _PrintResourceChange(operation,
                          resource,
                          kind,
@@ -1092,27 +1103,33 @@ def _PrintResourceChange(operation,
   """
   msg = []
   if failed:
-    msg.append('Failed to')
+    msg.append('Failed to ')
     msg.append(operation)
   elif is_async:
     msg.append(operation.capitalize())
-    msg.append('in progress for')
+    msg.append(' in progress for')
   else:
     verb = operation_past_tense or '{0}d'.format(operation)
     msg.append('{0}'.format(verb.capitalize()))
 
   if kind:
+    msg.append(' ')
     msg.append(kind)
   if resource:
-    msg.append('[{0}]'.format(str(resource)))
+    msg.append(' ')
+    msg.append(text.TextTypes.RESOURCE_NAME(six.text_type(resource)))
   if details:
+    msg.append(' ')
     msg.append(details)
+
   if failed:
-    msg[-1] = '{0}:'.format(msg[-1])
+    msg.append(': ')
     msg.append(failed)
-  period = '' if msg[-1].endswith('.') else '.'
+  period = '' if str(msg[-1]).endswith('.') else '.'
+  msg.append(period)
+  msg = text.TypedText(msg)
   writer = error if failed else status.Print
-  writer('{0}{1}'.format(' '.join(msg), period))
+  writer(msg)
 
 
 def CreatedResource(resource, kind=None, is_async=False, details=None,
@@ -1200,7 +1217,14 @@ def ExportResource(resource,
     details: str, Extra details appended to the message. Keep it succinct.
     failed: str, Failure message.
   """
-  _PrintResourceChange('export', resource, kind, is_async, details, failed)
+  _PrintResourceChange(
+      'export',
+      resource,
+      kind,
+      is_async,
+      details,
+      failed,
+      operation_past_tense='exported')
 
 
 # pylint: disable=invalid-name

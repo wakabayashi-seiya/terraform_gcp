@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -97,3 +97,18 @@ class Delete(base.DeleteCommand):
         holder.client.apitools_client, disk_refs))
 
     return holder.client.MakeRequests(requests)
+
+Delete.detailed_help = {
+    'brief': 'Delete a Google Compute Engine disk',
+    'DESCRIPTION':
+        """\
+        *{command}* deletes a Google Compute Engine disk. A disk can be
+        deleted only if it is not attached to any virtual machine instances.
+        """,
+    'EXAMPLES':
+        """\
+        To delete the disk 'my-disk' in zone 'us-east1-a', run:
+
+            $ {command} my-disk --zone=us-east1-a
+        """,
+}

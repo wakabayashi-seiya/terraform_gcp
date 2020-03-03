@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -23,7 +23,9 @@ from googlecloudsdk.command_lib.compute import flags
 from googlecloudsdk.command_lib.compute import scope as compute_scope
 from googlecloudsdk.command_lib.compute.instance_groups import flags as instance_groups_flags
 from googlecloudsdk.command_lib.compute.managed_instance_groups import update_instances_utils
+from googlecloudsdk.core import exceptions
 from googlecloudsdk.core.util import times
+import six
 
 
 def CreateRequest(args,
@@ -71,7 +73,7 @@ def CreateRequest(args,
       client.messages.InstanceGroupManagerVersion(
           instanceTemplate=igm_info.instanceTemplate)
   ])
-  current_time_str = str(times.Now(times.UTC))
+  current_time_str = six.text_type(times.Now(times.UTC))
   for i, version in enumerate(versions):
     version.name = '%d/%s' % (i, current_time_str)
 
@@ -88,6 +90,9 @@ def CreateRequest(args,
     replacement_method = update_instances_utils.ParseReplacementMethod(
         args.replacement_method, client.messages)
     update_policy.replacementMethod = replacement_method
+
+  ValidateAndFixUpdaterAgainstStateful(update_policy, igm_ref, igm_info, client,
+                                       args)
 
   igm_resource = client.messages.InstanceGroupManager(
       instanceTemplate=None, updatePolicy=update_policy, versions=versions)
@@ -106,3 +111,46 @@ def CreateRequest(args,
         project=igm_ref.project,
         region=igm_ref.region)
   return (service, 'Patch', request)
+
+
+def ValidateAndFixUpdaterAgainstStateful(update_policy, igm_ref, igm_info,
+                                         client, args):
+  """Validates and fixes update policy for patching stateful IGM.
+
+  Updating stateful IGMs requires maxSurge=0 and replacementMethod=RECREATE.
+  If the field has the value set, it is validated.
+  If the field has the value not set, it is being set.
+
+  Args:
+    update_policy: Update policy to be validated
+    igm_ref: Reference of IGM being validated
+    igm_info: Full resource of IGM being validated
+    client: The compute API client
+    args: argparse namespace used to select used version
+  """
+  if not managed_instance_groups_utils.IsStateful(client, igm_info, igm_ref):
+    return
+  if hasattr(args, 'replacement_method'):
+    recreate = (
+        client.messages.InstanceGroupManagerUpdatePolicy
+        .ReplacementMethodValueValuesEnum.RECREATE)
+    if update_policy.replacementMethod is None:
+      update_policy.replacementMethod = recreate
+    elif update_policy.replacementMethod != recreate:
+      raise exceptions.Error(
+          'For performing this action on a stateful IGMs '
+          '--replacement-method has to be RECREATE')
+  if update_policy.maxSurge is None:
+    update_policy.maxSurge = client.messages.FixedOrPercent(fixed=0)
+  else:
+    max_surge_is_zero = True
+    if update_policy.maxSurge.fixed is not None:
+      if update_policy.maxSurge.fixed != 0:
+        max_surge_is_zero = False
+    if update_policy.maxSurge.percent is not None:
+      if update_policy.maxSurge.percent != 0:
+        max_surge_is_zero = False
+    if not max_surge_is_zero:
+      raise exceptions.Error(
+          'For performing this action on a stateful IGMs '
+          '--max-surge has to be 0')

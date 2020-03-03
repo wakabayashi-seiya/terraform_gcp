@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,64 +22,92 @@ import sys
 from googlecloudsdk.api_lib.compute import base_classes
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.compute import flags as compute_flags
+from googlecloudsdk.command_lib.compute import scope as compute_scope
+from googlecloudsdk.command_lib.compute import traffic_control_codec_utils as codecs
 from googlecloudsdk.command_lib.compute.url_maps import flags
 from googlecloudsdk.command_lib.compute.url_maps import url_maps_utils
 from googlecloudsdk.command_lib.export import util as export_util
 from googlecloudsdk.core.util import files
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+def _DetailedHelp():
+  return {
+      'brief':
+          'Export a URL map.',
+      'DESCRIPTION':
+          """\
+          Exports a URL map's configuration to a file.
+          This configuration can be imported at a later time.
+          """,
+      'EXAMPLES':
+          """\
+          A URL map can be exported by running:
+
+            $ {command} NAME --destination=<path-to-file>
+          """
+  }
+
+
+def _GetApiVersion(release_track):
+  """Returns the API version based on the release track."""
+  if release_track == base.ReleaseTrack.ALPHA:
+    return 'alpha'
+  elif release_track == base.ReleaseTrack.BETA:
+    return 'beta'
+  return 'v1'
+
+
+def _GetSchemaPath(release_track, for_help=False):
+  """Returns the resource schema path."""
+  return export_util.GetSchemaPath(
+      'compute', _GetApiVersion(release_track), 'UrlMap', for_help=for_help)
+
+
+def _Run(args, holder, url_map_arg, release_track):
+  """Issues requests necessary to export URL maps."""
+  client = holder.client
+
+  url_map_ref = url_map_arg.ResolveAsResource(
+      args,
+      holder.resources,
+      default_scope=compute_scope.ScopeEnum.GLOBAL,
+      scope_lister=compute_flags.GetDefaultScopeLister(client))
+
+  url_map = url_maps_utils.SendGetRequest(client, url_map_ref)
+
+  codecs.RegisterL7TrafficControlCodecs(_GetApiVersion(release_track))
+  if args.destination:
+    with files.FileWriter(args.destination) as stream:
+      export_util.Export(
+          message=url_map,
+          stream=stream,
+          schema_path=_GetSchemaPath(release_track))
+  else:
+    export_util.Export(
+        message=url_map,
+        stream=sys.stdout,
+        schema_path=_GetSchemaPath(release_track))
+
+
+@base.ReleaseTracks(base.ReleaseTrack.GA, base.ReleaseTrack.BETA,
+                    base.ReleaseTrack.ALPHA)
 class Export(base.Command):
-  """Export a URL map.
+  """Export a URL map."""
 
-  Exports a URL map's configuration to a file.
-  This configuration can be imported at a later time.
-  """
+  _include_l7_internal_load_balancing = True
 
+  detailed_help = _DetailedHelp()
   URL_MAP_ARG = None
 
   @classmethod
-  def GetApiVersion(cls):
-    """Returns the API version based on the release track."""
-    if cls.ReleaseTrack() == base.ReleaseTrack.ALPHA:
-      return 'alpha'
-    elif cls.ReleaseTrack() == base.ReleaseTrack.BETA:
-      return 'beta'
-    return 'v1'
-
-  @classmethod
-  def GetSchemaPath(cls, for_help=False):
-    """Returns the resource schema path."""
-    return export_util.GetSchemaPath(
-        'compute', cls.GetApiVersion(), 'UrlMap', for_help=for_help)
-
-  @classmethod
   def Args(cls, parser):
-    if cls.ReleaseTrack() == base.ReleaseTrack.ALPHA:
-      cls.URL_MAP_ARG = flags.UrlMapArgument(include_alpha=True)
-    else:
-      cls.URL_MAP_ARG = flags.UrlMapArgument()
-
+    cls.URL_MAP_ARG = flags.UrlMapArgument(
+        include_l7_internal_load_balancing=cls
+        ._include_l7_internal_load_balancing)
     cls.URL_MAP_ARG.AddArgument(parser, operation_type='export')
-    export_util.AddExportFlags(parser, cls.GetSchemaPath(for_help=True))
+    export_util.AddExportFlags(
+        parser, _GetSchemaPath(cls.ReleaseTrack(), for_help=True))
 
   def Run(self, args):
     holder = base_classes.ComputeApiHolder(self.ReleaseTrack())
-    client = holder.client
-
-    url_map_ref = self.URL_MAP_ARG.ResolveAsResource(
-        args,
-        holder.resources,
-        scope_lister=compute_flags.GetDefaultScopeLister(client))
-
-    url_map = url_maps_utils.SendGetRequest(client, url_map_ref)
-
-    if args.destination:
-      with files.FileWriter(args.destination) as stream:
-        export_util.Export(message=url_map,
-                           stream=stream,
-                           schema_path=self.GetSchemaPath())
-    else:
-      export_util.Export(message=url_map,
-                         stream=sys.stdout,
-                         schema_path=self.GetSchemaPath())
+    return _Run(args, holder, self.URL_MAP_ARG, self.ReleaseTrack())

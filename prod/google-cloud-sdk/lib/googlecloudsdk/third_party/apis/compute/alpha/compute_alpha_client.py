@@ -8,7 +8,8 @@ class ComputeAlpha(base_api.BaseApiClient):
   """Generated client library for service compute version alpha."""
 
   MESSAGES_MODULE = messages
-  BASE_URL = u'https://www.googleapis.com/compute/alpha/'
+  BASE_URL = u'https://compute.googleapis.com/compute/alpha/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'compute'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform', u'https://www.googleapis.com/auth/compute', u'https://www.googleapis.com/auth/compute.readonly', u'https://www.googleapis.com/auth/devstorage.full_control', u'https://www.googleapis.com/auth/devstorage.read_only', u'https://www.googleapis.com/auth/devstorage.read_write']
@@ -50,6 +51,7 @@ class ComputeAlpha(base_api.BaseApiClient):
     self.globalNetworkEndpointGroups = self.GlobalNetworkEndpointGroupsService(self)
     self.globalOperations = self.GlobalOperationsService(self)
     self.globalOrganizationOperations = self.GlobalOrganizationOperationsService(self)
+    self.globalPublicDelegatedPrefixes = self.GlobalPublicDelegatedPrefixesService(self)
     self.healthChecks = self.HealthChecksService(self)
     self.httpHealthChecks = self.HttpHealthChecksService(self)
     self.httpsHealthChecks = self.HttpsHealthChecksService(self)
@@ -71,7 +73,10 @@ class ComputeAlpha(base_api.BaseApiClient):
     self.nodeTemplates = self.NodeTemplatesService(self)
     self.nodeTypes = self.NodeTypesService(self)
     self.organizationSecurityPolicies = self.OrganizationSecurityPoliciesService(self)
+    self.packetMirrorings = self.PacketMirroringsService(self)
     self.projects = self.ProjectsService(self)
+    self.publicAdvertisedPrefixes = self.PublicAdvertisedPrefixesService(self)
+    self.publicDelegatedPrefixes = self.PublicDelegatedPrefixesService(self)
     self.regionAutoscalers = self.RegionAutoscalersService(self)
     self.regionBackendServices = self.RegionBackendServicesService(self)
     self.regionCommitments = self.RegionCommitmentsService(self)
@@ -81,6 +86,8 @@ class ComputeAlpha(base_api.BaseApiClient):
     self.regionHealthChecks = self.RegionHealthChecksService(self)
     self.regionInstanceGroupManagers = self.RegionInstanceGroupManagersService(self)
     self.regionInstanceGroups = self.RegionInstanceGroupsService(self)
+    self.regionInstances = self.RegionInstancesService(self)
+    self.regionNetworkEndpointGroups = self.RegionNetworkEndpointGroupsService(self)
     self.regionNotificationEndpoints = self.RegionNotificationEndpointsService(self)
     self.regionOperations = self.RegionOperationsService(self)
     self.regionSslCertificates = self.RegionSslCertificatesService(self)
@@ -97,6 +104,7 @@ class ComputeAlpha(base_api.BaseApiClient):
     self.sslCertificates = self.SslCertificatesService(self)
     self.sslPolicies = self.SslPoliciesService(self)
     self.subnetworks = self.SubnetworksService(self)
+    self.targetGrpcProxies = self.TargetGrpcProxiesService(self)
     self.targetHttpProxies = self.TargetHttpProxiesService(self)
     self.targetHttpsProxies = self.TargetHttpsProxiesService(self)
     self.targetInstances = self.TargetInstancesService(self)
@@ -138,7 +146,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.acceleratorTypes.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/acceleratorTypes',
         request_field='',
         request_type_name=u'ComputeAcceleratorTypesAggregatedListRequest',
@@ -190,7 +198,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.acceleratorTypes.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/acceleratorTypes',
         request_field='',
         request_type_name=u'ComputeAcceleratorTypesListRequest',
@@ -226,7 +234,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.addresses.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/addresses',
         request_field='',
         request_type_name=u'ComputeAddressesAggregatedListRequest',
@@ -330,7 +338,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.addresses.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/addresses',
         request_field='',
         request_type_name=u'ComputeAddressesListRequest',
@@ -418,7 +426,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.autoscalers.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/autoscalers',
         request_field='',
         request_type_name=u'ComputeAutoscalersAggregatedListRequest',
@@ -522,7 +530,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.autoscalers.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/autoscalers',
         request_field='',
         request_type_name=u'ComputeAutoscalersListRequest',
@@ -740,7 +748,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.backendBuckets.getIamPolicy',
         ordered_params=[u'project', u'resource'],
         path_params=[u'project', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/global/backendBuckets/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeBackendBucketsGetIamPolicyRequest',
@@ -792,7 +800,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.backendBuckets.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/backendBuckets',
         request_field='',
         request_type_name=u'ComputeBackendBucketsListRequest',
@@ -958,7 +966,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.backendServices.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/backendServices',
         request_field='',
         request_type_name=u'ComputeBackendServicesAggregatedListRequest',
@@ -1071,7 +1079,7 @@ class ComputeAlpha(base_api.BaseApiClient):
     )
 
     def Insert(self, request, global_params=None):
-      r"""Creates a BackendService resource in the specified project using the data included in the request. There are several restrictions and guidelines to keep in mind when creating a backend service. Read  Restrictions and Guidelines for more information.
+      r"""Creates a BackendService resource in the specified project using the data included in the request. There are several restrictions and guidelines to keep in mind when creating a backend service. Read  Understanding backend services for more information.
 
       Args:
         request: (ComputeBackendServicesInsertRequest) input message
@@ -1114,7 +1122,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.backendServices.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/backendServices',
         request_field='',
         request_type_name=u'ComputeBackendServicesListRequest',
@@ -1123,7 +1131,7 @@ class ComputeAlpha(base_api.BaseApiClient):
     )
 
     def Patch(self, request, global_params=None):
-      r"""Patches the specified BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information. This method supports PATCH semantics and uses the JSON merge patch format and processing rules.
+      r"""Patches the specified BackendService resource with the data included in the request. There are several Understanding backend services to keep in mind when updating a backend service. Read  Understanding backend services for more information. This method supports PATCH semantics and uses the JSON merge patch format and processing rules.
 
       Args:
         request: (ComputeBackendServicesPatchRequest) input message
@@ -1201,7 +1209,7 @@ class ComputeAlpha(base_api.BaseApiClient):
     )
 
     def Update(self, request, global_params=None):
-      r"""Updates the specified BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information.
+      r"""Updates the specified BackendService resource with the data included in the request. There are several Understanding backend services to keep in mind when updating a backend service. Read  Understanding backend services for more information.
 
       Args:
         request: (ComputeBackendServicesUpdateRequest) input message
@@ -1254,7 +1262,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.diskTypes.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/diskTypes',
         request_field='',
         request_type_name=u'ComputeDiskTypesAggregatedListRequest',
@@ -1306,7 +1314,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.diskTypes.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/diskTypes',
         request_field='',
         request_type_name=u'ComputeDiskTypesListRequest',
@@ -1368,7 +1376,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.disks.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/disks',
         request_field='',
         request_type_name=u'ComputeDisksAggregatedListRequest',
@@ -1472,7 +1480,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.disks.getIamPolicy',
         ordered_params=[u'project', u'zone', u'resource'],
         path_params=[u'project', u'resource', u'zone'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/zones/{zone}/disks/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeDisksGetIamPolicyRequest',
@@ -1524,7 +1532,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.disks.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/disks',
         request_field='',
         request_type_name=u'ComputeDisksListRequest',
@@ -1768,7 +1776,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.externalVpnGateways.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/externalVpnGateways',
         request_field='',
         request_type_name=u'ComputeExternalVpnGatewaysListRequest',
@@ -1934,7 +1942,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.firewalls.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/firewalls',
         request_field='',
         request_type_name=u'ComputeFirewallsListRequest',
@@ -1995,7 +2003,7 @@ class ComputeAlpha(base_api.BaseApiClient):
     )
 
     def Update(self, request, global_params=None):
-      r"""Updates the specified firewall rule with the data included in the request. The PUT method can only update the following fields of firewall rule: allowed, description, sourceRanges, sourceTags, targetTags.
+      r"""Updates the specified firewall rule with the data included in the request. Note that all fields will be updated if using PUT, even fields that are not specified. To update individual fields, please use PATCH instead.
 
       Args:
         request: (ComputeFirewallsUpdateRequest) input message
@@ -2048,7 +2056,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.forwardingRules.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/forwardingRules',
         request_field='',
         request_type_name=u'ComputeForwardingRulesAggregatedListRequest',
@@ -2152,7 +2160,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.forwardingRules.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/forwardingRules',
         request_field='',
         request_type_name=u'ComputeForwardingRulesListRequest',
@@ -2370,7 +2378,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.globalAddresses.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/addresses',
         request_field='',
         request_type_name=u'ComputeGlobalAddressesListRequest',
@@ -2536,7 +2544,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.globalForwardingRules.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/forwardingRules',
         request_field='',
         request_type_name=u'ComputeGlobalForwardingRulesListRequest',
@@ -2806,7 +2814,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.globalNetworkEndpointGroups.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/networkEndpointGroups',
         request_field='',
         request_type_name=u'ComputeGlobalNetworkEndpointGroupsListRequest',
@@ -2832,7 +2840,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.globalNetworkEndpointGroups.listNetworkEndpoints',
         ordered_params=[u'project', u'networkEndpointGroup'],
         path_params=[u'networkEndpointGroup', u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/networkEndpointGroups/{networkEndpointGroup}/listNetworkEndpoints',
         request_field='',
         request_type_name=u'ComputeGlobalNetworkEndpointGroupsListNetworkEndpointsRequest',
@@ -2868,7 +2876,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.globalOperations.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/operations',
         request_field='',
         request_type_name=u'ComputeGlobalOperationsAggregatedListRequest',
@@ -2946,7 +2954,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.globalOperations.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/operations',
         request_field='',
         request_type_name=u'ComputeGlobalOperationsListRequest',
@@ -2955,7 +2963,11 @@ class ComputeAlpha(base_api.BaseApiClient):
     )
 
     def Wait(self, request, global_params=None):
-      r"""Waits for the specified Operations resource until it is done or timeout, and retrieves the specified Operations resource. 1. Immediately returns when the operation is already done. 2. Waits for no more than the default deadline (2 minutes, subject to change) and then returns the current state of the operation, which may be DONE or still in progress. 3. Is best-effort: a. The server can wait less than the default deadline or zero seconds, in overload situations. b. There is no guarantee that the operation is actually done when returns. 4. User should be prepared to retry if the operation is not DONE.
+      r"""Waits for the specified Operation resource to return as DONE or for the request to approach the 2 minute deadline, and retrieves the specified Operation resource. This method differs from the GET method in that it waits for no more than the default deadline (2 minutes) and then returns the current state of the operation, which might be DONE or still in progress.
+
+This method is called on a best-effort basis. Specifically:  
+- In uncommon cases, when the server is overloaded, the request might return before the default deadline is reached, or might return after zero seconds. 
+- If the default deadline is reached, there is no guarantee that the operation is actually done when the method returns. Be prepared to retry if the operation is not DONE.
 
       Args:
         request: (ComputeGlobalOperationsWaitRequest) input message
@@ -3060,7 +3072,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.globalOrganizationOperations.list',
         ordered_params=[],
         path_params=[],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'parentId'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'parentId', u'returnPartialSuccess'],
         relative_path=u'projects/locations/global/operations',
         request_field='',
         request_type_name=u'ComputeGlobalOrganizationOperationsListRequest',
@@ -3068,28 +3080,142 @@ class ComputeAlpha(base_api.BaseApiClient):
         supports_download=False,
     )
 
-    def Wait(self, request, global_params=None):
-      r"""Waits for the specified Operations resource until it is done or timeout, and retrieves the specified Operations resource. 1. Immediately returns when the operation is already done. 2. Waits for no more than the default deadline (2 minutes, subject to change) and then returns the current state of the operation, which may be DONE or still in progress. 3. Is best-effort: a. The server can wait less than the default deadline or zero seconds, in overload situations. b. There is no guarantee that the operation is actually done when returns. 4. User should be prepared to retry if the operation is not DONE.
+  class GlobalPublicDelegatedPrefixesService(base_api.BaseApiService):
+    """Service class for the globalPublicDelegatedPrefixes resource."""
+
+    _NAME = u'globalPublicDelegatedPrefixes'
+
+    def __init__(self, client):
+      super(ComputeAlpha.GlobalPublicDelegatedPrefixesService, self).__init__(client)
+      self._upload_configs = {
+          }
+
+    def Delete(self, request, global_params=None):
+      r"""Deletes the specified global PublicDelegatedPrefix.
 
       Args:
-        request: (ComputeGlobalOrganizationOperationsWaitRequest) input message
+        request: (ComputeGlobalPublicDelegatedPrefixesDeleteRequest) input message
         global_params: (StandardQueryParameters, default: None) global arguments
       Returns:
         (Operation) The response message.
       """
-      config = self.GetMethodConfig('Wait')
+      config = self.GetMethodConfig('Delete')
       return self._RunMethod(
           config, request, global_params=global_params)
 
-    Wait.method_config = lambda: base_api.ApiMethodInfo(
-        http_method=u'POST',
-        method_id=u'compute.globalOrganizationOperations.wait',
-        ordered_params=[u'operation'],
-        path_params=[u'operation'],
-        query_params=[u'parentId'],
-        relative_path=u'projects/locations/global/operations/{operation}/wait',
+    Delete.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'DELETE',
+        method_id=u'compute.globalPublicDelegatedPrefixes.delete',
+        ordered_params=[u'project', u'publicDelegatedPrefix'],
+        path_params=[u'project', u'publicDelegatedPrefix'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/global/publicDelegatedPrefixes/{publicDelegatedPrefix}',
         request_field='',
-        request_type_name=u'ComputeGlobalOrganizationOperationsWaitRequest',
+        request_type_name=u'ComputeGlobalPublicDelegatedPrefixesDeleteRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def Get(self, request, global_params=None):
+      r"""Returns the specified global PublicDelegatedPrefix resource.
+
+      Args:
+        request: (ComputeGlobalPublicDelegatedPrefixesGetRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PublicDelegatedPrefix) The response message.
+      """
+      config = self.GetMethodConfig('Get')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Get.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.globalPublicDelegatedPrefixes.get',
+        ordered_params=[u'project', u'publicDelegatedPrefix'],
+        path_params=[u'project', u'publicDelegatedPrefix'],
+        query_params=[],
+        relative_path=u'projects/{project}/global/publicDelegatedPrefixes/{publicDelegatedPrefix}',
+        request_field='',
+        request_type_name=u'ComputeGlobalPublicDelegatedPrefixesGetRequest',
+        response_type_name=u'PublicDelegatedPrefix',
+        supports_download=False,
+    )
+
+    def Insert(self, request, global_params=None):
+      r"""Creates a global PublicDelegatedPrefix in the specified project using the parameters that are included in the request.
+
+      Args:
+        request: (ComputeGlobalPublicDelegatedPrefixesInsertRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Insert')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Insert.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.globalPublicDelegatedPrefixes.insert',
+        ordered_params=[u'project'],
+        path_params=[u'project'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/global/publicDelegatedPrefixes',
+        request_field=u'publicDelegatedPrefix',
+        request_type_name=u'ComputeGlobalPublicDelegatedPrefixesInsertRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def List(self, request, global_params=None):
+      r"""Lists the global PublicDelegatedPrefixes for a project.
+
+      Args:
+        request: (ComputeGlobalPublicDelegatedPrefixesListRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PublicDelegatedPrefixList) The response message.
+      """
+      config = self.GetMethodConfig('List')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    List.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.globalPublicDelegatedPrefixes.list',
+        ordered_params=[u'project'],
+        path_params=[u'project'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/global/publicDelegatedPrefixes',
+        request_field='',
+        request_type_name=u'ComputeGlobalPublicDelegatedPrefixesListRequest',
+        response_type_name=u'PublicDelegatedPrefixList',
+        supports_download=False,
+    )
+
+    def Patch(self, request, global_params=None):
+      r"""Patches the specified global PublicDelegatedPrefix resource with the data included in the request. This method supports PATCH semantics and uses JSON merge patch format and processing rules.
+
+      Args:
+        request: (ComputeGlobalPublicDelegatedPrefixesPatchRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Patch')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Patch.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'PATCH',
+        method_id=u'compute.globalPublicDelegatedPrefixes.patch',
+        ordered_params=[u'project', u'publicDelegatedPrefix'],
+        path_params=[u'project', u'publicDelegatedPrefix'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/global/publicDelegatedPrefixes/{publicDelegatedPrefix}',
+        request_field=u'publicDelegatedPrefixResource',
+        request_type_name=u'ComputeGlobalPublicDelegatedPrefixesPatchRequest',
         response_type_name=u'Operation',
         supports_download=False,
     )
@@ -3122,7 +3248,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.healthChecks.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/healthChecks',
         request_field='',
         request_type_name=u'ComputeHealthChecksAggregatedListRequest',
@@ -3226,7 +3352,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.healthChecks.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/healthChecks',
         request_field='',
         request_type_name=u'ComputeHealthChecksListRequest',
@@ -3418,7 +3544,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.httpHealthChecks.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/httpHealthChecks',
         request_field='',
         request_type_name=u'ComputeHttpHealthChecksListRequest',
@@ -3610,7 +3736,7 @@ class ComputeAlpha(base_api.BaseApiClient):
         method_id=u'compute.httpsHealthChecks.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/httpsHealthChecks',
         request_field='',
         request_type_name=u'ComputeHttpsHealthChecksListRequest',
@@ -3830,7 +3956,7 @@ If an empty request body is given, clears the deprecation status instead.
         method_id=u'compute.images.getIamPolicy',
         ordered_params=[u'project', u'resource'],
         path_params=[u'project', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/global/images/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeImagesGetIamPolicyRequest',
@@ -3882,7 +4008,7 @@ If an empty request body is given, clears the deprecation status instead.
         method_id=u'compute.images.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/images',
         request_field='',
         request_type_name=u'ComputeImagesListRequest',
@@ -4026,7 +4152,7 @@ You can specify a maximum of 1000 instances with this method per request.
         method_id=u'compute.instanceGroupManagers.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/instanceGroupManagers',
         request_field='',
         request_type_name=u'ComputeInstanceGroupManagersAggregatedListRequest',
@@ -4035,7 +4161,7 @@ You can specify a maximum of 1000 instances with this method per request.
     )
 
     def ApplyUpdatesToInstances(self, request, global_params=None):
-      r"""Apply changes to selected instances on the managed instance group. This method can be used to apply new overrides and/or new versions.
+      r"""Applies changes to selected instances on the managed instance group. This method can be used to apply new overrides and/or new versions.
 
       Args:
         request: (ComputeInstanceGroupManagersApplyUpdatesToInstancesRequest) input message
@@ -4240,11 +4366,37 @@ A managed instance group can have up to 1000 VM instances per group. Please cont
         method_id=u'compute.instanceGroupManagers.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/instanceGroupManagers',
         request_field='',
         request_type_name=u'ComputeInstanceGroupManagersListRequest',
         response_type_name=u'InstanceGroupManagerList',
+        supports_download=False,
+    )
+
+    def ListErrors(self, request, global_params=None):
+      r"""Lists all errors thrown by actions on instances for a given managed instance group.
+
+      Args:
+        request: (ComputeInstanceGroupManagersListErrorsRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (InstanceGroupManagersListErrorsResponse) The response message.
+      """
+      config = self.GetMethodConfig('ListErrors')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    ListErrors.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.instanceGroupManagers.listErrors',
+        ordered_params=[u'project', u'zone', u'instanceGroupManager'],
+        path_params=[u'instanceGroupManager', u'project', u'zone'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/zones/{zone}/instanceGroupManagers/{instanceGroupManager}/listErrors',
+        request_field='',
+        request_type_name=u'ComputeInstanceGroupManagersListErrorsRequest',
+        response_type_name=u'InstanceGroupManagersListErrorsResponse',
         supports_download=False,
     )
 
@@ -4266,7 +4418,7 @@ A managed instance group can have up to 1000 VM instances per group. Please cont
         method_id=u'compute.instanceGroupManagers.listManagedInstances',
         ordered_params=[u'project', u'zone', u'instanceGroupManager'],
         path_params=[u'instanceGroupManager', u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'order_by', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
         relative_path=u'projects/{project}/zones/{zone}/instanceGroupManagers/{instanceGroupManager}/listManagedInstances',
         request_field='',
         request_type_name=u'ComputeInstanceGroupManagersListManagedInstancesRequest',
@@ -4292,7 +4444,7 @@ A managed instance group can have up to 1000 VM instances per group. Please cont
         method_id=u'compute.instanceGroupManagers.listPerInstanceConfigs',
         ordered_params=[u'project', u'zone', u'instanceGroupManager'],
         path_params=[u'instanceGroupManager', u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/instanceGroupManagers/{instanceGroupManager}/listPerInstanceConfigs',
         request_field='',
         request_type_name=u'ComputeInstanceGroupManagersListPerInstanceConfigsRequest',
@@ -4327,7 +4479,7 @@ A managed instance group can have up to 1000 VM instances per group. Please cont
     )
 
     def PatchPerInstanceConfigs(self, request, global_params=None):
-      r"""Insert or patch (for the ones that already exist) per-instance configs for the managed instance group. perInstanceConfig.instance serves as a key used to distinguish whether to perform insert or patch.
+      r"""Inserts or patches per-instance configs for the managed instance group. perInstanceConfig.name serves as a key used to distinguish whether to perform insert or patch.
 
       Args:
         request: (ComputeInstanceGroupManagersPatchPerInstanceConfigsRequest) input message
@@ -4577,7 +4729,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def UpdatePerInstanceConfigs(self, request, global_params=None):
-      r"""Insert or update (for the ones that already exist) per-instance configs for the managed instance group. perInstanceConfig.instance serves as a key used to distinguish whether to perform insert or patch.
+      r"""Inserts or updates per-instance configs for the managed instance group. perInstanceConfig.name serves as a key used to distinguish whether to perform insert or patch.
 
       Args:
         request: (ComputeInstanceGroupManagersUpdatePerInstanceConfigsRequest) input message
@@ -4656,7 +4808,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.instanceGroups.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/instanceGroups',
         request_field='',
         request_type_name=u'ComputeInstanceGroupsAggregatedListRequest',
@@ -4760,7 +4912,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.instanceGroups.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/instanceGroups',
         request_field='',
         request_type_name=u'ComputeInstanceGroupsListRequest',
@@ -4786,7 +4938,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.instanceGroups.listInstances',
         ordered_params=[u'project', u'zone', u'instanceGroup'],
         path_params=[u'instanceGroup', u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/instanceGroups/{instanceGroup}/listInstances',
         request_field=u'instanceGroupsListInstancesRequest',
         request_type_name=u'ComputeInstanceGroupsListInstancesRequest',
@@ -4954,7 +5106,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.instanceTemplates.getIamPolicy',
         ordered_params=[u'project', u'resource'],
         path_params=[u'project', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/global/instanceTemplates/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeInstanceTemplatesGetIamPolicyRequest',
@@ -5006,7 +5158,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.instanceTemplates.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/instanceTemplates',
         request_field='',
         request_type_name=u'ComputeInstanceTemplatesListRequest',
@@ -5146,7 +5298,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.instances.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/instances',
         request_field='',
         request_type_name=u'ComputeInstancesAggregatedListRequest',
@@ -5176,6 +5328,32 @@ If the group is part of a backend service that has enabled connection draining, 
         relative_path=u'projects/{project}/zones/{zone}/instances/{instance}/attachDisk',
         request_field=u'attachedDisk',
         request_type_name=u'ComputeInstancesAttachDiskRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def BulkInsert(self, request, global_params=None):
+      r"""Creates multiple instances. Count specifies the number of instances to create.
+
+      Args:
+        request: (ComputeInstancesBulkInsertRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('BulkInsert')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    BulkInsert.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.instances.bulkInsert',
+        ordered_params=[u'project', u'zone'],
+        path_params=[u'project', u'zone'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/zones/{zone}/instances/bulkInsert',
+        request_field=u'bulkInsertInstanceResource',
+        request_type_name=u'ComputeInstancesBulkInsertRequest',
         response_type_name=u'Operation',
         supports_download=False,
     )
@@ -5354,11 +5532,37 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.instances.getIamPolicy',
         ordered_params=[u'project', u'zone', u'resource'],
         path_params=[u'project', u'resource', u'zone'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/zones/{zone}/instances/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeInstancesGetIamPolicyRequest',
         response_type_name=u'Policy',
+        supports_download=False,
+    )
+
+    def GetScreenshot(self, request, global_params=None):
+      r"""Returns the screenshot from the specified instance.
+
+      Args:
+        request: (ComputeInstancesGetScreenshotRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Screenshot) The response message.
+      """
+      config = self.GetMethodConfig('GetScreenshot')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    GetScreenshot.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.instances.getScreenshot',
+        ordered_params=[u'project', u'zone', u'instance'],
+        path_params=[u'instance', u'project', u'zone'],
+        query_params=[],
+        relative_path=u'projects/{project}/zones/{zone}/instances/{instance}/screenshot',
+        request_field='',
+        request_type_name=u'ComputeInstancesGetScreenshotRequest',
+        response_type_name=u'Screenshot',
         supports_download=False,
     )
 
@@ -5484,7 +5688,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.instances.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/instances',
         request_field='',
         request_type_name=u'ComputeInstancesListRequest',
@@ -5510,7 +5714,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.instances.listReferrers',
         ordered_params=[u'project', u'zone', u'instance'],
         path_params=[u'instance', u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/instances/{instance}/referrers',
         request_field='',
         request_type_name=u'ComputeInstancesListReferrersRequest',
@@ -5804,6 +6008,32 @@ If the group is part of a backend service that has enabled connection draining, 
         supports_download=False,
     )
 
+    def SetName(self, request, global_params=None):
+      r"""Sets name of an instance.
+
+      Args:
+        request: (ComputeInstancesSetNameRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('SetName')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    SetName.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.instances.setName',
+        ordered_params=[u'project', u'zone', u'instance'],
+        path_params=[u'instance', u'project', u'zone'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/zones/{zone}/instances/{instance}/setName',
+        request_field=u'instancesSetNameRequest',
+        request_type_name=u'ComputeInstancesSetNameRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
     def SetScheduling(self, request, global_params=None):
       r"""Sets an instance's scheduling options.
 
@@ -6090,6 +6320,32 @@ If the group is part of a backend service that has enabled connection draining, 
         supports_download=False,
     )
 
+    def Update(self, request, global_params=None):
+      r"""Updates an instance.
+
+      Args:
+        request: (ComputeInstancesUpdateRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Update')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Update.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'PUT',
+        method_id=u'compute.instances.update',
+        ordered_params=[u'project', u'zone', u'instance'],
+        path_params=[u'instance', u'project', u'zone'],
+        query_params=[u'minimalAction', u'mostDisruptiveAllowedAction', u'requestId'],
+        relative_path=u'projects/{project}/zones/{zone}/instances/{instance}',
+        request_field=u'instanceResource',
+        request_type_name=u'ComputeInstancesUpdateRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
     def UpdateAccessConfig(self, request, global_params=None):
       r"""Updates the specified access config from an instance's network interface with the data included in the request. This method supports PATCH semantics and uses the JSON merge patch format and processing rules.
 
@@ -6248,7 +6504,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.interconnectAttachments.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/interconnectAttachments',
         request_field='',
         request_type_name=u'ComputeInterconnectAttachmentsAggregatedListRequest',
@@ -6326,7 +6582,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.interconnectAttachments.getIamPolicy',
         ordered_params=[u'project', u'region', u'resource'],
         path_params=[u'project', u'region', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/regions/{region}/interconnectAttachments/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeInterconnectAttachmentsGetIamPolicyRequest',
@@ -6378,7 +6634,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.interconnectAttachments.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/interconnectAttachments',
         request_field='',
         request_type_name=u'ComputeInterconnectAttachmentsListRequest',
@@ -6544,7 +6800,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.interconnectLocations.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/interconnectLocations',
         request_field='',
         request_type_name=u'ComputeInterconnectLocationsListRequest',
@@ -6684,7 +6940,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.interconnects.getIamPolicy',
         ordered_params=[u'project', u'resource'],
         path_params=[u'project', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/global/interconnects/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeInterconnectsGetIamPolicyRequest',
@@ -6736,7 +6992,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.interconnects.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/interconnects',
         request_field='',
         request_type_name=u'ComputeInterconnectsListRequest',
@@ -6859,7 +7115,7 @@ If the group is part of a backend service that has enabled connection draining, 
           }
 
     def Get(self, request, global_params=None):
-      r"""Return a specified license code. License codes are mirrored across all projects that have permissions to read the License Code.
+      r"""Return a specified license code. License codes are mirrored across all projects that have permissions to read the License Code.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicenseCodesGetRequest) input message
@@ -6885,7 +7141,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def GetIamPolicy(self, request, global_params=None):
-      r"""Gets the access control policy for a resource. May be empty if no such policy or resource exists.
+      r"""Gets the access control policy for a resource. May be empty if no such policy or resource exists.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicenseCodesGetIamPolicyRequest) input message
@@ -6902,7 +7158,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.licenseCodes.getIamPolicy',
         ordered_params=[u'project', u'resource'],
         path_params=[u'project', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/global/licenseCodes/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeLicenseCodesGetIamPolicyRequest',
@@ -6911,7 +7167,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def SetIamPolicy(self, request, global_params=None):
-      r"""Sets the access control policy on the specified resource. Replaces any existing policy.
+      r"""Sets the access control policy on the specified resource. Replaces any existing policy.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicenseCodesSetIamPolicyRequest) input message
@@ -6937,7 +7193,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def TestIamPermissions(self, request, global_params=None):
-      r"""Returns permissions that a caller has on the specified resource.
+      r"""Returns permissions that a caller has on the specified resource.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicenseCodesTestIamPermissionsRequest) input message
@@ -6973,7 +7229,7 @@ If the group is part of a backend service that has enabled connection draining, 
           }
 
     def Delete(self, request, global_params=None):
-      r"""Deletes the specified license.
+      r"""Deletes the specified license.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicensesDeleteRequest) input message
@@ -6999,7 +7255,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Get(self, request, global_params=None):
-      r"""Returns the specified License resource.
+      r"""Returns the specified License resource.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicensesGetRequest) input message
@@ -7025,7 +7281,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def GetIamPolicy(self, request, global_params=None):
-      r"""Gets the access control policy for a resource. May be empty if no such policy or resource exists.
+      r"""Gets the access control policy for a resource. May be empty if no such policy or resource exists.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicensesGetIamPolicyRequest) input message
@@ -7042,7 +7298,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.licenses.getIamPolicy',
         ordered_params=[u'project', u'resource'],
         path_params=[u'project', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/global/licenses/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeLicensesGetIamPolicyRequest',
@@ -7051,7 +7307,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Insert(self, request, global_params=None):
-      r"""Create a License resource in the specified project.
+      r"""Create a License resource in the specified project.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicensesInsertRequest) input message
@@ -7077,7 +7333,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def List(self, request, global_params=None):
-      r"""Retrieves the list of licenses available in the specified project. This method does not get any licenses that belong to other projects, including licenses attached to publicly-available images, like Debian 9. If you want to get a list of publicly-available licenses, use this method to make a request to the respective image project, such as debian-cloud or windows-cloud.
+      r"""Retrieves the list of licenses available in the specified project. This method does not get any licenses that belong to other projects, including licenses attached to publicly-available images, like Debian 9. If you want to get a list of publicly-available licenses, use this method to make a request to the respective image project, such as debian-cloud or windows-cloud.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicensesListRequest) input message
@@ -7094,7 +7350,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.licenses.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/licenses',
         request_field='',
         request_type_name=u'ComputeLicensesListRequest',
@@ -7103,7 +7359,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def SetIamPolicy(self, request, global_params=None):
-      r"""Sets the access control policy on the specified resource. Replaces any existing policy.
+      r"""Sets the access control policy on the specified resource. Replaces any existing policy.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicensesSetIamPolicyRequest) input message
@@ -7129,7 +7385,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def TestIamPermissions(self, request, global_params=None):
-      r"""Returns permissions that a caller has on the specified resource.
+      r"""Returns permissions that a caller has on the specified resource.  Caution This resource is intended for use only by third-party partners who are creating Cloud Marketplace images.
 
       Args:
         request: (ComputeLicensesTestIamPermissionsRequest) input message
@@ -7234,7 +7490,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.machineImages.getIamPolicy',
         ordered_params=[u'project', u'resource'],
         path_params=[u'project', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/global/machineImages/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeMachineImagesGetIamPolicyRequest',
@@ -7286,7 +7542,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.machineImages.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/machineImages',
         request_field='',
         request_type_name=u'ComputeMachineImagesListRequest',
@@ -7374,7 +7630,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.machineTypes.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/machineTypes',
         request_field='',
         request_type_name=u'ComputeMachineTypesAggregatedListRequest',
@@ -7426,7 +7682,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.machineTypes.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/machineTypes',
         request_field='',
         request_type_name=u'ComputeMachineTypesListRequest',
@@ -7462,7 +7718,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.networkEndpointGroups.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/networkEndpointGroups',
         request_field='',
         request_type_name=u'ComputeNetworkEndpointGroupsAggregatedListRequest',
@@ -7618,7 +7874,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.networkEndpointGroups.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/networkEndpointGroups',
         request_field='',
         request_type_name=u'ComputeNetworkEndpointGroupsListRequest',
@@ -7644,7 +7900,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.networkEndpointGroups.listNetworkEndpoints',
         ordered_params=[u'project', u'zone', u'networkEndpointGroup'],
         path_params=[u'networkEndpointGroup', u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/networkEndpointGroups/{networkEndpointGroup}/listNetworkEndpoints',
         request_field=u'networkEndpointGroupsListEndpointsRequest',
         request_type_name=u'ComputeNetworkEndpointGroupsListNetworkEndpointsRequest',
@@ -7836,7 +8092,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.networks.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/networks',
         request_field='',
         request_type_name=u'ComputeNetworksListRequest',
@@ -7862,7 +8118,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.networks.listIpAddresses',
         ordered_params=[u'project', u'network'],
         path_params=[u'network', u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'types'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess', u'types'],
         relative_path=u'projects/{project}/global/networks/{network}/listIpAddresses',
         request_field='',
         request_type_name=u'ComputeNetworksListIpAddressesRequest',
@@ -7888,7 +8144,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.networks.listIpOwners',
         ordered_params=[u'project', u'network'],
         path_params=[u'network', u'project'],
-        query_params=[u'filter', u'ipCidrRange', u'maxResults', u'orderBy', u'ownerProjects', u'ownerTypes', u'pageToken', u'subnetName', u'subnetRegion'],
+        query_params=[u'filter', u'ipCidrRange', u'maxResults', u'orderBy', u'ownerProjects', u'ownerTypes', u'pageToken', u'returnPartialSuccess', u'subnetName', u'subnetRegion'],
         relative_path=u'projects/{project}/global/networks/{network}/listIpOwners',
         request_field='',
         request_type_name=u'ComputeNetworksListIpOwnersRequest',
@@ -7914,7 +8170,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.networks.listPeeringRoutes',
         ordered_params=[u'project', u'network'],
         path_params=[u'network', u'project'],
-        query_params=[u'direction', u'filter', u'maxResults', u'orderBy', u'pageToken', u'peeringName', u'region'],
+        query_params=[u'direction', u'filter', u'maxResults', u'orderBy', u'pageToken', u'peeringName', u'region', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/networks/{network}/listPeeringRoutes',
         request_field='',
         request_type_name=u'ComputeNetworksListPeeringRoutesRequest',
@@ -8106,7 +8362,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.nodeGroups.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/nodeGroups',
         request_field='',
         request_type_name=u'ComputeNodeGroupsAggregatedListRequest',
@@ -8210,7 +8466,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.nodeGroups.getIamPolicy',
         ordered_params=[u'project', u'zone', u'resource'],
         path_params=[u'project', u'resource', u'zone'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/zones/{zone}/nodeGroups/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeNodeGroupsGetIamPolicyRequest',
@@ -8262,7 +8518,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.nodeGroups.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/nodeGroups',
         request_field='',
         request_type_name=u'ComputeNodeGroupsListRequest',
@@ -8288,7 +8544,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.nodeGroups.listNodes',
         ordered_params=[u'project', u'zone', u'nodeGroup'],
         path_params=[u'nodeGroup', u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/nodeGroups/{nodeGroup}/listNodes',
         request_field='',
         request_type_name=u'ComputeNodeGroupsListNodesRequest',
@@ -8296,28 +8552,28 @@ If the group is part of a backend service that has enabled connection draining, 
         supports_download=False,
     )
 
-    def SetAutoscalingPolicy(self, request, global_params=None):
-      r"""Sets the autoscaling policy of the node group.
+    def Patch(self, request, global_params=None):
+      r"""Patch the node group.
 
       Args:
-        request: (ComputeNodeGroupsSetAutoscalingPolicyRequest) input message
+        request: (ComputeNodeGroupsPatchRequest) input message
         global_params: (StandardQueryParameters, default: None) global arguments
       Returns:
         (Operation) The response message.
       """
-      config = self.GetMethodConfig('SetAutoscalingPolicy')
+      config = self.GetMethodConfig('Patch')
       return self._RunMethod(
           config, request, global_params=global_params)
 
-    SetAutoscalingPolicy.method_config = lambda: base_api.ApiMethodInfo(
-        http_method=u'POST',
-        method_id=u'compute.nodeGroups.setAutoscalingPolicy',
+    Patch.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'PATCH',
+        method_id=u'compute.nodeGroups.patch',
         ordered_params=[u'project', u'zone', u'nodeGroup'],
         path_params=[u'nodeGroup', u'project', u'zone'],
         query_params=[u'requestId'],
-        relative_path=u'projects/{project}/zones/{zone}/nodeGroups/{nodeGroup}/setAutoscalingPolicy',
-        request_field=u'nodeGroupsSetAutoscalingPolicyRequest',
-        request_type_name=u'ComputeNodeGroupsSetAutoscalingPolicyRequest',
+        relative_path=u'projects/{project}/zones/{zone}/nodeGroups/{nodeGroup}',
+        request_field=u'nodeGroupResource',
+        request_type_name=u'ComputeNodeGroupsPatchRequest',
         response_type_name=u'Operation',
         supports_download=False,
     )
@@ -8428,7 +8684,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.nodeTemplates.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/nodeTemplates',
         request_field='',
         request_type_name=u'ComputeNodeTemplatesAggregatedListRequest',
@@ -8506,7 +8762,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.nodeTemplates.getIamPolicy',
         ordered_params=[u'project', u'region', u'resource'],
         path_params=[u'project', u'region', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/regions/{region}/nodeTemplates/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeNodeTemplatesGetIamPolicyRequest',
@@ -8558,7 +8814,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.nodeTemplates.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/nodeTemplates',
         request_field='',
         request_type_name=u'ComputeNodeTemplatesListRequest',
@@ -8646,7 +8902,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.nodeTypes.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/nodeTypes',
         request_field='',
         request_type_name=u'ComputeNodeTypesAggregatedListRequest',
@@ -8698,7 +8954,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.nodeTypes.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/nodeTypes',
         request_field='',
         request_type_name=u'ComputeNodeTypesListRequest',
@@ -8942,7 +9198,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.organizationSecurityPolicies.list',
         ordered_params=[],
         path_params=[],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'parentId'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'parentId', u'returnPartialSuccess'],
         relative_path=u'projects/locations/global/securityPolicies',
         request_field='',
         request_type_name=u'ComputeOrganizationSecurityPoliciesListRequest',
@@ -9103,6 +9359,198 @@ If the group is part of a backend service that has enabled connection draining, 
         request_field='',
         request_type_name=u'ComputeOrganizationSecurityPoliciesRemoveRuleRequest',
         response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+  class PacketMirroringsService(base_api.BaseApiService):
+    """Service class for the packetMirrorings resource."""
+
+    _NAME = u'packetMirrorings'
+
+    def __init__(self, client):
+      super(ComputeAlpha.PacketMirroringsService, self).__init__(client)
+      self._upload_configs = {
+          }
+
+    def AggregatedList(self, request, global_params=None):
+      r"""Retrieves an aggregated list of packetMirrorings.
+
+      Args:
+        request: (ComputePacketMirroringsAggregatedListRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PacketMirroringAggregatedList) The response message.
+      """
+      config = self.GetMethodConfig('AggregatedList')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    AggregatedList.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.packetMirrorings.aggregatedList',
+        ordered_params=[u'project'],
+        path_params=[u'project'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/aggregated/packetMirrorings',
+        request_field='',
+        request_type_name=u'ComputePacketMirroringsAggregatedListRequest',
+        response_type_name=u'PacketMirroringAggregatedList',
+        supports_download=False,
+    )
+
+    def Delete(self, request, global_params=None):
+      r"""Deletes the specified PacketMirroring resource.
+
+      Args:
+        request: (ComputePacketMirroringsDeleteRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Delete')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Delete.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'DELETE',
+        method_id=u'compute.packetMirrorings.delete',
+        ordered_params=[u'project', u'region', u'packetMirroring'],
+        path_params=[u'packetMirroring', u'project', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/packetMirrorings/{packetMirroring}',
+        request_field='',
+        request_type_name=u'ComputePacketMirroringsDeleteRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def Get(self, request, global_params=None):
+      r"""Returns the specified PacketMirroring resource.
+
+      Args:
+        request: (ComputePacketMirroringsGetRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PacketMirroring) The response message.
+      """
+      config = self.GetMethodConfig('Get')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Get.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.packetMirrorings.get',
+        ordered_params=[u'project', u'region', u'packetMirroring'],
+        path_params=[u'packetMirroring', u'project', u'region'],
+        query_params=[],
+        relative_path=u'projects/{project}/regions/{region}/packetMirrorings/{packetMirroring}',
+        request_field='',
+        request_type_name=u'ComputePacketMirroringsGetRequest',
+        response_type_name=u'PacketMirroring',
+        supports_download=False,
+    )
+
+    def Insert(self, request, global_params=None):
+      r"""Creates a PacketMirroring resource in the specified project and region using the data included in the request.
+
+      Args:
+        request: (ComputePacketMirroringsInsertRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Insert')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Insert.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.packetMirrorings.insert',
+        ordered_params=[u'project', u'region'],
+        path_params=[u'project', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/packetMirrorings',
+        request_field=u'packetMirroring',
+        request_type_name=u'ComputePacketMirroringsInsertRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def List(self, request, global_params=None):
+      r"""Retrieves a list of PacketMirroring resources available to the specified project and region.
+
+      Args:
+        request: (ComputePacketMirroringsListRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PacketMirroringList) The response message.
+      """
+      config = self.GetMethodConfig('List')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    List.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.packetMirrorings.list',
+        ordered_params=[u'project', u'region'],
+        path_params=[u'project', u'region'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/regions/{region}/packetMirrorings',
+        request_field='',
+        request_type_name=u'ComputePacketMirroringsListRequest',
+        response_type_name=u'PacketMirroringList',
+        supports_download=False,
+    )
+
+    def Patch(self, request, global_params=None):
+      r"""Patches the specified PacketMirroring resource with the data included in the request. This method supports PATCH semantics and uses JSON merge patch format and processing rules.
+
+      Args:
+        request: (ComputePacketMirroringsPatchRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Patch')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Patch.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'PATCH',
+        method_id=u'compute.packetMirrorings.patch',
+        ordered_params=[u'project', u'region', u'packetMirroring'],
+        path_params=[u'packetMirroring', u'project', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/packetMirrorings/{packetMirroring}',
+        request_field=u'packetMirroringResource',
+        request_type_name=u'ComputePacketMirroringsPatchRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def TestIamPermissions(self, request, global_params=None):
+      r"""Returns permissions that a caller has on the specified resource.
+
+      Args:
+        request: (ComputePacketMirroringsTestIamPermissionsRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (TestPermissionsResponse) The response message.
+      """
+      config = self.GetMethodConfig('TestIamPermissions')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    TestIamPermissions.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.packetMirrorings.testIamPermissions',
+        ordered_params=[u'project', u'region', u'resource'],
+        path_params=[u'project', u'region', u'resource'],
+        query_params=[],
+        relative_path=u'projects/{project}/regions/{region}/packetMirrorings/{resource}/testIamPermissions',
+        request_field=u'testPermissionsRequest',
+        request_type_name=u'ComputePacketMirroringsTestIamPermissionsRequest',
+        response_type_name=u'TestPermissionsResponse',
         supports_download=False,
     )
 
@@ -9290,7 +9738,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.projects.getXpnResources',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'order_by', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
         relative_path=u'projects/{project}/getXpnResources',
         request_field='',
         request_type_name=u'ComputeProjectsGetXpnResourcesRequest',
@@ -9316,7 +9764,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.projects.listXpnHosts',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'order_by', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
         relative_path=u'projects/{project}/listXpnHosts',
         request_field=u'projectsListXpnHostsRequest',
         request_type_name=u'ComputeProjectsListXpnHostsRequest',
@@ -9480,6 +9928,312 @@ If the group is part of a backend service that has enabled connection draining, 
         supports_download=False,
     )
 
+  class PublicAdvertisedPrefixesService(base_api.BaseApiService):
+    """Service class for the publicAdvertisedPrefixes resource."""
+
+    _NAME = u'publicAdvertisedPrefixes'
+
+    def __init__(self, client):
+      super(ComputeAlpha.PublicAdvertisedPrefixesService, self).__init__(client)
+      self._upload_configs = {
+          }
+
+    def Delete(self, request, global_params=None):
+      r"""Deletes the specified PublicAdvertisedPrefix.
+
+      Args:
+        request: (ComputePublicAdvertisedPrefixesDeleteRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Delete')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Delete.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'DELETE',
+        method_id=u'compute.publicAdvertisedPrefixes.delete',
+        ordered_params=[u'project', u'publicAdvertisedPrefix'],
+        path_params=[u'project', u'publicAdvertisedPrefix'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/global/publicAdvertisedPrefixes/{publicAdvertisedPrefix}',
+        request_field='',
+        request_type_name=u'ComputePublicAdvertisedPrefixesDeleteRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def Get(self, request, global_params=None):
+      r"""Returns the specified PublicAdvertisedPrefix resource.
+
+      Args:
+        request: (ComputePublicAdvertisedPrefixesGetRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PublicAdvertisedPrefix) The response message.
+      """
+      config = self.GetMethodConfig('Get')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Get.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.publicAdvertisedPrefixes.get',
+        ordered_params=[u'project', u'publicAdvertisedPrefix'],
+        path_params=[u'project', u'publicAdvertisedPrefix'],
+        query_params=[],
+        relative_path=u'projects/{project}/global/publicAdvertisedPrefixes/{publicAdvertisedPrefix}',
+        request_field='',
+        request_type_name=u'ComputePublicAdvertisedPrefixesGetRequest',
+        response_type_name=u'PublicAdvertisedPrefix',
+        supports_download=False,
+    )
+
+    def Insert(self, request, global_params=None):
+      r"""Creates a PublicAdvertisedPrefix in the specified project using the parameters that are included in the request.
+
+      Args:
+        request: (ComputePublicAdvertisedPrefixesInsertRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Insert')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Insert.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.publicAdvertisedPrefixes.insert',
+        ordered_params=[u'project'],
+        path_params=[u'project'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/global/publicAdvertisedPrefixes',
+        request_field=u'publicAdvertisedPrefix',
+        request_type_name=u'ComputePublicAdvertisedPrefixesInsertRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def List(self, request, global_params=None):
+      r"""Lists the PublicAdvertisedPrefixes for a project.
+
+      Args:
+        request: (ComputePublicAdvertisedPrefixesListRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PublicAdvertisedPrefixList) The response message.
+      """
+      config = self.GetMethodConfig('List')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    List.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.publicAdvertisedPrefixes.list',
+        ordered_params=[u'project'],
+        path_params=[u'project'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/global/publicAdvertisedPrefixes',
+        request_field='',
+        request_type_name=u'ComputePublicAdvertisedPrefixesListRequest',
+        response_type_name=u'PublicAdvertisedPrefixList',
+        supports_download=False,
+    )
+
+    def Patch(self, request, global_params=None):
+      r"""Patches the specified Router resource with the data included in the request. This method supports PATCH semantics and uses JSON merge patch format and processing rules.
+
+      Args:
+        request: (ComputePublicAdvertisedPrefixesPatchRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Patch')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Patch.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'PATCH',
+        method_id=u'compute.publicAdvertisedPrefixes.patch',
+        ordered_params=[u'project', u'publicAdvertisedPrefix'],
+        path_params=[u'project', u'publicAdvertisedPrefix'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/global/publicAdvertisedPrefixes/{publicAdvertisedPrefix}',
+        request_field=u'publicAdvertisedPrefixResource',
+        request_type_name=u'ComputePublicAdvertisedPrefixesPatchRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+  class PublicDelegatedPrefixesService(base_api.BaseApiService):
+    """Service class for the publicDelegatedPrefixes resource."""
+
+    _NAME = u'publicDelegatedPrefixes'
+
+    def __init__(self, client):
+      super(ComputeAlpha.PublicDelegatedPrefixesService, self).__init__(client)
+      self._upload_configs = {
+          }
+
+    def AggregatedList(self, request, global_params=None):
+      r"""Lists all PublicDelegatedPrefix resources owned by the specific project across all scopes.
+
+      Args:
+        request: (ComputePublicDelegatedPrefixesAggregatedListRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PublicDelegatedPrefixAggregatedList) The response message.
+      """
+      config = self.GetMethodConfig('AggregatedList')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    AggregatedList.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.publicDelegatedPrefixes.aggregatedList',
+        ordered_params=[u'project'],
+        path_params=[u'project'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/aggregated/publicDelegatedPrefixes',
+        request_field='',
+        request_type_name=u'ComputePublicDelegatedPrefixesAggregatedListRequest',
+        response_type_name=u'PublicDelegatedPrefixAggregatedList',
+        supports_download=False,
+    )
+
+    def Delete(self, request, global_params=None):
+      r"""Deletes the specified PublicDelegatedPrefix in the given region.
+
+      Args:
+        request: (ComputePublicDelegatedPrefixesDeleteRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Delete')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Delete.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'DELETE',
+        method_id=u'compute.publicDelegatedPrefixes.delete',
+        ordered_params=[u'project', u'region', u'publicDelegatedPrefix'],
+        path_params=[u'project', u'publicDelegatedPrefix', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/publicDelegatedPrefixes/{publicDelegatedPrefix}',
+        request_field='',
+        request_type_name=u'ComputePublicDelegatedPrefixesDeleteRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def Get(self, request, global_params=None):
+      r"""Returns the specified PublicDelegatedPrefix resource in the given region.
+
+      Args:
+        request: (ComputePublicDelegatedPrefixesGetRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PublicDelegatedPrefix) The response message.
+      """
+      config = self.GetMethodConfig('Get')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Get.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.publicDelegatedPrefixes.get',
+        ordered_params=[u'project', u'region', u'publicDelegatedPrefix'],
+        path_params=[u'project', u'publicDelegatedPrefix', u'region'],
+        query_params=[],
+        relative_path=u'projects/{project}/regions/{region}/publicDelegatedPrefixes/{publicDelegatedPrefix}',
+        request_field='',
+        request_type_name=u'ComputePublicDelegatedPrefixesGetRequest',
+        response_type_name=u'PublicDelegatedPrefix',
+        supports_download=False,
+    )
+
+    def Insert(self, request, global_params=None):
+      r"""Creates a PublicDelegatedPrefix in the specified project in the given region using the parameters that are included in the request.
+
+      Args:
+        request: (ComputePublicDelegatedPrefixesInsertRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Insert')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Insert.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.publicDelegatedPrefixes.insert',
+        ordered_params=[u'project', u'region'],
+        path_params=[u'project', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/publicDelegatedPrefixes',
+        request_field=u'publicDelegatedPrefix',
+        request_type_name=u'ComputePublicDelegatedPrefixesInsertRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def List(self, request, global_params=None):
+      r"""Lists the PublicDelegatedPrefixes for a project in the given region.
+
+      Args:
+        request: (ComputePublicDelegatedPrefixesListRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (PublicDelegatedPrefixList) The response message.
+      """
+      config = self.GetMethodConfig('List')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    List.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.publicDelegatedPrefixes.list',
+        ordered_params=[u'project', u'region'],
+        path_params=[u'project', u'region'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/regions/{region}/publicDelegatedPrefixes',
+        request_field='',
+        request_type_name=u'ComputePublicDelegatedPrefixesListRequest',
+        response_type_name=u'PublicDelegatedPrefixList',
+        supports_download=False,
+    )
+
+    def Patch(self, request, global_params=None):
+      r"""Patches the specified PublicDelegatedPrefix resource with the data included in the request. This method supports PATCH semantics and uses JSON merge patch format and processing rules.
+
+      Args:
+        request: (ComputePublicDelegatedPrefixesPatchRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Patch')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Patch.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'PATCH',
+        method_id=u'compute.publicDelegatedPrefixes.patch',
+        ordered_params=[u'project', u'region', u'publicDelegatedPrefix'],
+        path_params=[u'project', u'publicDelegatedPrefix', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/publicDelegatedPrefixes/{publicDelegatedPrefix}',
+        request_field=u'publicDelegatedPrefixResource',
+        request_type_name=u'ComputePublicDelegatedPrefixesPatchRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
   class RegionAutoscalersService(base_api.BaseApiService):
     """Service class for the regionAutoscalers resource."""
 
@@ -9586,7 +10340,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionAutoscalers.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/autoscalers',
         request_field='',
         request_type_name=u'ComputeRegionAutoscalersListRequest',
@@ -9761,7 +10515,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Insert(self, request, global_params=None):
-      r"""Creates a regional BackendService resource in the specified project using the data included in the request. There are several restrictions and guidelines to keep in mind when creating a regional backend service. Read  Restrictions and Guidelines for more information.
+      r"""Creates a regional BackendService resource in the specified project using the data included in the request. There are several restrictions and guidelines to keep in mind when creating a regional backend service. Read  Understanding backend services for more information.
 
       Args:
         request: (ComputeRegionBackendServicesInsertRequest) input message
@@ -9804,7 +10558,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionBackendServices.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/backendServices',
         request_field='',
         request_type_name=u'ComputeRegionBackendServicesListRequest',
@@ -9813,7 +10567,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Patch(self, request, global_params=None):
-      r"""Updates the specified regional BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information. This method supports PATCH semantics and uses the JSON merge patch format and processing rules.
+      r"""Updates the specified regional BackendService resource with the data included in the request. There are several Understanding backend services to keep in mind when updating a backend service. Read  Understanding backend services for more information. This method supports PATCH semantics and uses the JSON merge patch format and processing rules.
 
       Args:
         request: (ComputeRegionBackendServicesPatchRequest) input message
@@ -9865,7 +10619,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Update(self, request, global_params=None):
-      r"""Updates the specified regional BackendService resource with the data included in the request. There are several restrictions and guidelines to keep in mind when updating a backend service. Read  Restrictions and Guidelines for more information.
+      r"""Updates the specified regional BackendService resource with the data included in the request. There are several Understanding backend services to keep in mind when updating a backend service. Read  Understanding backend services for more information.
 
       Args:
         request: (ComputeRegionBackendServicesUpdateRequest) input message
@@ -9918,7 +10672,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionCommitments.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/commitments',
         request_field='',
         request_type_name=u'ComputeRegionCommitmentsAggregatedListRequest',
@@ -9996,7 +10750,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionCommitments.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/commitments',
         request_field='',
         request_type_name=u'ComputeRegionCommitmentsListRequest',
@@ -10031,7 +10785,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def UpdateReservations(self, request, global_params=None):
-      r"""Update the shape of reservations for GPUS/Local SSDs of reservations within the commitments.
+      r"""Transfers GPUs or local SSDs between reservations within commitments.
 
       Args:
         request: (ComputeRegionCommitmentsUpdateReservationsRequest) input message
@@ -10110,7 +10864,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionDiskTypes.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/diskTypes',
         request_field='',
         request_type_name=u'ComputeRegionDiskTypesListRequest',
@@ -10250,7 +11004,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionDisks.getIamPolicy',
         ordered_params=[u'project', u'region', u'resource'],
         path_params=[u'project', u'region', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/regions/{region}/disks/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeRegionDisksGetIamPolicyRequest',
@@ -10302,7 +11056,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionDisks.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/disks',
         request_field='',
         request_type_name=u'ComputeRegionDisksListRequest',
@@ -10546,11 +11300,37 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionHealthCheckServices.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/healthCheckServices',
         request_field='',
         request_type_name=u'ComputeRegionHealthCheckServicesListRequest',
         response_type_name=u'HealthCheckServicesList',
+        supports_download=False,
+    )
+
+    def Patch(self, request, global_params=None):
+      r"""Updates the specified regional HealthCheckService resource with the data included in the request. This method supports PATCH semantics and uses the JSON merge patch format and processing rules.
+
+      Args:
+        request: (ComputeRegionHealthCheckServicesPatchRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Patch')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Patch.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'PATCH',
+        method_id=u'compute.regionHealthCheckServices.patch',
+        ordered_params=[u'project', u'region', u'healthCheckService'],
+        path_params=[u'healthCheckService', u'project', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/healthCheckServices/{healthCheckService}',
+        request_field=u'healthCheckServiceResource',
+        request_type_name=u'ComputeRegionHealthCheckServicesPatchRequest',
+        response_type_name=u'Operation',
         supports_download=False,
     )
 
@@ -10686,7 +11466,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionHealthChecks.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/healthChecks',
         request_field='',
         request_type_name=u'ComputeRegionHealthChecksListRequest',
@@ -11018,11 +11798,37 @@ A regional managed instance group can contain up to 2000 instances.
         method_id=u'compute.regionInstanceGroupManagers.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/instanceGroupManagers',
         request_field='',
         request_type_name=u'ComputeRegionInstanceGroupManagersListRequest',
         response_type_name=u'RegionInstanceGroupManagerList',
+        supports_download=False,
+    )
+
+    def ListErrors(self, request, global_params=None):
+      r"""Lists all errors thrown by actions on instances for a given regional managed instance group.
+
+      Args:
+        request: (ComputeRegionInstanceGroupManagersListErrorsRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (RegionInstanceGroupManagersListErrorsResponse) The response message.
+      """
+      config = self.GetMethodConfig('ListErrors')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    ListErrors.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.regionInstanceGroupManagers.listErrors',
+        ordered_params=[u'project', u'region', u'instanceGroupManager'],
+        path_params=[u'instanceGroupManager', u'project', u'region'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/listErrors',
+        request_field='',
+        request_type_name=u'ComputeRegionInstanceGroupManagersListErrorsRequest',
+        response_type_name=u'RegionInstanceGroupManagersListErrorsResponse',
         supports_download=False,
     )
 
@@ -11044,7 +11850,7 @@ A regional managed instance group can contain up to 2000 instances.
         method_id=u'compute.regionInstanceGroupManagers.listManagedInstances',
         ordered_params=[u'project', u'region', u'instanceGroupManager'],
         path_params=[u'instanceGroupManager', u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'order_by', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
         relative_path=u'projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/listManagedInstances',
         request_field='',
         request_type_name=u'ComputeRegionInstanceGroupManagersListManagedInstancesRequest',
@@ -11070,7 +11876,7 @@ A regional managed instance group can contain up to 2000 instances.
         method_id=u'compute.regionInstanceGroupManagers.listPerInstanceConfigs',
         ordered_params=[u'project', u'region', u'instanceGroupManager'],
         path_params=[u'instanceGroupManager', u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/instanceGroupManagers/{instanceGroupManager}/listPerInstanceConfigs',
         request_field='',
         request_type_name=u'ComputeRegionInstanceGroupManagersListPerInstanceConfigsRequest',
@@ -11400,7 +12206,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionInstanceGroups.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/instanceGroups',
         request_field='',
         request_type_name=u'ComputeRegionInstanceGroupsListRequest',
@@ -11426,7 +12232,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionInstanceGroups.listInstances',
         ordered_params=[u'project', u'region', u'instanceGroup'],
         path_params=[u'instanceGroup', u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/instanceGroups/{instanceGroup}/listInstances',
         request_field=u'regionInstanceGroupsListInstancesRequest',
         request_type_name=u'ComputeRegionInstanceGroupsListInstancesRequest',
@@ -11483,6 +12289,156 @@ If the group is part of a backend service that has enabled connection draining, 
         request_field=u'testPermissionsRequest',
         request_type_name=u'ComputeRegionInstanceGroupsTestIamPermissionsRequest',
         response_type_name=u'TestPermissionsResponse',
+        supports_download=False,
+    )
+
+  class RegionInstancesService(base_api.BaseApiService):
+    """Service class for the regionInstances resource."""
+
+    _NAME = u'regionInstances'
+
+    def __init__(self, client):
+      super(ComputeAlpha.RegionInstancesService, self).__init__(client)
+      self._upload_configs = {
+          }
+
+    def BulkInsert(self, request, global_params=None):
+      r"""Creates multiple instances in a given region. Count specifies the number of instances to create.
+
+      Args:
+        request: (ComputeRegionInstancesBulkInsertRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('BulkInsert')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    BulkInsert.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.regionInstances.bulkInsert',
+        ordered_params=[u'project', u'region'],
+        path_params=[u'project', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/instances/bulkInsert',
+        request_field=u'bulkInsertInstanceResource',
+        request_type_name=u'ComputeRegionInstancesBulkInsertRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+  class RegionNetworkEndpointGroupsService(base_api.BaseApiService):
+    """Service class for the regionNetworkEndpointGroups resource."""
+
+    _NAME = u'regionNetworkEndpointGroups'
+
+    def __init__(self, client):
+      super(ComputeAlpha.RegionNetworkEndpointGroupsService, self).__init__(client)
+      self._upload_configs = {
+          }
+
+    def Delete(self, request, global_params=None):
+      r"""Deletes the specified network endpoint group. Note that the NEG cannot be deleted if it is configured as a backend of a backend service.
+
+      Args:
+        request: (ComputeRegionNetworkEndpointGroupsDeleteRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Delete')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Delete.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'DELETE',
+        method_id=u'compute.regionNetworkEndpointGroups.delete',
+        ordered_params=[u'project', u'region', u'networkEndpointGroup'],
+        path_params=[u'networkEndpointGroup', u'project', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/networkEndpointGroups/{networkEndpointGroup}',
+        request_field='',
+        request_type_name=u'ComputeRegionNetworkEndpointGroupsDeleteRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def Get(self, request, global_params=None):
+      r"""Returns the specified network endpoint group. Gets a list of available network endpoint groups by making a list() request.
+
+      Args:
+        request: (ComputeRegionNetworkEndpointGroupsGetRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (NetworkEndpointGroup) The response message.
+      """
+      config = self.GetMethodConfig('Get')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Get.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.regionNetworkEndpointGroups.get',
+        ordered_params=[u'project', u'region', u'networkEndpointGroup'],
+        path_params=[u'networkEndpointGroup', u'project', u'region'],
+        query_params=[],
+        relative_path=u'projects/{project}/regions/{region}/networkEndpointGroups/{networkEndpointGroup}',
+        request_field='',
+        request_type_name=u'ComputeRegionNetworkEndpointGroupsGetRequest',
+        response_type_name=u'NetworkEndpointGroup',
+        supports_download=False,
+    )
+
+    def Insert(self, request, global_params=None):
+      r"""Creates a network endpoint group in the specified project using the parameters that are included in the request.
+
+      Args:
+        request: (ComputeRegionNetworkEndpointGroupsInsertRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Insert')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Insert.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.regionNetworkEndpointGroups.insert',
+        ordered_params=[u'project', u'region'],
+        path_params=[u'project', u'region'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/regions/{region}/networkEndpointGroups',
+        request_field=u'networkEndpointGroup',
+        request_type_name=u'ComputeRegionNetworkEndpointGroupsInsertRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def List(self, request, global_params=None):
+      r"""Retrieves the list of regional network endpoint groups available to the specified project in the given region.
+
+      Args:
+        request: (ComputeRegionNetworkEndpointGroupsListRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (NetworkEndpointGroupList) The response message.
+      """
+      config = self.GetMethodConfig('List')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    List.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.regionNetworkEndpointGroups.list',
+        ordered_params=[u'project', u'region'],
+        path_params=[u'project', u'region'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/regions/{region}/networkEndpointGroups',
+        request_field='',
+        request_type_name=u'ComputeRegionNetworkEndpointGroupsListRequest',
+        response_type_name=u'NetworkEndpointGroupList',
         supports_download=False,
     )
 
@@ -11592,7 +12548,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionNotificationEndpoints.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/notificationEndpoints',
         request_field='',
         request_type_name=u'ComputeRegionNotificationEndpointsListRequest',
@@ -11706,7 +12662,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionOperations.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/operations',
         request_field='',
         request_type_name=u'ComputeRegionOperationsListRequest',
@@ -11715,7 +12671,11 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Wait(self, request, global_params=None):
-      r"""Waits for the specified region-specific Operations resource until it is done or timeout, and retrieves the specified Operations resource. 1. Immediately returns when the operation is already done. 2. Waits for no more than the default deadline (2 minutes, subject to change) and then returns the current state of the operation, which may be DONE or still in progress. 3. Is best-effort: a. The server can wait less than the default deadline or zero seconds, in overload situations. b. There is no guarantee that the operation is actually done when returns. 4. User should be prepared to retry if the operation is not DONE.
+      r"""Waits for the specified Operation resource to return as DONE or for the request to approach the 2 minute deadline, and retrieves the specified Operation resource. This method differs from the GET method in that it waits for no more than the default deadline (2 minutes) and then returns the current state of the operation, which might be DONE or still in progress.
+
+This method is called on a best-effort basis. Specifically:  
+- In uncommon cases, when the server is overloaded, the request might return before the default deadline is reached, or might return after zero seconds. 
+- If the default deadline is reached, there is no guarantee that the operation is actually done when the method returns. Be prepared to retry if the operation is not DONE.
 
       Args:
         request: (ComputeRegionOperationsWaitRequest) input message
@@ -11846,7 +12806,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionSslCertificates.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/sslCertificates',
         request_field='',
         request_type_name=u'ComputeRegionSslCertificatesListRequest',
@@ -11986,7 +12946,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionTargetHttpProxies.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/targetHttpProxies',
         request_field='',
         request_type_name=u'ComputeRegionTargetHttpProxiesListRequest',
@@ -12152,7 +13112,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionTargetHttpsProxies.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/targetHttpsProxies',
         request_field='',
         request_type_name=u'ComputeRegionTargetHttpsProxiesListRequest',
@@ -12370,7 +13330,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regionUrlMaps.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/urlMaps',
         request_field='',
         request_type_name=u'ComputeRegionUrlMapsListRequest',
@@ -12536,7 +13496,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.regions.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions',
         request_field='',
         request_type_name=u'ComputeRegionsListRequest',
@@ -12572,7 +13532,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.reservations.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/reservations',
         request_field='',
         request_type_name=u'ComputeReservationsAggregatedListRequest',
@@ -12607,7 +13567,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Get(self, request, global_params=None):
-      r"""Retrieves all information of the specified reservation.
+      r"""Retrieves information about the specified reservation.
 
       Args:
         request: (ComputeReservationsGetRequest) input message
@@ -12650,7 +13610,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.reservations.getIamPolicy',
         ordered_params=[u'project', u'zone', u'resource'],
         path_params=[u'project', u'resource', u'zone'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/zones/{zone}/reservations/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeReservationsGetIamPolicyRequest',
@@ -12659,7 +13619,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Insert(self, request, global_params=None):
-      r"""Creates a new reservation.
+      r"""Creates a new reservation. For more information, read Reserving zonal resources.
 
       Args:
         request: (ComputeReservationsInsertRequest) input message
@@ -12685,7 +13645,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def List(self, request, global_params=None):
-      r"""A list all the reservations that have been configured for the specified project in specified zone.
+      r"""A list of all the reservations that have been configured for the specified project in specified zone.
 
       Args:
         request: (ComputeReservationsListRequest) input message
@@ -12702,7 +13662,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.reservations.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/reservations',
         request_field='',
         request_type_name=u'ComputeReservationsListRequest',
@@ -12711,7 +13671,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Resize(self, request, global_params=None):
-      r"""Resizes the reservation (applicable to standalone reservations only).
+      r"""Resizes the reservation (applicable to standalone reservations only). For more information, read Modifying reservations.
 
       Args:
         request: (ComputeReservationsResizeRequest) input message
@@ -12816,7 +13776,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.resourcePolicies.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/resourcePolicies',
         request_field='',
         request_type_name=u'ComputeResourcePoliciesAggregatedListRequest',
@@ -12894,7 +13854,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.resourcePolicies.getIamPolicy',
         ordered_params=[u'project', u'region', u'resource'],
         path_params=[u'project', u'region', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/regions/{region}/resourcePolicies/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeResourcePoliciesGetIamPolicyRequest',
@@ -12946,7 +13906,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.resourcePolicies.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/resourcePolicies',
         request_field='',
         request_type_name=u'ComputeResourcePoliciesListRequest',
@@ -13034,7 +13994,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.routers.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/routers',
         request_field='',
         request_type_name=u'ComputeRoutersAggregatedListRequest',
@@ -13112,7 +14072,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.routers.getNatMappingInfo',
         ordered_params=[u'project', u'region', u'router'],
         path_params=[u'project', u'region', u'router'],
-        query_params=[u'filter', u'maxResults', u'natName', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'natName', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/routers/{router}/getNatMappingInfo',
         request_field='',
         request_type_name=u'ComputeRoutersGetNatMappingInfoRequest',
@@ -13190,7 +14150,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.routers.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/routers',
         request_field='',
         request_type_name=u'ComputeRoutersListRequest',
@@ -13277,7 +14237,7 @@ If the group is part of a backend service that has enabled connection draining, 
     )
 
     def Update(self, request, global_params=None):
-      r"""Updates the specified Router resource with the data included in the request.
+      r"""Updates the specified Router resource with the data included in the request. This method conforms to PUT semantics, which requests that the state of the target resource be created or replaced with the state defined by the representation enclosed in the request message payload.
 
       Args:
         request: (ComputeRoutersUpdateRequest) input message
@@ -13408,7 +14368,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.routes.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/routes',
         request_field='',
         request_type_name=u'ComputeRoutesListRequest',
@@ -13600,7 +14560,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.securityPolicies.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/securityPolicies',
         request_field='',
         request_type_name=u'ComputeSecurityPoliciesListRequest',
@@ -13626,7 +14586,7 @@ If the group is part of a backend service that has enabled connection draining, 
         method_id=u'compute.securityPolicies.listPreconfiguredExpressionSets',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/securityPolicies/listPreconfiguredExpressionSets',
         request_field='',
         request_type_name=u'ComputeSecurityPoliciesListPreconfiguredExpressionSetsRequest',
@@ -13846,7 +14806,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.snapshots.getIamPolicy',
         ordered_params=[u'project', u'resource'],
         path_params=[u'project', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/global/snapshots/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeSnapshotsGetIamPolicyRequest',
@@ -13872,7 +14832,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.snapshots.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/snapshots',
         request_field='',
         request_type_name=u'ComputeSnapshotsListRequest',
@@ -13986,7 +14946,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.sslCertificates.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/sslCertificates',
         request_field='',
         request_type_name=u'ComputeSslCertificatesAggregatedListRequest',
@@ -14090,7 +15050,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.sslCertificates.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/sslCertificates',
         request_field='',
         request_type_name=u'ComputeSslCertificatesListRequest',
@@ -14230,7 +15190,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.sslPolicies.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/sslPolicies',
         request_field='',
         request_type_name=u'ComputeSslPoliciesListRequest',
@@ -14256,7 +15216,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.sslPolicies.listAvailableFeatures',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/sslPolicies/listAvailableFeatures',
         request_field='',
         request_type_name=u'ComputeSslPoliciesListAvailableFeaturesRequest',
@@ -14344,7 +15304,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.subnetworks.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/subnetworks',
         request_field='',
         request_type_name=u'ComputeSubnetworksAggregatedListRequest',
@@ -14448,7 +15408,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.subnetworks.getIamPolicy',
         ordered_params=[u'project', u'region', u'resource'],
         path_params=[u'project', u'region', u'resource'],
-        query_params=[],
+        query_params=[u'optionsRequestedPolicyVersion'],
         relative_path=u'projects/{project}/regions/{region}/subnetworks/{resource}/getIamPolicy',
         request_field='',
         request_type_name=u'ComputeSubnetworksGetIamPolicyRequest',
@@ -14500,7 +15460,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.subnetworks.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/subnetworks',
         request_field='',
         request_type_name=u'ComputeSubnetworksListRequest',
@@ -14509,7 +15469,7 @@ For more information, see Deleting snapshots.
     )
 
     def ListUsable(self, request, global_params=None):
-      r"""Retrieves an aggregated list of usable subnetworks.
+      r"""Retrieves an aggregated list of all usable subnetworks in the project. The list contains all of the subnetworks in the project and the subnetworks that were shared by a Shared VPC host project.
 
       Args:
         request: (ComputeSubnetworksListUsableRequest) input message
@@ -14526,7 +15486,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.subnetworks.listUsable',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/subnetworks/listUsable',
         request_field='',
         request_type_name=u'ComputeSubnetworksListUsableRequest',
@@ -14638,6 +15598,146 @@ For more information, see Deleting snapshots.
         supports_download=False,
     )
 
+  class TargetGrpcProxiesService(base_api.BaseApiService):
+    """Service class for the targetGrpcProxies resource."""
+
+    _NAME = u'targetGrpcProxies'
+
+    def __init__(self, client):
+      super(ComputeAlpha.TargetGrpcProxiesService, self).__init__(client)
+      self._upload_configs = {
+          }
+
+    def Delete(self, request, global_params=None):
+      r"""Deletes the specified TargetGrpcProxy in the given scope.
+
+      Args:
+        request: (ComputeTargetGrpcProxiesDeleteRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Delete')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Delete.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'DELETE',
+        method_id=u'compute.targetGrpcProxies.delete',
+        ordered_params=[u'project', u'targetGrpcProxy'],
+        path_params=[u'project', u'targetGrpcProxy'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/global/targetGrpcProxies/{targetGrpcProxy}',
+        request_field='',
+        request_type_name=u'ComputeTargetGrpcProxiesDeleteRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def Get(self, request, global_params=None):
+      r"""Returns the specified TargetGrpcProxy resource in the given scope.
+
+      Args:
+        request: (ComputeTargetGrpcProxiesGetRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (TargetGrpcProxy) The response message.
+      """
+      config = self.GetMethodConfig('Get')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Get.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.targetGrpcProxies.get',
+        ordered_params=[u'project', u'targetGrpcProxy'],
+        path_params=[u'project', u'targetGrpcProxy'],
+        query_params=[],
+        relative_path=u'projects/{project}/global/targetGrpcProxies/{targetGrpcProxy}',
+        request_field='',
+        request_type_name=u'ComputeTargetGrpcProxiesGetRequest',
+        response_type_name=u'TargetGrpcProxy',
+        supports_download=False,
+    )
+
+    def Insert(self, request, global_params=None):
+      r"""Creates a TargetGrpcProxy in the specified project in the given scope using the parameters that are included in the request.
+
+      Args:
+        request: (ComputeTargetGrpcProxiesInsertRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (Operation) The response message.
+      """
+      config = self.GetMethodConfig('Insert')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Insert.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.targetGrpcProxies.insert',
+        ordered_params=[u'project'],
+        path_params=[u'project'],
+        query_params=[u'requestId'],
+        relative_path=u'projects/{project}/global/targetGrpcProxies',
+        request_field=u'targetGrpcProxy',
+        request_type_name=u'ComputeTargetGrpcProxiesInsertRequest',
+        response_type_name=u'Operation',
+        supports_download=False,
+    )
+
+    def List(self, request, global_params=None):
+      r"""Lists the TargetGrpcProxies for a project in the given scope.
+
+      Args:
+        request: (ComputeTargetGrpcProxiesListRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (TargetGrpcProxyList) The response message.
+      """
+      config = self.GetMethodConfig('List')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    List.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'GET',
+        method_id=u'compute.targetGrpcProxies.list',
+        ordered_params=[u'project'],
+        path_params=[u'project'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
+        relative_path=u'projects/{project}/global/targetGrpcProxies',
+        request_field='',
+        request_type_name=u'ComputeTargetGrpcProxiesListRequest',
+        response_type_name=u'TargetGrpcProxyList',
+        supports_download=False,
+    )
+
+    def TestIamPermissions(self, request, global_params=None):
+      r"""Returns permissions that a caller has on the specified resource.
+
+      Args:
+        request: (ComputeTargetGrpcProxiesTestIamPermissionsRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (TestPermissionsResponse) The response message.
+      """
+      config = self.GetMethodConfig('TestIamPermissions')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    TestIamPermissions.method_config = lambda: base_api.ApiMethodInfo(
+        http_method=u'POST',
+        method_id=u'compute.targetGrpcProxies.testIamPermissions',
+        ordered_params=[u'project', u'resource'],
+        path_params=[u'project', u'resource'],
+        query_params=[],
+        relative_path=u'projects/{project}/global/targetGrpcProxies/{resource}/testIamPermissions',
+        request_field=u'testPermissionsRequest',
+        request_type_name=u'ComputeTargetGrpcProxiesTestIamPermissionsRequest',
+        response_type_name=u'TestPermissionsResponse',
+        supports_download=False,
+    )
+
   class TargetHttpProxiesService(base_api.BaseApiService):
     """Service class for the targetHttpProxies resource."""
 
@@ -14666,7 +15766,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetHttpProxies.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/targetHttpProxies',
         request_field='',
         request_type_name=u'ComputeTargetHttpProxiesAggregatedListRequest',
@@ -14770,7 +15870,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetHttpProxies.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/targetHttpProxies',
         request_field='',
         request_type_name=u'ComputeTargetHttpProxiesListRequest',
@@ -14858,7 +15958,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetHttpsProxies.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/targetHttpsProxies',
         request_field='',
         request_type_name=u'ComputeTargetHttpsProxiesAggregatedListRequest',
@@ -14962,7 +16062,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetHttpsProxies.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/targetHttpsProxies',
         request_field='',
         request_type_name=u'ComputeTargetHttpsProxiesListRequest',
@@ -15128,7 +16228,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetInstances.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/targetInstances',
         request_field='',
         request_type_name=u'ComputeTargetInstancesAggregatedListRequest',
@@ -15232,7 +16332,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetInstances.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/targetInstances',
         request_field='',
         request_type_name=u'ComputeTargetInstancesListRequest',
@@ -15346,7 +16446,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetPools.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/targetPools',
         request_field='',
         request_type_name=u'ComputeTargetPoolsAggregatedListRequest',
@@ -15476,7 +16576,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetPools.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/targetPools',
         request_field='',
         request_type_name=u'ComputeTargetPoolsListRequest',
@@ -15694,7 +16794,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetSslProxies.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/targetSslProxies',
         request_field='',
         request_type_name=u'ComputeTargetSslProxiesListRequest',
@@ -15938,7 +17038,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetTcpProxies.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/targetTcpProxies',
         request_field='',
         request_type_name=u'ComputeTargetTcpProxiesListRequest',
@@ -16052,7 +17152,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetVpnGateways.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/targetVpnGateways',
         request_field='',
         request_type_name=u'ComputeTargetVpnGatewaysAggregatedListRequest',
@@ -16156,7 +17256,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.targetVpnGateways.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/targetVpnGateways',
         request_field='',
         request_type_name=u'ComputeTargetVpnGatewaysListRequest',
@@ -16244,7 +17344,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.urlMaps.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/urlMaps',
         request_field='',
         request_type_name=u'ComputeUrlMapsAggregatedListRequest',
@@ -16374,7 +17474,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.urlMaps.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/global/urlMaps',
         request_field='',
         request_type_name=u'ComputeUrlMapsListRequest',
@@ -16514,7 +17614,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.vpnGateways.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/vpnGateways',
         request_field='',
         request_type_name=u'ComputeVpnGatewaysAggregatedListRequest',
@@ -16644,7 +17744,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.vpnGateways.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/vpnGateways',
         request_field='',
         request_type_name=u'ComputeVpnGatewaysListRequest',
@@ -16732,7 +17832,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.vpnTunnels.aggregatedList',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'includeAllScopes', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/aggregated/vpnTunnels',
         request_field='',
         request_type_name=u'ComputeVpnTunnelsAggregatedListRequest',
@@ -16836,7 +17936,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.vpnTunnels.list',
         ordered_params=[u'project', u'region'],
         path_params=[u'project', u'region'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/regions/{region}/vpnTunnels',
         request_field='',
         request_type_name=u'ComputeVpnTunnelsListRequest',
@@ -16976,7 +18076,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.zoneOperations.list',
         ordered_params=[u'project', u'zone'],
         path_params=[u'project', u'zone'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones/{zone}/operations',
         request_field='',
         request_type_name=u'ComputeZoneOperationsListRequest',
@@ -16985,7 +18085,11 @@ For more information, see Deleting snapshots.
     )
 
     def Wait(self, request, global_params=None):
-      r"""Waits for the specified zone-specific Operations resource until it is done or timeout, and retrieves the specified Operations resource. 1. Immediately returns when the operation is already done. 2. Waits for no more than the default deadline (2 minutes, subject to change) and then returns the current state of the operation, which may be DONE or still in progress. 3. Is best-effort: a. The server can wait less than the default deadline or zero seconds, in overload situations. b. There is no guarantee that the operation is actually done when returns. 4. User should be prepared to retry if the operation is not DONE.
+      r"""Waits for the specified Operation resource to return as DONE or for the request to approach the 2 minute deadline, and retrieves the specified Operation resource. This method differs from the GET method in that it waits for no more than the default deadline (2 minutes) and then returns the current state of the operation, which might be DONE or still in progress.
+
+This method is called on a best-effort basis. Specifically:  
+- In uncommon cases, when the server is overloaded, the request might return before the default deadline is reached, or might return after zero seconds. 
+- If the default deadline is reached, there is no guarantee that the operation is actually done when the method returns. Be prepared to retry if the operation is not DONE.
 
       Args:
         request: (ComputeZoneOperationsWaitRequest) input message
@@ -17064,7 +18168,7 @@ For more information, see Deleting snapshots.
         method_id=u'compute.zones.list',
         ordered_params=[u'project'],
         path_params=[u'project'],
-        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken'],
+        query_params=[u'filter', u'maxResults', u'orderBy', u'pageToken', u'returnPartialSuccess'],
         relative_path=u'projects/{project}/zones',
         request_field='',
         request_type_name=u'ComputeZonesListRequest',

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2015 Google Inc. All Rights Reserved.
+# Copyright 2015 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,50 @@ class Collections(enum.Enum):
       'namespaces/{namespacesId}',
       {},
       [u'namespacesId'],
+      True
+  )
+  NAMESPACES_CLOUDAUDITLOGSSOURCES = (
+      'namespaces.cloudauditlogssources',
+      '{+name}',
+      {
+          '':
+              'namespaces/{namespacesId}/cloudauditlogssources/'
+              '{cloudauditlogssourcesId}',
+      },
+      [u'name'],
+      True
+  )
+  NAMESPACES_CLOUDPUBSUBSOURCES = (
+      'namespaces.cloudpubsubsources',
+      '{+name}',
+      {
+          '':
+              'namespaces/{namespacesId}/cloudpubsubsources/'
+              '{cloudpubsubsourcesId}',
+      },
+      [u'name'],
+      True
+  )
+  NAMESPACES_CLOUDSCHEDULERSOURCES = (
+      'namespaces.cloudschedulersources',
+      '{+name}',
+      {
+          '':
+              'namespaces/{namespacesId}/cloudschedulersources/'
+              '{cloudschedulersourcesId}',
+      },
+      [u'name'],
+      True
+  )
+  NAMESPACES_CLOUDSTORAGESOURCES = (
+      'namespaces.cloudstoragesources',
+      '{+name}',
+      {
+          '':
+              'namespaces/{namespacesId}/cloudstoragesources/'
+              '{cloudstoragesourcesId}',
+      },
+      [u'name'],
       True
   )
   NAMESPACES_CONFIGURATIONS = (
@@ -81,6 +125,16 @@ class Collections(enum.Enum):
       [u'name'],
       True
   )
+  NAMESPACES_TRIGGERS = (
+      'namespaces.triggers',
+      '{+name}',
+      {
+          '':
+              'namespaces/{namespacesId}/triggers/{triggersId}',
+      },
+      [u'name'],
+      True
+  )
   PROJECTS = (
       'projects',
       'projects/{projectsId}',
@@ -93,6 +147,50 @@ class Collections(enum.Enum):
       'projects/{projectsId}/locations/{locationsId}',
       {},
       [u'projectsId', u'locationsId'],
+      True
+  )
+  PROJECTS_LOCATIONS_CLOUDAUDITLOGSSOURCES = (
+      'projects.locations.cloudauditlogssources',
+      '{+name}',
+      {
+          '':
+              'projects/{projectsId}/locations/{locationsId}/'
+              'cloudauditlogssources/{cloudauditlogssourcesId}',
+      },
+      [u'name'],
+      True
+  )
+  PROJECTS_LOCATIONS_CLOUDPUBSUBSOURCES = (
+      'projects.locations.cloudpubsubsources',
+      '{+name}',
+      {
+          '':
+              'projects/{projectsId}/locations/{locationsId}/'
+              'cloudpubsubsources/{cloudpubsubsourcesId}',
+      },
+      [u'name'],
+      True
+  )
+  PROJECTS_LOCATIONS_CLOUDSCHEDULERSOURCES = (
+      'projects.locations.cloudschedulersources',
+      '{+name}',
+      {
+          '':
+              'projects/{projectsId}/locations/{locationsId}/'
+              'cloudschedulersources/{cloudschedulersourcesId}',
+      },
+      [u'name'],
+      True
+  )
+  PROJECTS_LOCATIONS_CLOUDSTORAGESOURCES = (
+      'projects.locations.cloudstoragesources',
+      '{+name}',
+      {
+          '':
+              'projects/{projectsId}/locations/{locationsId}/'
+              'cloudstoragesources/{cloudstoragesourcesId}',
+      },
+      [u'name'],
       True
   )
   PROJECTS_LOCATIONS_CONFIGURATIONS = (
@@ -146,6 +244,17 @@ class Collections(enum.Enum):
           '':
               'projects/{projectsId}/locations/{locationsId}/services/'
               '{servicesId}',
+      },
+      [u'name'],
+      True
+  )
+  PROJECTS_LOCATIONS_TRIGGERS = (
+      'projects.locations.triggers',
+      '{+name}',
+      {
+          '':
+              'projects/{projectsId}/locations/{locationsId}/triggers/'
+              '{triggersId}',
       },
       [u'name'],
       True

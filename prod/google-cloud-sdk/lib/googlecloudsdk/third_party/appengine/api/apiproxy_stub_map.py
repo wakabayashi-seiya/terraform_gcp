@@ -1,5 +1,5 @@
 #
-# Copyright 2006 Google Inc.
+# Copyright 2006 Google LLC.
 # All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -678,7 +678,7 @@ class UserRPC(object):
         err.rpc._traceback = None
     finally:
       cls.__local.may_interrupt_wait = False
-    finished, runnning = cls.__check_one(rpcs)
+    finished, running = cls.__check_one(rpcs)
     return finished
 
   @classmethod

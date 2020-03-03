@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -47,6 +47,7 @@ if PY3:
   text_type = str
   binary_type = bytes
   class_types = type,
+  iterbytes = iter
 
   def reraise(tp, value, tb=None):
     try:
@@ -73,6 +74,9 @@ else:
   text_type = unicode
   binary_type = str
   class_types = (type, types.ClassType)
+
+  def iterbytes(s):
+    return (ord(c) for c in s)
 
   def exec_(_code_, _globs_=None, _locs_=None):
     """Execute code in a namespace."""

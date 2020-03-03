@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,14 +20,15 @@ from __future__ import unicode_literals
 
 import sys
 from googlecloudsdk.api_lib.dataproc import dataproc as dp
-from googlecloudsdk.api_lib.dataproc import util as dp_util
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.dataproc import clusters
+from googlecloudsdk.command_lib.dataproc import flags
 from googlecloudsdk.command_lib.export import util as export_util
 from googlecloudsdk.core.util import files
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA, base.ReleaseTrack.BETA)
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA, base.ReleaseTrack.BETA,
+                    base.ReleaseTrack.GA)
 class Export(base.DescribeCommand):
   """Export a cluster.
 
@@ -36,12 +37,24 @@ class Export(base.DescribeCommand):
   command.
   """
 
+  detailed_help = {
+      'EXAMPLES': """
+To export a cluster to a YAML file, run:
+
+  $ {command} my_cluster --region=us-central1 --destination=cluster.yaml
+
+To export a cluster to standard output, run:
+
+  $ {command} my_cluster --region=us-central1
+"""
+  }
+
   @classmethod
   def GetApiVersion(cls):
     """Returns the API version based on the release track."""
-    if cls.ReleaseTrack() == base.ReleaseTrack.BETA:
-      return 'v1beta2'
-    return 'v1'
+    if cls.ReleaseTrack() == base.ReleaseTrack.GA:
+      return 'v1'
+    return 'v1beta2'
 
   @classmethod
   def GetSchemaPath(cls, for_help=False):
@@ -51,13 +64,14 @@ class Export(base.DescribeCommand):
 
   @classmethod
   def Args(cls, parser):
-    parser.add_argument('name', help='The name of the cluster to export.')
+    dataproc = dp.Dataproc(cls.ReleaseTrack())
+    flags.AddClusterResourceArg(parser, 'export', dataproc.api_version)
     export_util.AddExportFlags(parser, cls.GetSchemaPath(for_help=True))
 
   def Run(self, args):
     dataproc = dp.Dataproc(self.ReleaseTrack())
 
-    cluster_ref = dp_util.ParseCluster(args.name, dataproc)
+    cluster_ref = args.CONCEPTS.cluster.Parse()
 
     request = dataproc.messages.DataprocProjectsRegionsClustersGetRequest(
         projectId=cluster_ref.projectId,

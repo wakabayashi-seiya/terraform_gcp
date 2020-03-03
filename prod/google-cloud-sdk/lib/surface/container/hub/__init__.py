@@ -21,7 +21,26 @@ from __future__ import unicode_literals
 from googlecloudsdk.calliope import base
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA, base.ReleaseTrack.BETA,
+                    base.ReleaseTrack.GA)
 class Hub(base.Group):
-  """Manage clusters registered with Google Cloud Platform."""
-  pass
+  """Centrally manage features and services on all your Kubernetes clusters with Hub.
+
+  The command group to register GKE or other Kubernetes clusters running in a
+  variety of environments, including Google cloud, on premises in customer
+  datacenters, or other third party clouds with Hub. Hub provides a centralized
+  control-plane to managed features and services on all registered clusters.
+
+  A registered cluster is always associated with a Membership, a resource
+  within Hub.
+
+  ## EXAMPLES
+
+  Manage memberships of all your GKE and other Kubernetes clusters with Hub:
+
+    $ {command} memberships --help
+
+  Manage features on all memberships:
+
+    $ {command} features --help
+  """

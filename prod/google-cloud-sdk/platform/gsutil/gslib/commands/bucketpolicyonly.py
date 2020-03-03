@@ -43,34 +43,39 @@ _SYNOPSIS = _SET_SYNOPSIS + _GET_SYNOPSIS.lstrip('\n')
 
 _SET_DESCRIPTION = """
 <B>SET</B>
-  The ``bucketpolicyonly set`` command enables or disables the Bucket Policy
-  Only feature on Google Cloud Storage bucket(s).
+  The ``bucketpolicyonly set`` command enables or disables the uniform bucket-level
+  access feature on Google Cloud Storage buckets.
 
 <B>SET EXAMPLES</B>
-  Configure your buckets to use Bucket Policy Only:
+  Configure your buckets to use uniform bucket-level access:
 
     gsutil bucketpolicyonly set on gs://redbucket gs://bluebucket
 
-  Configure your buckets to NOT use Bucket Policy Only:
+  Configure your buckets to NOT use uniform bucket-level access:
 
     gsutil bucketpolicyonly set off gs://redbucket gs://bluebucket
 """
 
 _GET_DESCRIPTION = """
 <B>GET</B>
-  The ``bucketpolicyonly get`` command shows whether Bucket Policy Only is
-  enabled for the specified Cloud Storage bucket(s).
+  The ``bucketpolicyonly get`` command shows whether uniform bucket-level
+  access is enabled for the specified Cloud Storage bucket.
 
 <B>GET EXAMPLES</B>
-  Check if your buckets are using Bucket Policy Only:
+  Check if your buckets are using uniform bucket-level access:
 
     gsutil bucketpolicyonly get gs://redbucket gs://bluebucket
 """
 
 _DESCRIPTION = """
-  The ``bucketpolicyonly`` command is used to retrieve or configure the Bucket
-  Policy Only setting of Cloud Storage bucket(s). This command has two
-  sub-commands, ``get`` and ``set``.
+  The Bucket Policy Only feature is now known as `uniform bucket-level access
+  <https://cloud.google.com/storage/docs/uniform-bucket-level-access>`_. 
+  The ``bucketpolicyonly`` command is still supported, but we recommend using
+  the equivalent ```ubla``<https://cloud.google.com/storage/docs/gsutil/commands/ubla>`_ command.
+
+  The ``bucketpolicyonly`` command is used to retrieve or configure the
+  uniform bucket-level access setting of Cloud Storage buckets. This command has
+  two sub-commands, ``get`` and ``set``.
 """ + _GET_DESCRIPTION + _SET_DESCRIPTION
 
 _DETAILED_HELP_TEXT = CreateHelpText(_SYNOPSIS, _DESCRIPTION)
@@ -97,9 +102,7 @@ class BucketPolicyOnlyCommand(Command):
       gs_api_support=[ApiSelector.JSON],
       gs_default_api=ApiSelector.JSON,
       argparse_arguments={
-          'get': [
-              CommandArgument.MakeNCloudURLsArgument(1),
-          ],
+          'get': [CommandArgument.MakeNCloudURLsArgument(1),],
           'set': [
               CommandArgument('mode', choices=['on', 'off']),
               CommandArgument.MakeZeroOrMoreCloudBucketURLsArgument()
@@ -110,7 +113,7 @@ class BucketPolicyOnlyCommand(Command):
       help_name='bucketpolicyonly',
       help_name_aliases=[],
       help_type='command_help',
-      help_one_line_summary='Configure Bucket Policy Only',
+      help_one_line_summary='Configure Bucket Policy Only (Beta)',
       help_text=_DETAILED_HELP_TEXT,
       subcommand_help_text={
           'get': _get_help_text,
@@ -129,15 +132,16 @@ class BucketPolicyOnlyCommand(Command):
     self._ValidateBucketListingRefAndReturnBucketName(blr)
     bucket_url = blr.storage_url
 
-    bucket_metadata = self.gsutil_api.GetBucket(
-        bucket_url.bucket_name,
-        fields=['iamConfiguration'],
-        provider=bucket_url.scheme)
+    bucket_metadata = self.gsutil_api.GetBucket(bucket_url.bucket_name,
+                                                fields=['iamConfiguration'],
+                                                provider=bucket_url.scheme)
     iam_config = bucket_metadata.iamConfiguration
     bucket_policy_only = iam_config.bucketPolicyOnly
 
-    fields = {'bucket': str(bucket_url).rstrip('/'),
-              'enabled': bucket_policy_only.enabled}
+    fields = {
+        'bucket': str(bucket_url).rstrip('/'),
+        'enabled': bucket_policy_only.enabled
+    }
 
     locked_time_line = ''
     if bucket_policy_only.lockedTime:
@@ -146,8 +150,7 @@ class BucketPolicyOnlyCommand(Command):
 
     if bucket_policy_only:
       print(('Bucket Policy Only setting for {bucket}:\n'
-             '  Enabled: {enabled}\n' +
-             locked_time_line).format(**fields))
+             '  Enabled: {enabled}\n' + locked_time_line).format(**fields))
 
   def _SetBucketPolicyOnly(self, blr, setting_arg):
     """Sets the Bucket Policy Only setting for a bucket on or off."""
@@ -158,18 +161,16 @@ class BucketPolicyOnlyCommand(Command):
     iam_config.bucketPolicyOnly = BucketPolicyOnlyValue()
     iam_config.bucketPolicyOnly.enabled = (setting_arg == 'on')
 
-    bucket_metadata = apitools_messages.Bucket(
-        iamConfiguration=iam_config)
+    bucket_metadata = apitools_messages.Bucket(iamConfiguration=iam_config)
 
     setting_verb = 'Enabling' if setting_arg == 'on' else 'Disabling'
-    print('%s Bucket Policy Only for %s...'
-          % (setting_verb, str(bucket_url).rstrip('/')))
+    print('%s Bucket Policy Only for %s...' %
+          (setting_verb, str(bucket_url).rstrip('/')))
 
-    self.gsutil_api.PatchBucket(
-        bucket_url.bucket_name,
-        bucket_metadata,
-        fields=['iamConfiguration'],
-        provider=bucket_url.scheme)
+    self.gsutil_api.PatchBucket(bucket_url.bucket_name,
+                                bucket_metadata,
+                                fields=['iamConfiguration'],
+                                provider=bucket_url.scheme)
     return 0
 
   def _BucketPolicyOnly(self):
@@ -211,9 +212,10 @@ class BucketPolicyOnlyCommand(Command):
   def RunCommand(self):
     """Command entry point for the bucketpolicyonly command."""
     if self.gsutil_api.GetApiSelector(provider='gs') != ApiSelector.JSON:
-      raise CommandException('\n'.join(textwrap.wrap(
-          'The "%s" command can only be used with the Cloud Storage JSON API.'
-          % self.command_name)))
+      raise CommandException('\n'.join(
+          textwrap.wrap(
+              'The "%s" command can only be used with the Cloud Storage JSON API.'
+              % self.command_name)))
 
     action_subcommand = self.args[0]
     self.ParseSubOpts(check_args=True)

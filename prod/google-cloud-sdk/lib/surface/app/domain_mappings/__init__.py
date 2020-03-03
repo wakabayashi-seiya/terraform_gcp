@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,8 +30,9 @@ class DomainMappings(base.Group):
   domain mappings.
 
   App Engine Domain Mappings allow an application to be served via one or many
-  custom domains, such as `example.com`, instead of the default `appspot.com`
-  address. You can use a custom domain with or without SSL.
+  custom domains, such as `example.com`, instead of the default
+  `https://<PROJECT-ID>.<REGION-ID>.r.appspot.com` address. You can use a
+  custom domain with or without SSL.
 
   Use the AUTOMATIC management type to automatically provision an SSL
   certificate for your domain. Use the MANUAL management type to provide
@@ -47,7 +48,7 @@ class DomainMappings(base.Group):
 
             $ {command} list
 
-          To create a domain with an automatically managed certiticate, run:
+          To create a domain with an automatically managed certificate, run:
 
             $ {command} create 'example.com' --certificate-management=AUTOMATIC
 

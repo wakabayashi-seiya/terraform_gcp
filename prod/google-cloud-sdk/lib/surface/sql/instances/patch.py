@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,6 +18,9 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import copy
+
+from apitools.base.protorpclite import messages
 from apitools.base.py import encoding
 
 from googlecloudsdk.api_lib.sql import api_util as common_api_util
@@ -43,17 +46,26 @@ class _Result(object):
     self.old = old
 
 
-def _PrintAndConfirmWarningMessage(args):
+def _PrintAndConfirmWarningMessage(args, database_version):
   """Print and confirm warning indicating the effect of applying the patch."""
   continue_msg = None
-  if any([
-      args.tier, args.database_flags, args.clear_database_flags,
-      args.enable_database_replication is not None
-  ]):
+  if any([args.tier, args.enable_database_replication is not None]):
+    continue_msg = ('WARNING: This patch modifies a value that requires '
+                    'your instance to be restarted. Submitting this patch '
+                    'will immediately restart your instance if it\'s running.')
+  elif any([args.database_flags, args.clear_database_flags]):
+    database_type_fragment = 'mysql'
+    if api_util.InstancesV1Beta4.IsPostgresDatabaseVersion(database_version):
+      database_type_fragment = 'postgres'
+    elif api_util.InstancesV1Beta4.IsSqlServerDatabaseVersion(database_version):
+      database_type_fragment = 'sqlserver'
+    flag_docs_url = 'https://cloud.google.com/sql/docs/{}/flags'.format(
+        database_type_fragment)
     continue_msg = (
-        'WARNING: This patch modifies a value that requires '
-        'your instance to be restarted. Submitting this patch '
-        'will immediately restart your instance if it\'s running.')
+        'WARNING: This patch modifies database flag values, which may require '
+        'your instance to be restarted. Check the list of supported flags - '
+        '{} - to see if your instance will be restarted when this patch '
+        'is submitted.'.format(flag_docs_url))
   else:
     if any([args.follow_gae_app, args.gce_zone]):
       continue_msg = ('WARNING: This patch modifies the zone your instance '
@@ -65,7 +77,23 @@ def _PrintAndConfirmWarningMessage(args):
     raise exceptions.CancelledError('canceled by the user.')
 
 
-def _GetConfirmedClearedFields(args, patch_instance):
+def WithoutKind(message, inline=False):
+  result = message if inline else copy.deepcopy(message)
+  for field in result.all_fields():
+    if field.name == 'kind':
+      result.kind = None
+    elif isinstance(field, messages.MessageField):
+      value = getattr(result, field.name)
+      if value is not None:
+        if isinstance(value, list):
+          setattr(result, field.name,
+                  [WithoutKind(item, True) for item in value])
+        else:
+          setattr(result, field.name, WithoutKind(value, True))
+  return result
+
+
+def _GetConfirmedClearedFields(args, patch_instance, original_instance):
   """Clear fields according to args and confirm with user."""
   cleared_fields = []
 
@@ -79,10 +107,10 @@ def _GetConfirmedClearedFields(args, patch_instance):
   log.status.write(
       'The following message will be used for the patch API method.\n')
   log.status.write(
-      encoding.MessageToJson(patch_instance, include_fields=cleared_fields) +
-      '\n')
+      encoding.MessageToJson(
+          WithoutKind(patch_instance), include_fields=cleared_fields) + '\n')
 
-  _PrintAndConfirmWarningMessage(args)
+  _PrintAndConfirmWarningMessage(args, original_instance.databaseVersion)
 
   return cleared_fields
 
@@ -91,11 +119,8 @@ def AddBaseArgs(parser):
   """Adds base args and flags to the parser."""
   # TODO(b/35705305): move common flags to command_lib.sql.flags
   flags.AddActivationPolicy(parser)
-  flags.AddAssignIp(parser, show_negated_in_help=True)
-  parser.add_argument(
-      '--async',
-      action='store_true',
-      help='Do not wait for the operation to complete.')
+  flags.AddAssignIp(parser)
+  base.ASYNC_FLAG.AddToParser(parser)
   gae_apps_group = parser.add_mutually_exclusive_group()
   flags.AddAuthorizedGAEApps(gae_apps_group, update=True)
   gae_apps_group.add_argument(
@@ -145,9 +170,10 @@ def AddBaseArgs(parser):
       help=('First Generation instances only. The App Engine app '
             'this instance should follow. It must be in the same region as '
             'the instance. WARNING: Instance may be restarted.'))
-  flags.AddZone(parser, help_text=(
-      'Preferred Compute Engine zone (e.g. us-central1-a, '
-      'us-central1-b, etc.). WARNING: Instance may be restarted.'))
+  flags.AddZone(
+      parser,
+      help_text=('Preferred Compute Engine zone (e.g. us-central1-a, '
+                 'us-central1-b, etc.). WARNING: Instance may be restarted.'))
   parser.add_argument(
       'instance',
       completer=flags.InstanceCompleter,
@@ -185,12 +211,16 @@ def AddBetaArgs(parser):
   labels_util.AddUpdateLabelsFlags(parser, enable_clear=True)
 
 
+def AddAlphaArgs(parser):
+  """Adds alpha args and flags to the parser."""
+  flags.AddEnablePointInTimeRecovery(parser)
+
+
 def RunBasePatchCommand(args, release_track):
   """Updates settings of a Cloud SQL instance using the patch api method.
 
   Args:
-    args: argparse.Namespace, The arguments that this command was invoked
-        with.
+    args: argparse.Namespace, The arguments that this command was invoked with.
     release_track: base.ReleaseTrack, the release track that this was run under.
 
   Returns:
@@ -221,21 +251,21 @@ def RunBasePatchCommand(args, release_track):
       sql_messages.SqlInstancesGetRequest(
           project=instance_ref.project, instance=instance_ref.instance))
 
-  patch_instance = (
-      command_util.InstancesV1Beta4.ConstructPatchInstanceFromArgs(
-          sql_messages,
-          args,
-          original=original_instance_resource,
-          release_track=release_track))
+  patch_instance = command_util.InstancesV1Beta4.ConstructPatchInstanceFromArgs(
+      sql_messages,
+      args,
+      original=original_instance_resource,
+      release_track=release_track)
   patch_instance.project = instance_ref.project
   patch_instance.name = instance_ref.instance
 
   # TODO(b/122660263): Remove when V1 instances are no longer supported.
   # V1 deprecation notice.
-  if api_util.IsInstanceV1(original_instance_resource):
+  if api_util.IsInstanceV1(sql_messages, original_instance_resource):
     command_util.ShowV1DeprecationWarning()
 
-  cleared_fields = _GetConfirmedClearedFields(args, patch_instance)
+  cleared_fields = _GetConfirmedClearedFields(args, patch_instance,
+                                              original_instance_resource)
   # beta only
   if args.maintenance_window_any:
     cleared_fields.append('settings.maintenanceWindow')
@@ -252,7 +282,7 @@ def RunBasePatchCommand(args, release_track):
       operation=result_operation.name,
       project=instance_ref.project)
 
-  if args.async:
+  if args.async_:
     return sql_client.operations.Get(
         sql_messages.SqlOperationsGetRequest(
             project=operation_ref.project, operation=operation_ref.operation))
@@ -281,7 +311,7 @@ class Patch(base.UpdateCommand):
     AddBaseArgs(parser)
 
 
-@base.ReleaseTracks(base.ReleaseTrack.BETA, base.ReleaseTrack.ALPHA)
+@base.ReleaseTracks(base.ReleaseTrack.BETA)
 class PatchBeta(base.UpdateCommand):
   """Updates the settings of a Cloud SQL instance."""
 
@@ -293,3 +323,18 @@ class PatchBeta(base.UpdateCommand):
     """Args is called by calliope to gather arguments for this command."""
     AddBaseArgs(parser)
     AddBetaArgs(parser)
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class PatchAlpha(base.UpdateCommand):
+  """Updates the settings of a Cloud SQL instance."""
+
+  def Run(self, args):
+    return RunBasePatchCommand(args, self.ReleaseTrack())
+
+  @staticmethod
+  def Args(parser):
+    """Args is called by calliope to gather arguments for this command."""
+    AddBaseArgs(parser)
+    AddBetaArgs(parser)
+    AddAlphaArgs(parser)

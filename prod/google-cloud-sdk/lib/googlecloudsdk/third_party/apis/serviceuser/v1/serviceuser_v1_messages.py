@@ -184,20 +184,6 @@ class AuthenticationRule(_messages.Message):
   selector = _messages.StringField(4)
 
 
-class AuthorizationConfig(_messages.Message):
-  r"""Configuration of authorization.  This section determines the
-  authorization provider, if unspecified, then no authorization check will be
-  done.  Example:      experimental:       authorization:         provider:
-  firebaserules.googleapis.com
-
-  Fields:
-    provider: The name of the authorization provider, such as
-      firebaserules.googleapis.com.
-  """
-
-  provider = _messages.StringField(1)
-
-
 class Backend(_messages.Message):
   r"""`Backend` defines the backend configuration for a service.
 
@@ -216,17 +202,40 @@ class BackendRule(_messages.Message):
     PathTranslationValueValuesEnum:
 
   Fields:
-    address: The address of the API backend.
-    deadline: The number of seconds to wait for a response from a request.
-      The default deadline for gRPC is infinite (no deadline) and HTTP
-      requests is 5 seconds.
-    jwtAudience: The JWT audience is used when generating a JWT id token for
-      the backend.
+    address: The address of the API backend.  The scheme is used to determine
+      the backend protocol and security. The following schemes are accepted:
+      SCHEME        PROTOCOL    SECURITY    http://       HTTP        None
+      https://      HTTP        TLS    grpc://       gRPC        None
+      grpcs://      gRPC        TLS  It is recommended to explicitly include a
+      scheme. Leaving out the scheme may cause constrasting behaviors across
+      platforms.  If the port is unspecified, the default is: - 80 for schemes
+      without TLS - 443 for schemes with TLS  For HTTP backends, use protocol
+      to specify the protocol version.
+    deadline: The number of seconds to wait for a response from a request. The
+      default varies based on the request protocol and deployment environment.
+    disableAuth: When disable_auth is true, a JWT ID token won't be generated
+      and the original "Authorization" HTTP header will be preserved. If the
+      header is used to carry the original token and is expected by the
+      backend, this field must be set to true to preserve the header.
+    jwtAudience: The JWT audience is used when generating a JWT ID token for
+      the backend. This ID token will be added in the HTTP "authorization"
+      header, and sent to the backend.
     minDeadline: Minimum deadline in seconds needed for this method. Calls
       having deadline value lower than this will be rejected.
     operationDeadline: The number of seconds to wait for the completion of a
       long running operation. The default is no deadline.
     pathTranslation: A PathTranslationValueValuesEnum attribute.
+    protocol: The protocol used for sending a request to the backend. The
+      supported values are "http/1.1" and "h2".  The default value is inferred
+      from the scheme in the address field:     SCHEME        PROTOCOL
+      http://       http/1.1    https://      http/1.1    grpc://       h2
+      grpcs://      h2  For secure HTTP backends (https://) that support
+      HTTP/2, set this field to "h2" for improved performance.  Configuring
+      this field to non-default values is only supported for secure HTTP
+      backends. This field will be ignored for all other backends.  See
+      https://www.iana.org/assignments/tls-extensiontype-values/tls-
+      extensiontype-values.xhtml#alpn-protocol-ids for more details on the
+      supported values.
     selector: Selects the methods to which this rule applies.  Refer to
       selector for syntax details.
   """
@@ -267,11 +276,13 @@ class BackendRule(_messages.Message):
 
   address = _messages.StringField(1)
   deadline = _messages.FloatField(2)
-  jwtAudience = _messages.StringField(3)
-  minDeadline = _messages.FloatField(4)
-  operationDeadline = _messages.FloatField(5)
-  pathTranslation = _messages.EnumField('PathTranslationValueValuesEnum', 6)
-  selector = _messages.StringField(7)
+  disableAuth = _messages.BooleanField(3)
+  jwtAudience = _messages.StringField(4)
+  minDeadline = _messages.FloatField(5)
+  operationDeadline = _messages.FloatField(6)
+  pathTranslation = _messages.EnumField('PathTranslationValueValuesEnum', 7)
+  protocol = _messages.StringField(8)
+  selector = _messages.StringField(9)
 
 
 class Billing(_messages.Message):
@@ -466,6 +477,10 @@ class Documentation(_messages.Message):
     rules: A list of documentation rules that apply to individual API
       elements.  **NOTE:** All service configuration rules follow "last one
       wins" order.
+    serviceRootUrl: Specifies the service root url if the default one (the
+      service name from the yaml file) is not suitable. This can be seen in
+      any fully specified service urls as well as sections that show a base
+      that other urls are relative to.
     summary: A short summary of what the service does. Can only be provided by
       plain text.
   """
@@ -474,7 +489,8 @@ class Documentation(_messages.Message):
   overview = _messages.StringField(2)
   pages = _messages.MessageField('Page', 3, repeated=True)
   rules = _messages.MessageField('DocumentationRule', 4, repeated=True)
-  summary = _messages.StringField(5)
+  serviceRootUrl = _messages.StringField(5)
+  summary = _messages.StringField(6)
 
 
 class DocumentationRule(_messages.Message):
@@ -582,17 +598,6 @@ class EnumValue(_messages.Message):
   name = _messages.StringField(1)
   number = _messages.IntegerField(2, variant=_messages.Variant.INT32)
   options = _messages.MessageField('Option', 3, repeated=True)
-
-
-class Experimental(_messages.Message):
-  r"""Experimental service configuration. These configuration options can only
-  be used by whitelisted users.
-
-  Fields:
-    authorization: Authorization configuration.
-  """
-
-  authorization = _messages.MessageField('AuthorizationConfig', 1)
 
 
 class Field(_messages.Message):
@@ -861,6 +866,8 @@ class HttpRule(_messages.Message):
     additionalBindings: Additional HTTP bindings for the selector. Nested
       bindings must not contain an `additional_bindings` field themselves
       (that is, the nesting may only be one level deep).
+    allowHalfDuplex: When this flag is set to true, HTTP requests will be
+      allowed to invoke a half-duplex streaming method.
     body: The name of the request field whose value is mapped to the HTTP
       request body, or `*` for mapping all request fields not captured by the
       path pattern to the HTTP body, or omitted for not having any HTTP
@@ -886,15 +893,16 @@ class HttpRule(_messages.Message):
   """
 
   additionalBindings = _messages.MessageField('HttpRule', 1, repeated=True)
-  body = _messages.StringField(2)
-  custom = _messages.MessageField('CustomHttpPattern', 3)
-  delete = _messages.StringField(4)
-  get = _messages.StringField(5)
-  patch = _messages.StringField(6)
-  post = _messages.StringField(7)
-  put = _messages.StringField(8)
-  responseBody = _messages.StringField(9)
-  selector = _messages.StringField(10)
+  allowHalfDuplex = _messages.BooleanField(2)
+  body = _messages.StringField(3)
+  custom = _messages.MessageField('CustomHttpPattern', 4)
+  delete = _messages.StringField(5)
+  get = _messages.StringField(6)
+  patch = _messages.StringField(7)
+  post = _messages.StringField(8)
+  put = _messages.StringField(9)
+  responseBody = _messages.StringField(10)
+  selector = _messages.StringField(11)
 
 
 class LabelDescriptor(_messages.Message):
@@ -1056,6 +1064,8 @@ class MetricDescriptor(_messages.Message):
   type's existing data unusable.
 
   Enums:
+    LaunchStageValueValuesEnum: Optional. The launch stage of the metric
+      definition.
     MetricKindValueValuesEnum: Whether the metric records instantaneous
       values, changes to a value, etc. Some combinations of `metric_kind` and
       `value_type` might not be supported.
@@ -1075,11 +1085,17 @@ class MetricDescriptor(_messages.Message):
       `appengine.googleapis.com/http/server/response_latencies` metric type
       has a label for the HTTP response code, `response_code`, so you can look
       at latencies for successful responses or just for responses that failed.
+    launchStage: Optional. The launch stage of the metric definition.
     metadata: Optional. Metadata which can be used to guide usage of the
       metric.
     metricKind: Whether the metric records instantaneous values, changes to a
       value, etc. Some combinations of `metric_kind` and `value_type` might
       not be supported.
+    monitoredResourceTypes: Read-only. If present, then a time series, which
+      is identified partially by a metric type and a
+      MonitoredResourceDescriptor, that is associated with this metric type
+      can only be associated with one of the monitored resource types listed
+      here.
     name: The resource name of the metric descriptor.
     type: The metric type, including its DNS name prefix. The type is not URL-
       encoded.  All user-defined metric types have the DNS name
@@ -1088,36 +1104,104 @@ class MetricDescriptor(_messages.Message):
       "custom.googleapis.com/invoice/paid/amount"
       "external.googleapis.com/prometheus/up"
       "appengine.googleapis.com/http/server/response_latencies"
-    unit: The unit in which the metric value is reported. It is only
+    unit: The units in which the metric value is reported. It is only
       applicable if the `value_type` is `INT64`, `DOUBLE`, or `DISTRIBUTION`.
-      The supported units are a subset of [The Unified Code for Units of
-      Measure](http://unitsofmeasure.org/ucum.html) standard:  **Basic units
-      (UNIT)**  * `bit`   bit * `By`    byte * `s`     second * `min`   minute
-      * `h`     hour * `d`     day  **Prefixes (PREFIX)**  * `k`     kilo
-      (10**3) * `M`     mega    (10**6) * `G`     giga    (10**9) * `T`
-      tera    (10**12) * `P`     peta    (10**15) * `E`     exa     (10**18) *
-      `Z`     zetta   (10**21) * `Y`     yotta   (10**24) * `m`     milli
-      (10**-3) * `u`     micro   (10**-6) * `n`     nano    (10**-9) * `p`
-      pico    (10**-12) * `f`     femto   (10**-15) * `a`     atto
-      (10**-18) * `z`     zepto   (10**-21) * `y`     yocto   (10**-24) * `Ki`
-      kibi    (2**10) * `Mi`    mebi    (2**20) * `Gi`    gibi    (2**30) *
-      `Ti`    tebi    (2**40)  **Grammar**  The grammar also includes these
-      connectors:  * `/`    division (as an infix operator, e.g. `1/s`). * `.`
-      multiplication (as an infix operator, e.g. `GBy.d`)  The grammar for a
-      unit is as follows:      Expression = Component { "." Component } { "/"
-      Component } ;      Component = ( [ PREFIX ] UNIT | "%" ) [ Annotation ]
-      | Annotation               | "1"               ;      Annotation = "{"
-      NAME "}" ;  Notes:  * `Annotation` is just a comment if it follows a
-      `UNIT` and is    equivalent to `1` if it is used alone. For examples,
-      `{requests}/s == 1/s`, `By{transmitted}/s == By/s`. * `NAME` is a
-      sequence of non-blank printable ASCII characters not    containing '{'
-      or '}'. * `1` represents dimensionless value 1, such as in `1/s`. * `%`
-      represents dimensionless value 1/100, and annotates values giving    a
-      percentage.
+      The `unit` defines the representation of the stored metric values.
+      Different systems may scale the values to be more easily displayed (so a
+      value of `0.02KBy` _might_ be displayed as `20By`, and a value of
+      `3523KBy` _might_ be displayed as `3.5MBy`). However, if the `unit` is
+      `KBy`, then the value of the metric is always in thousands of bytes, no
+      matter how it may be displayed..  If you want a custom metric to record
+      the exact number of CPU-seconds used by a job, you can create an `INT64
+      CUMULATIVE` metric whose `unit` is `s{CPU}` (or equivalently `1s{CPU}`
+      or just `s`). If the job uses 12,005 CPU-seconds, then the value is
+      written as `12005`.  Alternatively, if you want a custom metric to
+      record data in a more granular way, you can create a `DOUBLE CUMULATIVE`
+      metric whose `unit` is `ks{CPU}`, and then write the value `12.005`
+      (which is `12005/1000`), or use `Kis{CPU}` and write `11.723` (which is
+      `12005/1024`).  The supported units are a subset of [The Unified Code
+      for Units of Measure](http://unitsofmeasure.org/ucum.html) standard:
+      **Basic units (UNIT)**  * `bit`   bit * `By`    byte * `s`     second *
+      `min`   minute * `h`     hour * `d`     day  **Prefixes (PREFIX)**  *
+      `k`     kilo    (10^3) * `M`     mega    (10^6) * `G`     giga    (10^9)
+      * `T`     tera    (10^12) * `P`     peta    (10^15) * `E`     exa
+      (10^18) * `Z`     zetta   (10^21) * `Y`     yotta   (10^24)  * `m`
+      milli   (10^-3) * `u`     micro   (10^-6) * `n`     nano    (10^-9) *
+      `p`     pico    (10^-12) * `f`     femto   (10^-15) * `a`     atto
+      (10^-18) * `z`     zepto   (10^-21) * `y`     yocto   (10^-24)  * `Ki`
+      kibi    (2^10) * `Mi`    mebi    (2^20) * `Gi`    gibi    (2^30) * `Ti`
+      tebi    (2^40) * `Pi`    pebi    (2^50)  **Grammar**  The grammar also
+      includes these connectors:  * `/`    division or ratio (as an infix
+      operator). For examples,          `kBy/{email}` or `MiBy/10ms` (although
+      you should almost never          have `/s` in a metric `unit`; rates
+      should always be computed at          query time from the underlying
+      cumulative or delta value). * `.`    multiplication or composition (as
+      an infix operator). For          examples, `GBy.d` or `k{watt}.h`.  The
+      grammar for a unit is as follows:      Expression = Component { "."
+      Component } { "/" Component } ;      Component = ( [ PREFIX ] UNIT | "%"
+      ) [ Annotation ]               | Annotation               | "1"
+      ;      Annotation = "{" NAME "}" ;  Notes:  * `Annotation` is just a
+      comment if it follows a `UNIT`. If the annotation    is used alone, then
+      the unit is equivalent to `1`. For examples,    `{request}/s == 1/s`,
+      `By{transmitted}/s == By/s`. * `NAME` is a sequence of non-blank
+      printable ASCII characters not    containing `{` or `}`. * `1`
+      represents a unitary [dimensionless
+      unit](https://en.wikipedia.org/wiki/Dimensionless_quantity) of 1, such
+      as in `1/s`. It is typically used when none of the basic units are
+      appropriate. For example, "new users per day" can be represented as
+      `1/d` or `{new-users}/d` (and a metric value `5` would mean "5 new
+      users). Alternatively, "thousands of page views per day" would be
+      represented as `1000/d` or `k1/d` or `k{page_views}/d` (and a metric
+      value of `5.3` would mean "5300 page views per day"). * `%` represents
+      dimensionless value of 1/100, and annotates values giving    a
+      percentage (so the metric values are typically in the range of 0..100,
+      and a metric value `3` means "3 percent"). * `10^2.%` indicates a metric
+      contains a ratio, typically in the range    0..1, that will be
+      multiplied by 100 and displayed as a percentage    (so a metric value
+      `0.03` means "3 percent").
     valueType: Whether the measurement is an integer, a floating-point number,
       etc. Some combinations of `metric_kind` and `value_type` might not be
       supported.
   """
+
+  class LaunchStageValueValuesEnum(_messages.Enum):
+    r"""Optional. The launch stage of the metric definition.
+
+    Values:
+      LAUNCH_STAGE_UNSPECIFIED: Do not use this default value.
+      EARLY_ACCESS: Early Access features are limited to a closed group of
+        testers. To use these features, you must sign up in advance and sign a
+        Trusted Tester agreement (which includes confidentiality provisions).
+        These features may be unstable, changed in backward-incompatible ways,
+        and are not guaranteed to be released.
+      ALPHA: Alpha is a limited availability test for releases before they are
+        cleared for widespread use. By Alpha, all significant design issues
+        are resolved and we are in the process of verifying functionality.
+        Alpha customers need to apply for access, agree to applicable terms,
+        and have their projects whitelisted. Alpha releases don't have to be
+        feature complete, no SLAs are provided, and there are no technical
+        support obligations, but they will be far enough along that customers
+        can actually use them in test environments or for limited-use tests --
+        just like they would in normal production cases.
+      BETA: Beta is the point at which we are ready to open a release for any
+        customer to use. There are no SLA or technical support obligations in
+        a Beta release. Products will be complete from a feature perspective,
+        but may have some open outstanding issues. Beta releases are suitable
+        for limited production use cases.
+      GA: GA features are open to all developers and are considered stable and
+        fully qualified for production use.
+      DEPRECATED: Deprecated features are scheduled to be shut down and
+        removed. For more information, see the "Deprecation Policy" section of
+        our [Terms of Service](https://cloud.google.com/terms/) and the
+        [Google Cloud Platform Subject to the Deprecation
+        Policy](https://cloud.google.com/terms/deprecation) documentation.
+    """
+    LAUNCH_STAGE_UNSPECIFIED = 0
+    EARLY_ACCESS = 1
+    ALPHA = 2
+    BETA = 3
+    GA = 4
+    DEPRECATED = 5
 
   class MetricKindValueValuesEnum(_messages.Enum):
     r"""Whether the metric records instantaneous values, changes to a value,
@@ -1165,25 +1249,29 @@ class MetricDescriptor(_messages.Message):
   description = _messages.StringField(1)
   displayName = _messages.StringField(2)
   labels = _messages.MessageField('LabelDescriptor', 3, repeated=True)
-  metadata = _messages.MessageField('MetricDescriptorMetadata', 4)
-  metricKind = _messages.EnumField('MetricKindValueValuesEnum', 5)
-  name = _messages.StringField(6)
-  type = _messages.StringField(7)
-  unit = _messages.StringField(8)
-  valueType = _messages.EnumField('ValueTypeValueValuesEnum', 9)
+  launchStage = _messages.EnumField('LaunchStageValueValuesEnum', 4)
+  metadata = _messages.MessageField('MetricDescriptorMetadata', 5)
+  metricKind = _messages.EnumField('MetricKindValueValuesEnum', 6)
+  monitoredResourceTypes = _messages.StringField(7, repeated=True)
+  name = _messages.StringField(8)
+  type = _messages.StringField(9)
+  unit = _messages.StringField(10)
+  valueType = _messages.EnumField('ValueTypeValueValuesEnum', 11)
 
 
 class MetricDescriptorMetadata(_messages.Message):
   r"""Additional annotations that can be used to guide the usage of a metric.
 
   Enums:
-    LaunchStageValueValuesEnum: The launch stage of the metric definition.
+    LaunchStageValueValuesEnum: Deprecated. Must use the
+      MetricDescriptor.launch_stage instead.
 
   Fields:
     ingestDelay: The delay of data points caused by ingestion. Data points
       older than this age are guaranteed to be ingested and available to be
       read, excluding data loss due to errors.
-    launchStage: The launch stage of the metric definition.
+    launchStage: Deprecated. Must use the MetricDescriptor.launch_stage
+      instead.
     samplePeriod: The sampling period of metric data points. For metrics which
       are written periodically, consecutive data points are stored at this
       time interval, excluding data loss due to errors. Metrics with a higher
@@ -1191,7 +1279,7 @@ class MetricDescriptorMetadata(_messages.Message):
   """
 
   class LaunchStageValueValuesEnum(_messages.Enum):
-    r"""The launch stage of the metric definition.
+    r"""Deprecated. Must use the MetricDescriptor.launch_stage instead.
 
     Values:
       LAUNCH_STAGE_UNSPECIFIED: Do not use this default value.
@@ -1531,7 +1619,8 @@ class Operation(_messages.Message):
       if any.
     name: The server-assigned name, which is only unique within the same
       service that originally returns it. If you use the default HTTP mapping,
-      the `name` should have the format of `operations/some/unique/name`.
+      the `name` should be a resource name ending with
+      `operations/{unique_id}`.
     response: The normal response of the operation in case of success.  If the
       original method returns no data on success, such as `Delete`, the
       response is `google.protobuf.Empty`.  If the original method is standard
@@ -1781,11 +1870,8 @@ class QuotaLimit(_messages.Message):
       set, the UI will provide a default display name based on the quota
       configuration. This field can be used to override the default display
       name generated from the configuration.
-    duration: Duration of this limit in textual notation. Example: "100s",
-      "24h", "1d". For duration longer than a day, only multiple of days is
-      supported. We support only "100s" and "1d" for now. Additional support
-      will be added in the future. "0" indicates indefinite duration.  Used by
-      group-based quotas only.
+    duration: Duration of this limit in textual notation. Must be "100s" or
+      "1d".  Used by group-based quotas only.
     freeTier: Free tier value displayed in the Developers Console for this
       limit. The free tier is the number of tokens that will be subtracted
       from the billed amount when billing is enabled. This field can only be
@@ -1910,11 +1996,11 @@ class Service(_messages.Message):
       included.  Enums which are not referenced but shall be included should
       be listed here by name. Example:      enums:     - name:
       google.someapi.v1.SomeEnum
-    experimental: Experimental configuration.
     http: HTTP configuration.
     id: A unique ID for a specific instance of this message, typically
-      assigned by the client for tracking purpose. If empty, the server may
-      choose to generate one instead. Must be no longer than 60 characters.
+      assigned by the client for tracking purpose. Must be no longer than 63
+      characters and only lower case letters, digits, '.', '_' and '-' are
+      allowed. If empty, the server may choose to generate one instead.
     logging: Logging configuration.
     logs: Defines the logs used by this service.
     metrics: Defines the metrics used by this service.
@@ -1956,23 +2042,44 @@ class Service(_messages.Message):
   documentation = _messages.MessageField('Documentation', 9)
   endpoints = _messages.MessageField('Endpoint', 10, repeated=True)
   enums = _messages.MessageField('Enum', 11, repeated=True)
-  experimental = _messages.MessageField('Experimental', 12)
-  http = _messages.MessageField('Http', 13)
-  id = _messages.StringField(14)
-  logging = _messages.MessageField('Logging', 15)
-  logs = _messages.MessageField('LogDescriptor', 16, repeated=True)
-  metrics = _messages.MessageField('MetricDescriptor', 17, repeated=True)
-  monitoredResources = _messages.MessageField('MonitoredResourceDescriptor', 18, repeated=True)
-  monitoring = _messages.MessageField('Monitoring', 19)
-  name = _messages.StringField(20)
-  producerProjectId = _messages.StringField(21)
-  quota = _messages.MessageField('Quota', 22)
-  sourceInfo = _messages.MessageField('SourceInfo', 23)
-  systemParameters = _messages.MessageField('SystemParameters', 24)
-  systemTypes = _messages.MessageField('Type', 25, repeated=True)
-  title = _messages.StringField(26)
-  types = _messages.MessageField('Type', 27, repeated=True)
-  usage = _messages.MessageField('Usage', 28)
+  http = _messages.MessageField('Http', 12)
+  id = _messages.StringField(13)
+  logging = _messages.MessageField('Logging', 14)
+  logs = _messages.MessageField('LogDescriptor', 15, repeated=True)
+  metrics = _messages.MessageField('MetricDescriptor', 16, repeated=True)
+  monitoredResources = _messages.MessageField('MonitoredResourceDescriptor', 17, repeated=True)
+  monitoring = _messages.MessageField('Monitoring', 18)
+  name = _messages.StringField(19)
+  producerProjectId = _messages.StringField(20)
+  quota = _messages.MessageField('Quota', 21)
+  sourceInfo = _messages.MessageField('SourceInfo', 22)
+  systemParameters = _messages.MessageField('SystemParameters', 23)
+  systemTypes = _messages.MessageField('Type', 24, repeated=True)
+  title = _messages.StringField(25)
+  types = _messages.MessageField('Type', 26, repeated=True)
+  usage = _messages.MessageField('Usage', 27)
+
+
+class ServiceIdentity(_messages.Message):
+  r"""The per-product per-project service identity for a service.   Use this
+  field to configure per-product per-project service identity. Example of a
+  service identity configuration.      usage:       service_identity:       -
+  service_account_parent: "projects/123456789"         display_name: "Cloud
+  XXX Service Agent"         description: "Used as the identity of Cloud XXX
+  to access resources"
+
+  Fields:
+    description: Optional. A user-specified opaque description of the service
+      account. Must be less than or equal to 256 UTF-8 bytes.
+    displayName: Optional. A user-specified name for the service account. Must
+      be less than or equal to 100 UTF-8 bytes.
+    serviceAccountParent: A service account project that hosts the service
+      accounts.  An example name would be: `projects/123456789`
+  """
+
+  description = _messages.StringField(1)
+  displayName = _messages.StringField(2)
+  serviceAccountParent = _messages.StringField(3)
 
 
 class ServiceuserProjectsServicesDisableRequest(_messages.Message):
@@ -2158,37 +2265,10 @@ class StandardQueryParameters(_messages.Message):
 class Status(_messages.Message):
   r"""The `Status` type defines a logical error model that is suitable for
   different programming environments, including REST APIs and RPC APIs. It is
-  used by [gRPC](https://github.com/grpc). The error model is designed to be:
-  - Simple to use and understand for most users - Flexible enough to meet
-  unexpected needs  # Overview  The `Status` message contains three pieces of
-  data: error code, error message, and error details. The error code should be
-  an enum value of google.rpc.Code, but it may accept additional error codes
-  if needed.  The error message should be a developer-facing English message
-  that helps developers *understand* and *resolve* the error. If a localized
-  user-facing error message is needed, put the localized message in the error
-  details or localize it in the client. The optional error details may contain
-  arbitrary information about the error. There is a predefined set of error
-  detail types in the package `google.rpc` that can be used for common error
-  conditions.  # Language mapping  The `Status` message is the logical
-  representation of the error model, but it is not necessarily the actual wire
-  format. When the `Status` message is exposed in different client libraries
-  and different wire protocols, it can be mapped differently. For example, it
-  will likely be mapped to some exceptions in Java, but more likely mapped to
-  some error codes in C.  # Other uses  The error model and the `Status`
-  message can be used in a variety of environments, either with or without
-  APIs, to provide a consistent developer experience across different
-  environments.  Example uses of this error model include:  - Partial errors.
-  If a service needs to return partial errors to the client,     it may embed
-  the `Status` in the normal response to indicate the partial     errors.  -
-  Workflow errors. A typical workflow has multiple steps. Each step may
-  have a `Status` message for error reporting.  - Batch operations. If a
-  client uses batch request and batch response, the     `Status` message
-  should be used directly inside batch response, one for     each error sub-
-  response.  - Asynchronous operations. If an API call embeds asynchronous
-  operation     results in its response, the status of those operations should
-  be     represented directly using the `Status` message.  - Logging. If some
-  API errors are stored in logs, the message `Status` could     be used
-  directly after any stripping needed for security/privacy reasons.
+  used by [gRPC](https://github.com/grpc). Each `Status` message contains
+  three pieces of data: error code, error message, and error details.  You can
+  find out more about this error model and how to work with it in the [API
+  Design Guide](https://cloud.google.com/apis/design/errors).
 
   Messages:
     DetailsValueListEntry: A DetailsValueListEntry object.
@@ -2379,11 +2459,14 @@ class Usage(_messages.Message):
       'serviceusage.googleapis.com/billing-enabled'.
     rules: A list of usage rules that apply to individual API methods.
       **NOTE:** All service configuration rules follow "last one wins" order.
+    serviceIdentity: The configuration of a per-product per-project service
+      identity.
   """
 
   producerNotificationChannel = _messages.StringField(1)
   requirements = _messages.StringField(2, repeated=True)
   rules = _messages.MessageField('UsageRule', 3, repeated=True)
+  serviceIdentity = _messages.MessageField('ServiceIdentity', 4)
 
 
 class UsageRule(_messages.Message):

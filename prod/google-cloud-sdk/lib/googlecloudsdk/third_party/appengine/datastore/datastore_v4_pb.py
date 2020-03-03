@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -170,7 +170,7 @@ class EntityResult(ProtocolBuffer.ProtocolMessage):
   cursor_ = ""
 
   def __init__(self, contents=None):
-    self.entity_ = Entity()
+    self.entity_ = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Entity()
     if contents is not None: self.MergeFromString(contents)
 
   def entity(self): return self.entity_
@@ -1662,7 +1662,7 @@ class PropertyFilter(ProtocolBuffer.ProtocolMessage):
 
   def __init__(self, contents=None):
     self.property_ = PropertyReference()
-    self.value_ = Value()
+    self.value_ = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Value()
     if contents is not None: self.MergeFromString(contents)
 
   def property(self): return self.property_
@@ -2113,7 +2113,7 @@ class GqlQueryArg(ProtocolBuffer.ProtocolMessage):
     if self.value_ is None:
       self.lazy_init_lock_.acquire()
       try:
-        if self.value_ is None: self.value_ = Value()
+        if self.value_ is None: self.value_ = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Value()
       finally:
         self.lazy_init_lock_.release()
     return self.value_
@@ -2658,7 +2658,7 @@ class Mutation(ProtocolBuffer.ProtocolMessage):
     if self.key_ is None:
       self.lazy_init_lock_.acquire()
       try:
-        if self.key_ is None: self.key_ = Key()
+        if self.key_ is None: self.key_ = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Key()
       finally:
         self.lazy_init_lock_.release()
     return self.key_
@@ -2677,7 +2677,7 @@ class Mutation(ProtocolBuffer.ProtocolMessage):
     if self.entity_ is None:
       self.lazy_init_lock_.acquire()
       try:
-        if self.entity_ is None: self.entity_ = Entity()
+        if self.entity_ is None: self.entity_ = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Entity()
       finally:
         self.lazy_init_lock_.release()
     return self.entity_
@@ -2839,7 +2839,7 @@ class MutationResult(ProtocolBuffer.ProtocolMessage):
     if self.key_ is None:
       self.lazy_init_lock_.acquire()
       try:
-        if self.key_ is None: self.key_ = Key()
+        if self.key_ is None: self.key_ = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Key()
       finally:
         self.lazy_init_lock_.release()
     return self.key_
@@ -2994,7 +2994,7 @@ class DeprecatedMutation(ProtocolBuffer.ProtocolMessage):
     return self.upsert_[i]
 
   def add_upsert(self):
-    x = Entity()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Entity()
     self.upsert_.append(x)
     return x
 
@@ -3010,7 +3010,7 @@ class DeprecatedMutation(ProtocolBuffer.ProtocolMessage):
     return self.update_[i]
 
   def add_update(self):
-    x = Entity()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Entity()
     self.update_.append(x)
     return x
 
@@ -3026,7 +3026,7 @@ class DeprecatedMutation(ProtocolBuffer.ProtocolMessage):
     return self.insert_[i]
 
   def add_insert(self):
-    x = Entity()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Entity()
     self.insert_.append(x)
     return x
 
@@ -3042,7 +3042,7 @@ class DeprecatedMutation(ProtocolBuffer.ProtocolMessage):
     return self.insert_auto_id_[i]
 
   def add_insert_auto_id(self):
-    x = Entity()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Entity()
     self.insert_auto_id_.append(x)
     return x
 
@@ -3058,7 +3058,7 @@ class DeprecatedMutation(ProtocolBuffer.ProtocolMessage):
     return self.delete_[i]
 
   def add_delete(self):
-    x = Key()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Key()
     self.delete_.append(x)
     return x
 
@@ -3370,7 +3370,7 @@ class DeprecatedMutationResult(ProtocolBuffer.ProtocolMessage):
     return self.insert_auto_id_key_[i]
 
   def add_insert_auto_id_key(self):
-    x = Key()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Key()
     self.insert_auto_id_key_.append(x)
     return x
 
@@ -3888,7 +3888,7 @@ class LookupRequest(ProtocolBuffer.ProtocolMessage):
     return self.key_[i]
 
   def add_key(self):
-    x = Key()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Key()
     self.key_.append(x)
     return x
 
@@ -4066,7 +4066,7 @@ class LookupResponse(ProtocolBuffer.ProtocolMessage):
     return self.deferred_[i]
 
   def add_deferred(self):
-    x = Key()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Key()
     self.deferred_.append(x)
     return x
 
@@ -4279,7 +4279,7 @@ class RunQueryRequest(ProtocolBuffer.ProtocolMessage):
     if self.partition_id_ is None:
       self.lazy_init_lock_.acquire()
       try:
-        if self.partition_id_ is None: self.partition_id_ = PartitionId()
+        if self.partition_id_ is None: self.partition_id_ = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.PartitionId()
       finally:
         self.lazy_init_lock_.release()
     return self.partition_id_
@@ -5814,7 +5814,7 @@ class AllocateIdsRequest(ProtocolBuffer.ProtocolMessage):
     return self.allocate_[i]
 
   def add_allocate(self):
-    x = Key()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Key()
     self.allocate_.append(x)
     return x
 
@@ -5830,7 +5830,7 @@ class AllocateIdsRequest(ProtocolBuffer.ProtocolMessage):
     return self.reserve_[i]
 
   def add_reserve(self):
-    x = Key()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Key()
     self.reserve_.append(x)
     return x
 
@@ -5982,7 +5982,7 @@ class AllocateIdsResponse(ProtocolBuffer.ProtocolMessage):
     return self.allocated_[i]
 
   def add_allocated(self):
-    x = Key()
+    x = googlecloudsdk.third_party.appengine.datastore.entity_v4_pb.Key()
     self.allocated_.append(x)
     return x
 

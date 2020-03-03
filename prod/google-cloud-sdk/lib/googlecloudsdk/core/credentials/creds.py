@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ from __future__ import unicode_literals
 
 import abc
 import base64
+import copy
 import json
 import os
 
@@ -29,15 +30,17 @@ import enum
 from googlecloudsdk.core import config
 from googlecloudsdk.core import exceptions
 from googlecloudsdk.core import log
+from googlecloudsdk.core import properties
 from googlecloudsdk.core.credentials import devshell as c_devshell
 from googlecloudsdk.core.util import files
 
 from oauth2client import client
 from oauth2client import service_account
 from oauth2client.contrib import gce as oauth2client_gce
-from oauth2client.contrib import multistore_file
 import six
 import sqlite3
+
+ADC_QUOTA_PROJECT_FIELD_NAME = 'quota_project_id'
 
 
 class Error(exceptions.Error):
@@ -46,6 +49,11 @@ class Error(exceptions.Error):
 
 class UnknownCredentialsType(Error):
   """An error for when we fail to determine the type of the credentials."""
+  pass
+
+
+class CredentialFileSaveError(Error):
+  """An error for when we fail to save a credential file."""
   pass
 
 
@@ -157,15 +165,6 @@ class AccessTokenCache(object):
 
   def __init__(self, store_file):
     self._cursor = _SqlCursor(store_file)
-
-    # Older versions of the access_tokens database may not have the id_token
-    # column, so we add it and catch the exception if it's already present.
-    try:
-      self._Execute('ALTER TABLE "{}" ADD COLUMN id_token TEXT'.format(
-          _ACCESS_TOKEN_TABLE))
-    except sqlite3.OperationalError:
-      pass
-
     self._Execute(
         'CREATE TABLE IF NOT EXISTS "{}" '
         '(account_id TEXT PRIMARY KEY, '
@@ -173,6 +172,15 @@ class AccessTokenCache(object):
         'token_expiry TIMESTAMP, '
         'rapt_token TEXT, '
         'id_token TEXT)'.format(_ACCESS_TOKEN_TABLE))
+
+    # Older versions of the access_tokens database may not have the id_token
+    # column, so we will add it if we can't access it.
+    try:
+      self._Execute(
+          'SELECT id_token FROM "{}" LIMIT 1'.format(_ACCESS_TOKEN_TABLE))
+    except sqlite3.OperationalError:
+      self._Execute('ALTER TABLE "{}" ADD COLUMN id_token TEXT'.format(
+          _ACCESS_TOKEN_TABLE))
 
   def _Execute(self, *args):
     with self._cursor as cur:
@@ -186,17 +194,23 @@ class AccessTokenCache(object):
           .format(_ACCESS_TOKEN_TABLE), (account_id,)).fetchone()
 
   def Store(self, account_id, access_token, token_expiry, rapt_token, id_token):
-    self._Execute(
-        'REPLACE INTO "{}" '
-        '(account_id, access_token, token_expiry, rapt_token, id_token) '
-        'VALUES (?,?,?,?,?)'
-        .format(_ACCESS_TOKEN_TABLE),
-        (account_id, access_token, token_expiry, rapt_token, id_token))
+    try:
+      self._Execute(
+          'REPLACE INTO "{}" '
+          '(account_id, access_token, token_expiry, rapt_token, id_token) '
+          'VALUES (?,?,?,?,?)'
+          .format(_ACCESS_TOKEN_TABLE),
+          (account_id, access_token, token_expiry, rapt_token, id_token))
+    except sqlite3.OperationalError as e:
+      log.warning('Could not store access token in cache: {}'.format(str(e)))
 
   def Remove(self, account_id):
-    self._Execute(
-        'DELETE FROM "{}" WHERE account_id = ?'
-        .format(_ACCESS_TOKEN_TABLE), (account_id,))
+    try:
+      self._Execute(
+          'DELETE FROM "{}" WHERE account_id = ?'
+          .format(_ACCESS_TOKEN_TABLE), (account_id,))
+    except sqlite3.OperationalError as e:
+      log.warning('Could not delete access token from cache: {}'.format(str(e)))
 
 
 class AccessTokenStore(client.Storage):
@@ -272,7 +286,7 @@ def MaybeAttachAccessTokenCacheStore(credentials,
     return credentials
   account_id = getattr(credentials, 'service_account_email', None)
   if not account_id:
-    account_id = str(hash(credentials.refresh_token))
+    account_id = six.text_type(hash(credentials.refresh_token))
 
   access_token_cache = AccessTokenCache(
       access_token_file or config.Paths().access_token_db_path)
@@ -325,73 +339,7 @@ def GetCredentialStore(store_file=None, access_token_file=None):
   Returns:
     CredentialStore object.
   """
-  # TODO(b/69059614): remove migration logic and all of oauth2client multistore.
-  _MigrateMultistore2Sqlite()
   return _GetSqliteStore(store_file, access_token_file)
-
-
-class Oauth2ClientCredentialStore(CredentialStore):
-  """Implementation of credential sotore over oauth2client.multistore_file."""
-
-  def __init__(self, store_file):
-    self._store_file = store_file
-
-  def GetAccounts(self):
-    """Overrides."""
-    all_keys = multistore_file.get_all_credential_keys(
-        filename=self._store_file)
-
-    return {self._StorageKey2AccountId(key) for key in all_keys}
-
-  def Load(self, account_id):
-    credential_store = self._GetStorageByAccountId(account_id)
-    return credential_store.get()
-
-  def Store(self, account_id, credentials):
-    credential_store = self._GetStorageByAccountId(account_id)
-    credential_store.put(credentials)
-    credentials.set_store(credential_store)
-
-  def Remove(self, account_id):
-    credential_store = self._GetStorageByAccountId(account_id)
-    credential_store.delete()
-
-  def _GetStorageByAccountId(self, account_id):
-    storage_key = self._AcctountId2StorageKey(account_id)
-    return multistore_file.get_credential_storage_custom_key(
-        filename=self._store_file, key_dict=storage_key)
-
-  def _AcctountId2StorageKey(self, account_id):
-    """Converts account id into storage key."""
-    all_storage_keys = multistore_file.get_all_credential_keys(
-        filename=self._store_file)
-    matching_keys = [k for k in all_storage_keys if k['account'] == account_id]
-    if not matching_keys:
-      return {'type': 'google-cloud-sdk', 'account': account_id}
-
-    # We do not expect any other type keys in the credential store. Just in case
-    # somehow they occur:
-    #  1. prefer key with no type
-    #  2. use google-cloud-sdk type
-    #  3. use any other
-    # Also log all cases where type was present but was not google-cloud-sdk.
-    right_key = matching_keys[0]
-    for key in matching_keys:
-      if 'type' in key:
-        if key['type'] == 'google-cloud-sdk' and 'type' in right_key:
-          right_key = key
-        else:
-          log.file_only_logger.warn(
-              'Credential store has unknown type [{0}] key for account [{1}]'
-              .format(key['type'], key['account']))
-      else:
-        right_key = key
-    if 'type' in right_key:
-      right_key['type'] = 'google-cloud-sdk'
-    return right_key
-
-  def _StorageKey2AccountId(self, storage_key):
-    return storage_key['account']
 
 
 class CredentialType(enum.Enum):
@@ -526,16 +474,96 @@ def _GetSqliteStore(sqlite_credential_file=None, sqlite_access_token_file=None):
   return CredentialStoreWithCache(credential_store, access_token_cache)
 
 
-def _MigrateMultistore2Sqlite():
-  multistore_file_path = config.Paths().credentials_path
-  if os.path.isfile(multistore_file_path):
-    multistore = Oauth2ClientCredentialStore(multistore_file_path)
-    credential_db_file = config.Paths().credentials_db_path
-    sqlite_store = _GetSqliteStore(credential_db_file)
+def GetQuotaProject(credentials, force_resource_quota):
+  """Gets the value to use for the X-Goog-User-Project header.
 
-    for account_id in multistore.GetAccounts():
-      credential = multistore.Load(account_id)
-      sqlite_store.Store(account_id, credential)
+  Args:
+    credentials: The credentials that are going to be used for requests.
+    force_resource_quota: bool, If true, resource project quota will be used
+      even if gcloud is set to use legacy mode for quota. This should be set
+      when calling newer APIs that would not work without resource quota.
 
-    os.remove(multistore_file_path)
+  Returns:
+    str, The project id to send in the header or None to not populate the
+    header.
+  """
+  if not CredentialType.FromCredentials(credentials).is_user:
+    return None
 
+  quota_project = properties.VALUES.billing.quota_project.Get()
+  if quota_project == properties.VALUES.billing.CURRENT_PROJECT:
+    return properties.VALUES.core.project.Get()
+  elif quota_project == properties.VALUES.billing.LEGACY:
+    if force_resource_quota:
+      return properties.VALUES.core.project.Get()
+    return None
+  return quota_project
+
+
+class ADC(object):
+  """Application default credential object."""
+
+  def __init__(self, credentials):
+    self._credentials = credentials
+    self.adc = _ConvertCredentialsToADC(self._credentials)
+    self.default_adc_file_path = config.ADCFilePath()
+
+  def DumpADCToFile(self, file_path=None):
+    """Dumps the credentials to the ADC json file."""
+    file_path = file_path or self.default_adc_file_path
+    return _DumpADCJsonToFile(self.adc, file_path)
+
+  def DumpExtendedADCToFile(self, file_path=None, quota_project=None):
+    """Dumps the credentials and the quota project to the ADC json file."""
+    if (CredentialType.FromCredentials(self._credentials) !=
+        CredentialType.USER_ACCOUNT):
+      raise CredentialFileSaveError(
+          'The credential is not a user credential, so we cannot insert a '
+          'quota project to application default credential.')
+    file_path = file_path or self.default_adc_file_path
+    if not quota_project:
+      quota_project = GetQuotaProject(
+          self._credentials, force_resource_quota=True)
+    extended_adc = self._ExtendADCWithQuotaProject(quota_project)
+    return _DumpADCJsonToFile(extended_adc, file_path)
+
+  def _ExtendADCWithQuotaProject(self, quota_project):
+    """Add quota_project_id field to ADC json."""
+    extended_adc = copy.deepcopy(self.adc)
+    if quota_project:
+      extended_adc[ADC_QUOTA_PROJECT_FIELD_NAME] = quota_project
+    else:
+      log.warning(
+          'Cannot find a project to insert into application default '
+          'credentials (ADC) as a quota project.\n'
+          'Run $gcloud auth application-default set-quota-project to insert a '
+          'quota project to ADC.')
+    return extended_adc
+
+
+def _DumpADCJsonToFile(adc, file_path):
+  """Dumps ADC json object to file."""
+  try:
+    contents = json.dumps(adc, sort_keys=True, indent=2, separators=(',', ': '))
+    files.WriteFileContents(file_path, contents, private=True)
+  except files.Error as e:
+    log.debug(e, exc_info=True)
+    raise CredentialFileSaveError(
+        'Error saving Application Default Credentials: ' + six.text_type(e))
+  return os.path.abspath(file_path)
+
+
+def _ConvertCredentialsToADC(credentials):
+  """Converts given credentials to application default credentials."""
+  creds_type = CredentialType.FromCredentials(credentials)
+  if creds_type == CredentialType.P12_SERVICE_ACCOUNT:
+    raise CredentialFileSaveError(
+        'Error saving Application Default Credentials: p12 keys are not'
+        'supported in this format')
+  if creds_type == CredentialType.USER_ACCOUNT:
+    credentials = client.GoogleCredentials(
+        credentials.access_token, credentials.client_id,
+        credentials.client_secret, credentials.refresh_token,
+        credentials.token_expiry, credentials.token_uri, credentials.user_agent,
+        credentials.revoke_uri)
+  return credentials.serialization_data

@@ -19,7 +19,7 @@ class AcceleratorConfig(_messages.Message):
     acceleratorCount: The number of the accelerator cards exposed to an
       instance.
     acceleratorType: The accelerator type resource name. List of supported
-      accelerators [here](/compute/docs/gpus/#Introduction)
+      accelerators [here](/compute/docs/gpus)
   """
 
   acceleratorCount = _messages.IntegerField(1)
@@ -31,11 +31,17 @@ class AddonsConfig(_messages.Message):
   cluster, enabling additional functionality.
 
   Fields:
+    cloudBuildConfig: Configuration for the Cloud Build addon.
     cloudRunConfig: Configuration for the Cloud Run addon. The `IstioConfig`
       addon must be enabled in order to enable Cloud Run. This option can only
       be enabled at cluster creation time.
+    configConnectorConfig: Configuration for the ConfigConnector add-on, a
+      Kubernetes extension to manage hosted GCP services through the
+      Kubernetes API
     dnsCacheConfig: Configuration for NodeLocalDNS, a dns cache running on
       cluster nodes
+    gcePersistentDiskCsiDriverConfig: Configuration for the GCP Compute
+      Persistent Disk CSI driver.
     horizontalPodAutoscaling: Configuration for the horizontal pod autoscaling
       feature, which increases or decreases the number of replica pods a
       replication controller has based on the resource usage of the existing
@@ -45,21 +51,29 @@ class AddonsConfig(_messages.Message):
       services in a cluster.
     istioConfig: Configuration for Istio, an open platform to connect, manage,
       and secure microservices.
-    kubernetesDashboard: Configuration for the Kubernetes Dashboard.
+    kalmConfig: Configuration for the KALM addon, which manages the lifecycle
+      of k8s applications.
+    kubernetesDashboard: Configuration for the Kubernetes Dashboard. This
+      addon is deprecated, and will be disabled in 1.15. It is recommended to
+      use the Cloud Console to manage and monitor your Kubernetes clusters,
+      workloads and applications. For more information, see:
+      https://cloud.google.com/kubernetes-engine/docs/concepts/dashboards
     networkPolicyConfig: Configuration for NetworkPolicy. This only tracks
       whether the addon is enabled or not on the Master, it does not track
       whether network policy is enabled for the nodes.
-    serverlessConfig: Deprecated: use CloudRunConfig instead (same behavior).
   """
 
-  cloudRunConfig = _messages.MessageField('CloudRunConfig', 1)
-  dnsCacheConfig = _messages.MessageField('DnsCacheConfig', 2)
-  horizontalPodAutoscaling = _messages.MessageField('HorizontalPodAutoscaling', 3)
-  httpLoadBalancing = _messages.MessageField('HttpLoadBalancing', 4)
-  istioConfig = _messages.MessageField('IstioConfig', 5)
-  kubernetesDashboard = _messages.MessageField('KubernetesDashboard', 6)
-  networkPolicyConfig = _messages.MessageField('NetworkPolicyConfig', 7)
-  serverlessConfig = _messages.MessageField('ServerlessConfig', 8)
+  cloudBuildConfig = _messages.MessageField('CloudBuildConfig', 1)
+  cloudRunConfig = _messages.MessageField('CloudRunConfig', 2)
+  configConnectorConfig = _messages.MessageField('ConfigConnectorConfig', 3)
+  dnsCacheConfig = _messages.MessageField('DnsCacheConfig', 4)
+  gcePersistentDiskCsiDriverConfig = _messages.MessageField('GcePersistentDiskCsiDriverConfig', 5)
+  horizontalPodAutoscaling = _messages.MessageField('HorizontalPodAutoscaling', 6)
+  httpLoadBalancing = _messages.MessageField('HttpLoadBalancing', 7)
+  istioConfig = _messages.MessageField('IstioConfig', 8)
+  kalmConfig = _messages.MessageField('KalmConfig', 9)
+  kubernetesDashboard = _messages.MessageField('KubernetesDashboard', 10)
+  networkPolicyConfig = _messages.MessageField('NetworkPolicyConfig', 11)
 
 
 class AuthenticatorGroupsConfig(_messages.Message):
@@ -97,14 +111,42 @@ class AutoprovisioningNodePoolDefaults(_messages.Message):
   created by NAP.
 
   Fields:
+    management: Specifies the node management options for NAP created node-
+      pools.
+    minCpuPlatform: Minimum CPU platform to be used for NAP created node
+      pools. The instance may be scheduled on the specified or newer CPU
+      platform. Applicable values are the friendly names of CPU platforms,
+      such as <code>minCpuPlatform: &quot;Intel Haswell&quot;</code> or
+      <code>minCpuPlatform: &quot;Intel Sandy Bridge&quot;</code>. For more
+      information, read [how to specify min CPU
+      platform](https://cloud.google.com/compute/docs/instances/specify-min-
+      cpu-platform) To unset the min cpu platform field pass "automatic" as
+      field value.
     oauthScopes: Scopes that are used by NAP when creating node pools. If
       oauth_scopes are specified, service_account should be empty.
     serviceAccount: The Google Cloud Platform Service Account to be used by
       the node VMs. If service_account is specified, scopes should be empty.
+    upgradeSettings: Specifies the upgrade settings for NAP created node pools
   """
 
-  oauthScopes = _messages.StringField(1, repeated=True)
-  serviceAccount = _messages.StringField(2)
+  management = _messages.MessageField('NodeManagement', 1)
+  minCpuPlatform = _messages.StringField(2)
+  oauthScopes = _messages.StringField(3, repeated=True)
+  serviceAccount = _messages.StringField(4)
+  upgradeSettings = _messages.MessageField('UpgradeSettings', 5)
+
+
+class AvailableVersion(_messages.Message):
+  r"""AvailableVersion is an additional Kubernetes versions offered to users
+  who subscribed to the release channel.
+
+  Fields:
+    reason: Reason for availability.
+    version: Kubernetes version.
+  """
+
+  reason = _messages.StringField(1)
+  version = _messages.StringField(2)
 
 
 class BigQueryDestination(_messages.Message):
@@ -174,6 +216,16 @@ class ClientCertificateConfig(_messages.Message):
   issueClientCertificate = _messages.BooleanField(1)
 
 
+class CloudBuildConfig(_messages.Message):
+  r"""Configuration options for the Cloud Build addon.
+
+  Fields:
+    enabled: Whether the Cloud Build addon is enabled for this cluster.
+  """
+
+  enabled = _messages.BooleanField(1)
+
+
 class CloudNatStatus(_messages.Message):
   r"""CloudNatStatus contains the desired state of the cloud nat functionality
   on this cluster.
@@ -196,9 +248,12 @@ class CloudRunConfig(_messages.Message):
 
   Fields:
     disabled: Whether Cloud Run is enabled for this cluster.
+    enableAlphaFeatures: Enable alpha features of Cloud Run. These features
+      are only available to trusted testers.
   """
 
   disabled = _messages.BooleanField(1)
+  enableAlphaFeatures = _messages.BooleanField(2)
 
 
 class Cluster(_messages.Message):
@@ -223,7 +278,10 @@ class Cluster(_messages.Message):
       cluster, in [CIDR](http://en.wikipedia.org/wiki/Classless_Inter-
       Domain_Routing) notation (e.g. `10.96.0.0/14`). Leave blank to have one
       automatically chosen or specify a `/14` block in `10.0.0.0/8`.
+    clusterTelemetry: Telemetry integration for the cluster.
     conditions: Which conditions caused the current cluster state.
+    costManagementConfig: Configuration for the fine-grained cost management
+      feature.
     createTime: [Output only] The time the cluster was created, in
       [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) text format.
     currentMasterVersion: The current software version of the master endpoint.
@@ -294,9 +352,6 @@ class Cluster(_messages.Message):
       cluster. * if left as an empty string,`logging.googleapis.com` will be
       used.
     maintenancePolicy: Configure the maintenance policy for this cluster.
-    managedPodIdentityConfig: Configuration for the use of GCP IAM Service
-      Accounts in applications in this cluster.  Deprecated, use
-      WorkloadIdentityConfig instead.
     masterAuth: The authentication information for accessing the master
       endpoint. If unspecified, the defaults are used: For clusters before
       v1.12, if master_auth is unspecified, `username` will be set to "admin",
@@ -315,9 +370,10 @@ class Cluster(_messages.Message):
       exported from the cluster. * if left as an empty string,
       `monitoring.googleapis.com` will be used.
     name: The name of this cluster. The name must be unique within this
-      project and zone, and can be up to 40 characters with the following
-      restrictions:  * Lowercase letters, numbers, and hyphens only. * Must
-      start with a letter. * Must end with a number or a letter.
+      project and location (e.g. zone or region), and can be up to 40
+      characters with the following restrictions:  * Lowercase letters,
+      numbers, and hyphens only. * Must start with a letter. * Must end with a
+      number or a letter.
     network: The name of the Google Compute Engine [network](/compute/docs
       /networks-and-firewalls#networks) to which the cluster is connected. If
       left unspecified, the `default` network will be used.
@@ -366,6 +422,7 @@ class Cluster(_messages.Message):
     subnetwork: The name of the Google Compute Engine
       [subnetwork](/compute/docs/subnetworks) to which the cluster is
       connected. On output this shows the subnetwork ID instead of the name.
+    tierSettings: Cluster tier settings.
     tpuIpv4CidrBlock: [Output only] The IP address range of the Cloud TPUs in
       this cluster, in [CIDR](http://en.wikipedia.org/wiki/Classless_Inter-
       Domain_Routing) notation (e.g. `1.2.3.4/29`).
@@ -451,60 +508,62 @@ class Cluster(_messages.Message):
   autoscaling = _messages.MessageField('ClusterAutoscaling', 3)
   binaryAuthorization = _messages.MessageField('BinaryAuthorization', 4)
   clusterIpv4Cidr = _messages.StringField(5)
-  conditions = _messages.MessageField('StatusCondition', 6, repeated=True)
-  createTime = _messages.StringField(7)
-  currentMasterVersion = _messages.StringField(8)
-  currentNodeCount = _messages.IntegerField(9, variant=_messages.Variant.INT32)
-  currentNodeVersion = _messages.StringField(10)
-  databaseEncryption = _messages.MessageField('DatabaseEncryption', 11)
-  databaseEncryptionKeyId = _messages.StringField(12)
-  defaultMaxPodsConstraint = _messages.MessageField('MaxPodsConstraint', 13)
-  description = _messages.StringField(14)
-  enableKubernetesAlpha = _messages.BooleanField(15)
-  enableTpu = _messages.BooleanField(16)
-  endpoint = _messages.StringField(17)
-  expireTime = _messages.StringField(18)
-  initialClusterVersion = _messages.StringField(19)
-  initialNodeCount = _messages.IntegerField(20, variant=_messages.Variant.INT32)
-  instanceGroupUrls = _messages.StringField(21, repeated=True)
-  ipAllocationPolicy = _messages.MessageField('IPAllocationPolicy', 22)
-  labelFingerprint = _messages.StringField(23)
-  legacyAbac = _messages.MessageField('LegacyAbac', 24)
-  location = _messages.StringField(25)
-  locations = _messages.StringField(26, repeated=True)
-  loggingService = _messages.StringField(27)
-  maintenancePolicy = _messages.MessageField('MaintenancePolicy', 28)
-  managedPodIdentityConfig = _messages.MessageField('ManagedPodIdentityConfig', 29)
-  masterAuth = _messages.MessageField('MasterAuth', 30)
-  masterAuthorizedNetworksConfig = _messages.MessageField('MasterAuthorizedNetworksConfig', 31)
-  masterIpv4CidrBlock = _messages.StringField(32)
-  monitoringService = _messages.StringField(33)
-  name = _messages.StringField(34)
-  network = _messages.StringField(35)
-  networkConfig = _messages.MessageField('NetworkConfig', 36)
-  networkPolicy = _messages.MessageField('NetworkPolicy', 37)
-  nodeConfig = _messages.MessageField('NodeConfig', 38)
-  nodeIpv4CidrSize = _messages.IntegerField(39, variant=_messages.Variant.INT32)
-  nodePools = _messages.MessageField('NodePool', 40, repeated=True)
-  nodeSchedulingStrategy = _messages.EnumField('NodeSchedulingStrategyValueValuesEnum', 41)
-  podSecurityPolicyConfig = _messages.MessageField('PodSecurityPolicyConfig', 42)
-  privateCluster = _messages.BooleanField(43)
-  privateClusterConfig = _messages.MessageField('PrivateClusterConfig', 44)
-  releaseChannel = _messages.MessageField('ReleaseChannel', 45)
-  resourceLabels = _messages.MessageField('ResourceLabelsValue', 46)
-  resourceUsageExportConfig = _messages.MessageField('ResourceUsageExportConfig', 47)
-  resourceVersion = _messages.StringField(48)
-  securityProfile = _messages.MessageField('SecurityProfile', 49)
-  selfLink = _messages.StringField(50)
-  servicesIpv4Cidr = _messages.StringField(51)
-  shieldedNodes = _messages.MessageField('ShieldedNodes', 52)
-  status = _messages.EnumField('StatusValueValuesEnum', 53)
-  statusMessage = _messages.StringField(54)
-  subnetwork = _messages.StringField(55)
-  tpuIpv4CidrBlock = _messages.StringField(56)
-  verticalPodAutoscaling = _messages.MessageField('VerticalPodAutoscaling', 57)
-  workloadIdentityConfig = _messages.MessageField('WorkloadIdentityConfig', 58)
-  zone = _messages.StringField(59)
+  clusterTelemetry = _messages.MessageField('ClusterTelemetry', 6)
+  conditions = _messages.MessageField('StatusCondition', 7, repeated=True)
+  costManagementConfig = _messages.MessageField('CostManagementConfig', 8)
+  createTime = _messages.StringField(9)
+  currentMasterVersion = _messages.StringField(10)
+  currentNodeCount = _messages.IntegerField(11, variant=_messages.Variant.INT32)
+  currentNodeVersion = _messages.StringField(12)
+  databaseEncryption = _messages.MessageField('DatabaseEncryption', 13)
+  databaseEncryptionKeyId = _messages.StringField(14)
+  defaultMaxPodsConstraint = _messages.MessageField('MaxPodsConstraint', 15)
+  description = _messages.StringField(16)
+  enableKubernetesAlpha = _messages.BooleanField(17)
+  enableTpu = _messages.BooleanField(18)
+  endpoint = _messages.StringField(19)
+  expireTime = _messages.StringField(20)
+  initialClusterVersion = _messages.StringField(21)
+  initialNodeCount = _messages.IntegerField(22, variant=_messages.Variant.INT32)
+  instanceGroupUrls = _messages.StringField(23, repeated=True)
+  ipAllocationPolicy = _messages.MessageField('IPAllocationPolicy', 24)
+  labelFingerprint = _messages.StringField(25)
+  legacyAbac = _messages.MessageField('LegacyAbac', 26)
+  location = _messages.StringField(27)
+  locations = _messages.StringField(28, repeated=True)
+  loggingService = _messages.StringField(29)
+  maintenancePolicy = _messages.MessageField('MaintenancePolicy', 30)
+  masterAuth = _messages.MessageField('MasterAuth', 31)
+  masterAuthorizedNetworksConfig = _messages.MessageField('MasterAuthorizedNetworksConfig', 32)
+  masterIpv4CidrBlock = _messages.StringField(33)
+  monitoringService = _messages.StringField(34)
+  name = _messages.StringField(35)
+  network = _messages.StringField(36)
+  networkConfig = _messages.MessageField('NetworkConfig', 37)
+  networkPolicy = _messages.MessageField('NetworkPolicy', 38)
+  nodeConfig = _messages.MessageField('NodeConfig', 39)
+  nodeIpv4CidrSize = _messages.IntegerField(40, variant=_messages.Variant.INT32)
+  nodePools = _messages.MessageField('NodePool', 41, repeated=True)
+  nodeSchedulingStrategy = _messages.EnumField('NodeSchedulingStrategyValueValuesEnum', 42)
+  podSecurityPolicyConfig = _messages.MessageField('PodSecurityPolicyConfig', 43)
+  privateCluster = _messages.BooleanField(44)
+  privateClusterConfig = _messages.MessageField('PrivateClusterConfig', 45)
+  releaseChannel = _messages.MessageField('ReleaseChannel', 46)
+  resourceLabels = _messages.MessageField('ResourceLabelsValue', 47)
+  resourceUsageExportConfig = _messages.MessageField('ResourceUsageExportConfig', 48)
+  resourceVersion = _messages.StringField(49)
+  securityProfile = _messages.MessageField('SecurityProfile', 50)
+  selfLink = _messages.StringField(51)
+  servicesIpv4Cidr = _messages.StringField(52)
+  shieldedNodes = _messages.MessageField('ShieldedNodes', 53)
+  status = _messages.EnumField('StatusValueValuesEnum', 54)
+  statusMessage = _messages.StringField(55)
+  subnetwork = _messages.StringField(56)
+  tierSettings = _messages.MessageField('TierSettings', 57)
+  tpuIpv4CidrBlock = _messages.StringField(58)
+  verticalPodAutoscaling = _messages.MessageField('VerticalPodAutoscaling', 59)
+  workloadIdentityConfig = _messages.MessageField('WorkloadIdentityConfig', 60)
+  zone = _messages.StringField(61)
 
 
 class ClusterAutoscaling(_messages.Message):
@@ -516,6 +575,9 @@ class ClusterAutoscaling(_messages.Message):
     AutoscalingProfileValueValuesEnum: Defines autoscaling behaviour.
 
   Fields:
+    autoprovisioningLocations: The list of Google Compute Engine
+      [zones](/compute/docs/zones#available) in which the NodePool's nodes can
+      be created by NAP.
     autoprovisioningNodePoolDefaults: AutoprovisioningNodePoolDefaults
       contains defaults for a node pool created by NAP.
     autoscalingProfile: Defines autoscaling behaviour.
@@ -529,16 +591,46 @@ class ClusterAutoscaling(_messages.Message):
     r"""Defines autoscaling behaviour.
 
     Values:
-      PROFILE_UNSPECIFIED: Use default (balanced) autoscaling configuration.
+      PROFILE_UNSPECIFIED: No change to autoscaling configuration.
       OPTIMIZE_UTILIZATION: Prioritize optimizing utilization of resources.
+      BALANCED: Use default (balanced) autoscaling configuration.
     """
     PROFILE_UNSPECIFIED = 0
     OPTIMIZE_UTILIZATION = 1
+    BALANCED = 2
 
-  autoprovisioningNodePoolDefaults = _messages.MessageField('AutoprovisioningNodePoolDefaults', 1)
-  autoscalingProfile = _messages.EnumField('AutoscalingProfileValueValuesEnum', 2)
-  enableNodeAutoprovisioning = _messages.BooleanField(3)
-  resourceLimits = _messages.MessageField('ResourceLimit', 4, repeated=True)
+  autoprovisioningLocations = _messages.StringField(1, repeated=True)
+  autoprovisioningNodePoolDefaults = _messages.MessageField('AutoprovisioningNodePoolDefaults', 2)
+  autoscalingProfile = _messages.EnumField('AutoscalingProfileValueValuesEnum', 3)
+  enableNodeAutoprovisioning = _messages.BooleanField(4)
+  resourceLimits = _messages.MessageField('ResourceLimit', 5, repeated=True)
+
+
+class ClusterTelemetry(_messages.Message):
+  r"""Telemetry integration for the cluster.
+
+  Enums:
+    TypeValueValuesEnum: Type of the integration.
+
+  Fields:
+    type: Type of the integration.
+  """
+
+  class TypeValueValuesEnum(_messages.Enum):
+    r"""Type of the integration.
+
+    Values:
+      UNSPECIFIED: Not set.
+      DISABLED: Monitoring integration is disabled.
+      ENABLED: Monitoring integration is enabled.
+      SYSTEM_ONLY: Only system components are monitored and logged.
+    """
+    UNSPECIFIED = 0
+    DISABLED = 1
+    ENABLED = 2
+    SYSTEM_ONLY = 3
+
+  type = _messages.EnumField('TypeValueValuesEnum', 1)
 
 
 class ClusterUpdate(_messages.Message):
@@ -548,15 +640,25 @@ class ClusterUpdate(_messages.Message):
 
   Fields:
     concurrentNodeCount: Controls how many nodes to upgrade in parallel. A
-      maximum of 20 concurrent nodes is allowed.
+      maximum of 20 concurrent nodes is allowed. Deprecated. This feature will
+      be replaced by an equivalent new feature that gives better control over
+      concurrency. It is not planned to propagate this field to GA and it will
+      be eventually removed from the API.
     desiredAddonsConfig: Configurations for the various addons available to
       run in the cluster.
     desiredBinaryAuthorization: The desired configuration options for the
       Binary Authorization feature.
     desiredCloudNatStatus: The desired status of Cloud NAT for this cluster.
+      Deprecated: use desired_default_snat_status instead.
     desiredClusterAutoscaling: The desired cluster-level autoscaling
       configuration.
+    desiredClusterTelemetry: The desired telemetry integration for the
+      cluster.
+    desiredCostManagementConfig: The desired configuration for the fine-
+      grained cost management feature.
     desiredDatabaseEncryption: Configuration of etcd encryption.
+    desiredDefaultSnatStatus: The desired status of whether to disable default
+      sNAT for this cluster.
     desiredImage: The desired name of the image to use for this node. This is
       used to create clusters using a custom image.
     desiredImageProject: The project containing the desired image to use for
@@ -574,9 +676,9 @@ class ClusterUpdate(_messages.Message):
     desiredLoggingService: The logging service the cluster should use to write
       metrics. Currently available options:  *
       "logging.googleapis.com/kubernetes" - the Google Cloud Logging service
-      with Kubernetes-native resource model in Stackdriver *
-      "logging.googleapis.com" - the Google Cloud Logging service * "none" -
-      no logs will be exported from the cluster
+      with Kubernetes-native resource model * "logging.googleapis.com" - the
+      Google Cloud Logging service * "none" - no logs will be exported from
+      the cluster
     desiredMasterAuthorizedNetworksConfig: The desired configuration options
       for master authorized networks feature.
     desiredMasterVersion: The Kubernetes version to change the master to.
@@ -589,7 +691,7 @@ class ClusterUpdate(_messages.Message):
     desiredMonitoringService: The monitoring service the cluster should use to
       write metrics. Currently available options:  *
       "monitoring.googleapis.com/kubernetes" - the Google Cloud Monitoring
-      service with Kubernetes-native resource model in Stackdriver *
+      service with Kubernetes-native resource model *
       "monitoring.googleapis.com" - the Google Cloud Monitoring service *
       "none" - no metrics will be exported from the cluster
     desiredNodePoolAutoscaling: Autoscaler configuration for the node pool
@@ -613,12 +715,14 @@ class ClusterUpdate(_messages.Message):
     desiredPrivateClusterConfig: The desired private cluster configuration.
     desiredPrivateIpv6Access: The desired status of Private IPv6 access for
       this cluster.
+    desiredReleaseChannel: The desired release channel configuration.
     desiredResourceUsageExportConfig: The desired configuration for exporting
       resource usage.
     desiredShieldedNodes: Configuration for Shielded Nodes.
     desiredVerticalPodAutoscaling: Cluster-level Vertical Pod Autoscaling
       configuration.
     desiredWorkloadIdentityConfig: Configuration for Workload Identity.
+    privateClusterConfig: The desired private cluster configuration.
     securityProfile: User may change security profile during update
   """
 
@@ -627,27 +731,32 @@ class ClusterUpdate(_messages.Message):
   desiredBinaryAuthorization = _messages.MessageField('BinaryAuthorization', 3)
   desiredCloudNatStatus = _messages.MessageField('CloudNatStatus', 4)
   desiredClusterAutoscaling = _messages.MessageField('ClusterAutoscaling', 5)
-  desiredDatabaseEncryption = _messages.MessageField('DatabaseEncryption', 6)
-  desiredImage = _messages.StringField(7)
-  desiredImageProject = _messages.StringField(8)
-  desiredImageType = _messages.StringField(9)
-  desiredIntraNodeVisibilityConfig = _messages.MessageField('IntraNodeVisibilityConfig', 10)
-  desiredLocations = _messages.StringField(11, repeated=True)
-  desiredLoggingService = _messages.StringField(12)
-  desiredMasterAuthorizedNetworksConfig = _messages.MessageField('MasterAuthorizedNetworksConfig', 13)
-  desiredMasterVersion = _messages.StringField(14)
-  desiredMonitoringService = _messages.StringField(15)
-  desiredNodePoolAutoscaling = _messages.MessageField('NodePoolAutoscaling', 16)
-  desiredNodePoolId = _messages.StringField(17)
-  desiredNodeVersion = _messages.StringField(18)
-  desiredPodSecurityPolicyConfig = _messages.MessageField('PodSecurityPolicyConfig', 19)
-  desiredPrivateClusterConfig = _messages.MessageField('PrivateClusterConfig', 20)
-  desiredPrivateIpv6Access = _messages.MessageField('PrivateIPv6Status', 21)
-  desiredResourceUsageExportConfig = _messages.MessageField('ResourceUsageExportConfig', 22)
-  desiredShieldedNodes = _messages.MessageField('ShieldedNodes', 23)
-  desiredVerticalPodAutoscaling = _messages.MessageField('VerticalPodAutoscaling', 24)
-  desiredWorkloadIdentityConfig = _messages.MessageField('WorkloadIdentityConfig', 25)
-  securityProfile = _messages.MessageField('SecurityProfile', 26)
+  desiredClusterTelemetry = _messages.MessageField('ClusterTelemetry', 6)
+  desiredCostManagementConfig = _messages.MessageField('CostManagementConfig', 7)
+  desiredDatabaseEncryption = _messages.MessageField('DatabaseEncryption', 8)
+  desiredDefaultSnatStatus = _messages.MessageField('DefaultSnatStatus', 9)
+  desiredImage = _messages.StringField(10)
+  desiredImageProject = _messages.StringField(11)
+  desiredImageType = _messages.StringField(12)
+  desiredIntraNodeVisibilityConfig = _messages.MessageField('IntraNodeVisibilityConfig', 13)
+  desiredLocations = _messages.StringField(14, repeated=True)
+  desiredLoggingService = _messages.StringField(15)
+  desiredMasterAuthorizedNetworksConfig = _messages.MessageField('MasterAuthorizedNetworksConfig', 16)
+  desiredMasterVersion = _messages.StringField(17)
+  desiredMonitoringService = _messages.StringField(18)
+  desiredNodePoolAutoscaling = _messages.MessageField('NodePoolAutoscaling', 19)
+  desiredNodePoolId = _messages.StringField(20)
+  desiredNodeVersion = _messages.StringField(21)
+  desiredPodSecurityPolicyConfig = _messages.MessageField('PodSecurityPolicyConfig', 22)
+  desiredPrivateClusterConfig = _messages.MessageField('PrivateClusterConfig', 23)
+  desiredPrivateIpv6Access = _messages.MessageField('PrivateIPv6Status', 24)
+  desiredReleaseChannel = _messages.MessageField('ReleaseChannel', 25)
+  desiredResourceUsageExportConfig = _messages.MessageField('ResourceUsageExportConfig', 26)
+  desiredShieldedNodes = _messages.MessageField('ShieldedNodes', 27)
+  desiredVerticalPodAutoscaling = _messages.MessageField('VerticalPodAutoscaling', 28)
+  desiredWorkloadIdentityConfig = _messages.MessageField('WorkloadIdentityConfig', 29)
+  privateClusterConfig = _messages.MessageField('PrivateClusterConfig', 30)
+  securityProfile = _messages.MessageField('SecurityProfile', 31)
 
 
 class CompleteIPRotationRequest(_messages.Message):
@@ -675,6 +784,28 @@ class CompleteIPRotationRequest(_messages.Message):
   zone = _messages.StringField(4)
 
 
+class ConfigConnectorConfig(_messages.Message):
+  r"""Configuration options for the Config Connector add-on.
+
+  Fields:
+    enabled: Whether Cloud Connector is enabled for this cluster.
+  """
+
+  enabled = _messages.BooleanField(1)
+
+
+class ConsumptionMeteringConfig(_messages.Message):
+  r"""Parameters for controlling consumption metering.
+
+  Fields:
+    enabled: Whether to enable consumption metering for this cluster. If
+      enabled, a second BigQuery table will be created to hold resource
+      consumption records.
+  """
+
+  enabled = _messages.BooleanField(1)
+
+
 class ContainerProjectsAggregatedUsableSubnetworksListRequest(_messages.Message):
   r"""A ContainerProjectsAggregatedUsableSubnetworksListRequest object.
 
@@ -698,21 +829,6 @@ class ContainerProjectsAggregatedUsableSubnetworksListRequest(_messages.Message)
   pageSize = _messages.IntegerField(2, variant=_messages.Variant.INT32)
   pageToken = _messages.StringField(3)
   parent = _messages.StringField(4, required=True)
-
-
-class ContainerProjectsGetIamPolicyRequest(_messages.Message):
-  r"""A ContainerProjectsGetIamPolicyRequest object.
-
-  Fields:
-    googleIamV1GetIamPolicyRequest: A GoogleIamV1GetIamPolicyRequest resource
-      to be passed as the request body.
-    resource: REQUIRED: The resource for which the policy is being requested.
-      See the operation documentation for the appropriate value for this
-      field.
-  """
-
-  googleIamV1GetIamPolicyRequest = _messages.MessageField('GoogleIamV1GetIamPolicyRequest', 1)
-  resource = _messages.StringField(2, required=True)
 
 
 class ContainerProjectsLocationsClustersDeleteRequest(_messages.Message):
@@ -902,6 +1018,17 @@ class ContainerProjectsLocationsGetServerConfigRequest(_messages.Message):
   zone = _messages.StringField(3)
 
 
+class ContainerProjectsLocationsListRequest(_messages.Message):
+  r"""A ContainerProjectsLocationsListRequest object.
+
+  Fields:
+    parent: Contains the name of the resource requested. Specified in the
+      format 'projects/*'.
+  """
+
+  parent = _messages.StringField(1, required=True)
+
+
 class ContainerProjectsLocationsOperationsGetRequest(_messages.Message):
   r"""A ContainerProjectsLocationsOperationsGetRequest object.
 
@@ -943,37 +1070,6 @@ class ContainerProjectsLocationsOperationsListRequest(_messages.Message):
   parent = _messages.StringField(1, required=True)
   projectId = _messages.StringField(2)
   zone = _messages.StringField(3)
-
-
-class ContainerProjectsSetIamPolicyRequest(_messages.Message):
-  r"""A ContainerProjectsSetIamPolicyRequest object.
-
-  Fields:
-    googleIamV1SetIamPolicyRequest: A GoogleIamV1SetIamPolicyRequest resource
-      to be passed as the request body.
-    resource: REQUIRED: The resource for which the policy is being specified.
-      See the operation documentation for the appropriate value for this
-      field.
-  """
-
-  googleIamV1SetIamPolicyRequest = _messages.MessageField('GoogleIamV1SetIamPolicyRequest', 1)
-  resource = _messages.StringField(2, required=True)
-
-
-class ContainerProjectsTestIamPermissionsRequest(_messages.Message):
-  r"""A ContainerProjectsTestIamPermissionsRequest object.
-
-  Fields:
-    googleIamV1TestIamPermissionsRequest: A
-      GoogleIamV1TestIamPermissionsRequest resource to be passed as the
-      request body.
-    resource: REQUIRED: The resource for which the policy detail is being
-      requested. See the operation documentation for the appropriate value for
-      this field.
-  """
-
-  googleIamV1TestIamPermissionsRequest = _messages.MessageField('GoogleIamV1TestIamPermissionsRequest', 1)
-  resource = _messages.StringField(2, required=True)
 
 
 class ContainerProjectsZonesClustersDeleteRequest(_messages.Message):
@@ -1181,6 +1277,16 @@ class ContainerProjectsZonesOperationsListRequest(_messages.Message):
   zone = _messages.StringField(3, required=True)
 
 
+class CostManagementConfig(_messages.Message):
+  r"""Configuration for fine-grained cost management feature.
+
+  Fields:
+    enabled: Whether the feature is enabled or not.
+  """
+
+  enabled = _messages.BooleanField(1)
+
+
 class CreateClusterRequest(_messages.Message):
   r"""CreateClusterRequest creates a cluster.
 
@@ -1288,6 +1394,17 @@ class DatabaseEncryption(_messages.Message):
   state = _messages.EnumField('StateValueValuesEnum', 2)
 
 
+class DefaultSnatStatus(_messages.Message):
+  r"""DefaultSnatStatus contains the desired state of whether default sNAT
+  should be disabled on the cluster.
+
+  Fields:
+    disabled: Disables cluster default sNAT rules.
+  """
+
+  disabled = _messages.BooleanField(1)
+
+
 class DnsCacheConfig(_messages.Message):
   r"""Configuration for NodeLocal DNSCache
 
@@ -1308,28 +1425,69 @@ class Empty(_messages.Message):
 
 
 
-class Expr(_messages.Message):
-  r"""Represents an expression text. Example:      title: "User account
-  presence"     description: "Determines whether the request has a user
-  account"     expression: "size(request.user) > 0"
+class FeatureConfig(_messages.Message):
+  r"""FeatureConfig is the configuration for a specific feature including the
+  definition of the feature as well as the tier in which it resides.
+
+  Enums:
+    FeatureValueValuesEnum: The feature that is being configured with this
+      value.
+    TierValueValuesEnum: The tier in which the configured feature resides.
 
   Fields:
-    description: An optional description of the expression. This is a longer
-      text which describes the expression, e.g. when hovered over it in a UI.
-    expression: Textual representation of an expression in Common Expression
-      Language syntax.  The application context of the containing message
-      determines which well-known feature set of CEL is supported.
-    location: An optional string indicating the location of the expression for
-      error reporting, e.g. a file name and a position in the file.
-    title: An optional title for the expression, i.e. a short string
-      describing its purpose. This can be used e.g. in UIs which allow to
-      enter the expression.
+    feature: The feature that is being configured with this value.
+    tier: The tier in which the configured feature resides.
   """
 
-  description = _messages.StringField(1)
-  expression = _messages.StringField(2)
-  location = _messages.StringField(3)
-  title = _messages.StringField(4)
+  class FeatureValueValuesEnum(_messages.Enum):
+    r"""The feature that is being configured with this value.
+
+    Values:
+      DEFAULT_FEATURE: DEFAULT_FEATURE is the default zero value of the
+        Feature.  This value is valid.
+      VERTICAL_POD_AUTOSCALER: The vertical pod autoscaling feature.
+      NODE_AUTO_PROVISIONING: The node auto provisioning feature.
+      BINARY_AUTHORIZATION: The binary authorization feature.
+      RESOURCE_LABELS: The resource labels feature.
+      USAGE_METERING: The GKE usage metering feature.
+      CLOUD_RUN_ON_GKE: The Cloud Run on GKE feature.
+    """
+    DEFAULT_FEATURE = 0
+    VERTICAL_POD_AUTOSCALER = 1
+    NODE_AUTO_PROVISIONING = 2
+    BINARY_AUTHORIZATION = 3
+    RESOURCE_LABELS = 4
+    USAGE_METERING = 5
+    CLOUD_RUN_ON_GKE = 6
+
+  class TierValueValuesEnum(_messages.Enum):
+    r"""The tier in which the configured feature resides.
+
+    Values:
+      TIER_UNSPECIFIED: TIER_UNSPECIFIED is the default value. If this value
+        is set during create or update, it defaults to the project level tier
+        setting.
+      STANDARD: Represents the standard tier or base Google Kubernetes Engine
+        offering.
+      ADVANCED: Represents the advanced tier.
+    """
+    TIER_UNSPECIFIED = 0
+    STANDARD = 1
+    ADVANCED = 2
+
+  feature = _messages.EnumField('FeatureValueValuesEnum', 1)
+  tier = _messages.EnumField('TierValueValuesEnum', 2)
+
+
+class GcePersistentDiskCsiDriverConfig(_messages.Message):
+  r"""Configuration for the GCE PD CSI driver. This option can only be enabled
+  at cluster creation time.
+
+  Fields:
+    enabled: Whether the GCE PD CSI driver is enabled for this cluster.
+  """
+
+  enabled = _messages.BooleanField(1)
 
 
 class GetJSONWebKeysResponse(_messages.Message):
@@ -1337,11 +1495,14 @@ class GetJSONWebKeysResponse(_messages.Message):
   7517
 
   Fields:
+    cacheHeader: OnePlatform automagically extracts this field and uses it to
+      set the HTTP Cache-Control header.
     keys: The public component of the keys used by the cluster to sign token
       requests.
   """
 
-  keys = _messages.MessageField('Jwk', 1, repeated=True)
+  cacheHeader = _messages.MessageField('HttpCacheControlResponseHeader', 1)
+  keys = _messages.MessageField('Jwk', 2, repeated=True)
 
 
 class GetOpenIDConfigResponse(_messages.Message):
@@ -1349,6 +1510,8 @@ class GetOpenIDConfigResponse(_messages.Message):
   See the OpenID Connect Discovery 1.0 specification for details.
 
   Fields:
+    cacheHeader: OnePlatform automagically extracts this field and uses it to
+      set the HTTP Cache-Control header.
     claims_supported: Supported claims.
     grant_types: Supported grant types.
     id_token_signing_alg_values_supported: supported ID Token signing
@@ -1359,124 +1522,14 @@ class GetOpenIDConfigResponse(_messages.Message):
     subject_types_supported: Supported subject types.
   """
 
-  claims_supported = _messages.StringField(1, repeated=True)
-  grant_types = _messages.StringField(2, repeated=True)
-  id_token_signing_alg_values_supported = _messages.StringField(3, repeated=True)
-  issuer = _messages.StringField(4)
-  jwks_uri = _messages.StringField(5)
-  response_types_supported = _messages.StringField(6, repeated=True)
-  subject_types_supported = _messages.StringField(7, repeated=True)
-
-
-class GoogleIamV1Binding(_messages.Message):
-  r"""Associates `members` with a `role`.
-
-  Fields:
-    condition: The condition that is associated with this binding. NOTE: An
-      unsatisfied condition will not allow user access via current binding.
-      Different bindings, including their conditions, are examined
-      independently.
-    members: Specifies the identities requesting access for a Cloud Platform
-      resource. `members` can have the following values:  * `allUsers`: A
-      special identifier that represents anyone who is    on the internet;
-      with or without a Google account.  * `allAuthenticatedUsers`: A special
-      identifier that represents anyone    who is authenticated with a Google
-      account or a service account.  * `user:{emailid}`: An email address that
-      represents a specific Google    account. For example, `alice@gmail.com`
-      .   * `serviceAccount:{emailid}`: An email address that represents a
-      service    account. For example, `my-other-
-      app@appspot.gserviceaccount.com`.  * `group:{emailid}`: An email address
-      that represents a Google group.    For example, `admins@example.com`.
-      * `domain:{domain}`: The G Suite domain (primary) that represents all
-      the    users of that domain. For example, `google.com` or `example.com`.
-    role: Role that is assigned to `members`. For example, `roles/viewer`,
-      `roles/editor`, or `roles/owner`.
-  """
-
-  condition = _messages.MessageField('Expr', 1)
-  members = _messages.StringField(2, repeated=True)
-  role = _messages.StringField(3)
-
-
-class GoogleIamV1GetIamPolicyRequest(_messages.Message):
-  r"""Request message for `GetIamPolicy` method."""
-
-
-class GoogleIamV1Policy(_messages.Message):
-  r"""Defines an Identity and Access Management (IAM) policy. It is used to
-  specify access control policies for Cloud Platform resources.   A `Policy`
-  consists of a list of `bindings`. A `binding` binds a list of `members` to a
-  `role`, where the members can be user accounts, Google groups, Google
-  domains, and service accounts. A `role` is a named list of permissions
-  defined by IAM.  **JSON Example**      {       "bindings": [         {
-  "role": "roles/owner",           "members": [
-  "user:mike@example.com",             "group:admins@example.com",
-  "domain:google.com",             "serviceAccount:my-other-
-  app@appspot.gserviceaccount.com"           ]         },         {
-  "role": "roles/viewer",           "members": ["user:sean@example.com"]
-  }       ]     }  **YAML Example**      bindings:     - members:       -
-  user:mike@example.com       - group:admins@example.com       -
-  domain:google.com       - serviceAccount:my-other-
-  app@appspot.gserviceaccount.com       role: roles/owner     - members:
-  - user:sean@example.com       role: roles/viewer   For a description of IAM
-  and its features, see the [IAM developer's
-  guide](https://cloud.google.com/iam/docs).
-
-  Fields:
-    bindings: Associates a list of `members` to a `role`. `bindings` with no
-      members will result in an error.
-    etag: `etag` is used for optimistic concurrency control as a way to help
-      prevent simultaneous updates of a policy from overwriting each other. It
-      is strongly suggested that systems make use of the `etag` in the read-
-      modify-write cycle to perform policy updates in order to avoid race
-      conditions: An `etag` is returned in the response to `getIamPolicy`, and
-      systems are expected to put that etag in the request to `setIamPolicy`
-      to ensure that their change will be applied to the same version of the
-      policy.  If no `etag` is provided in the call to `setIamPolicy`, then
-      the existing policy is overwritten blindly.
-    version: Deprecated.
-  """
-
-  bindings = _messages.MessageField('GoogleIamV1Binding', 1, repeated=True)
-  etag = _messages.BytesField(2)
-  version = _messages.IntegerField(3, variant=_messages.Variant.INT32)
-
-
-class GoogleIamV1SetIamPolicyRequest(_messages.Message):
-  r"""Request message for `SetIamPolicy` method.
-
-  Fields:
-    policy: REQUIRED: The complete policy to be applied to the `resource`. The
-      size of the policy is limited to a few 10s of KB. An empty policy is a
-      valid policy but certain Cloud Platform services (such as Projects)
-      might reject them.
-  """
-
-  policy = _messages.MessageField('GoogleIamV1Policy', 1)
-
-
-class GoogleIamV1TestIamPermissionsRequest(_messages.Message):
-  r"""Request message for `TestIamPermissions` method.
-
-  Fields:
-    permissions: The set of permissions to check for the `resource`.
-      Permissions with wildcards (such as '*' or 'storage.*') are not allowed.
-      For more information see [IAM
-      Overview](https://cloud.google.com/iam/docs/overview#permissions).
-  """
-
-  permissions = _messages.StringField(1, repeated=True)
-
-
-class GoogleIamV1TestIamPermissionsResponse(_messages.Message):
-  r"""Response message for `TestIamPermissions` method.
-
-  Fields:
-    permissions: A subset of `TestPermissionsRequest.permissions` that the
-      caller is allowed.
-  """
-
-  permissions = _messages.StringField(1, repeated=True)
+  cacheHeader = _messages.MessageField('HttpCacheControlResponseHeader', 1)
+  claims_supported = _messages.StringField(2, repeated=True)
+  grant_types = _messages.StringField(3, repeated=True)
+  id_token_signing_alg_values_supported = _messages.StringField(4, repeated=True)
+  issuer = _messages.StringField(5)
+  jwks_uri = _messages.StringField(6)
+  response_types_supported = _messages.StringField(7, repeated=True)
+  subject_types_supported = _messages.StringField(8, repeated=True)
 
 
 class HorizontalPodAutoscaling(_messages.Message):
@@ -1486,11 +1539,25 @@ class HorizontalPodAutoscaling(_messages.Message):
 
   Fields:
     disabled: Whether the Horizontal Pod Autoscaling feature is enabled in the
-      cluster. When enabled, it ensures that a Heapster pod is running in the
-      cluster, which is also used by the Cloud Monitoring service.
+      cluster. When enabled, it ensures that metrics are collected into
+      Stackdriver Monitoring.
   """
 
   disabled = _messages.BooleanField(1)
+
+
+class HttpCacheControlResponseHeader(_messages.Message):
+  r"""RFC-2616: cache control support
+
+  Fields:
+    age: 14.6 response cache age, in seconds since the response is generated
+    directive: 14.9 request and response directives
+    expires: 14.21 response cache expires, in RFC 1123 date format
+  """
+
+  age = _messages.IntegerField(1)
+  directive = _messages.StringField(2)
+  expires = _messages.StringField(3)
 
 
 class HttpLoadBalancing(_messages.Message):
@@ -1580,6 +1647,9 @@ class IPAllocationPolicy(_messages.Message):
       managed by Service Networking, instead of GKE.  This field must be
       `false` when `tpu_ipv4_cidr_block` is specified.
     useIpAliases: Whether alias IPs will be used for pod IPs in the cluster.
+      This is used in conjunction with use_routes. It cannot be true if
+      use_routes is true. If both use_ip_aliases and use_routes are false,
+      then the server picks the default IP allocation mode
   """
 
   allowRouteOverlap = _messages.BooleanField(1)
@@ -1618,8 +1688,7 @@ class IstioConfig(_messages.Message):
 
   Fields:
     auth: The specified Istio auth mode, either none, or mutual TLS.
-    csmMeshName: If specified, denotes the Cloud Service Management service
-      mesh to join.
+    csmMeshName: DEPRECATED: No longer used.
     disabled: Whether Istio is enabled for this cluster.
   """
 
@@ -1664,6 +1733,16 @@ class Jwk(_messages.Message):
   y = _messages.StringField(9)
 
 
+class KalmConfig(_messages.Message):
+  r"""Configuration options for the KALM addon.
+
+  Fields:
+    enabled: Whether KALM is enabled for this cluster.
+  """
+
+  enabled = _messages.BooleanField(1)
+
+
 class KubernetesDashboard(_messages.Message):
   r"""Configuration for the Kubernetes Dashboard.
 
@@ -1693,17 +1772,61 @@ class LinuxNodeConfig(_messages.Message):
 
   Messages:
     SysctlsValue: The Linux kernel parameters to be applied to the nodes and
-      all pods running on the nodes.
+      all pods running on the nodes.  The following parameters are supported.
+      kernel.pid_max kernel.threads-max fs.inotify.max_queued_events
+      fs.inotify.max_user_instances fs.inotify.max_user_watches
+      net.core.netdev_budget net.core.netdev_budget_usecs
+      net.core.netdev_max_backlog net.core.rmem_default net.core.rmem_max
+      net.core.wmem_default net.core.wmem_max net.core.optmem_max
+      net.core.somaxconn net.ipv4.tcp_rmem net.ipv4.tcp_wmem net.ipv4.tcp_mem
+      net.ipv4.tcp_fin_timeout net.ipv4.tcp_keepalive_intvl
+      net.ipv4.tcp_keepalive_probes net.ipv4.tcp_keepalive_time
+      net.ipv4.tcp_max_orphans net.ipv4.tcp_max_syn_backlog
+      net.ipv4.tcp_max_tw_buckets net.ipv4.tcp_syn_retries
+      net.ipv4.tcp_tw_reuse net.ipv4.udp_mem net.ipv4.udp_rmem_min
+      net.ipv4.udp_wmem_min net.netfilter.nf_conntrack_generic_timeout
+      net.netfilter.nf_conntrack_max
+      net.netfilter.nf_conntrack_tcp_timeout_close_wait
+      net.netfilter.nf_conntrack_tcp_timeout_established
 
   Fields:
     sysctls: The Linux kernel parameters to be applied to the nodes and all
-      pods running on the nodes.
+      pods running on the nodes.  The following parameters are supported.
+      kernel.pid_max kernel.threads-max fs.inotify.max_queued_events
+      fs.inotify.max_user_instances fs.inotify.max_user_watches
+      net.core.netdev_budget net.core.netdev_budget_usecs
+      net.core.netdev_max_backlog net.core.rmem_default net.core.rmem_max
+      net.core.wmem_default net.core.wmem_max net.core.optmem_max
+      net.core.somaxconn net.ipv4.tcp_rmem net.ipv4.tcp_wmem net.ipv4.tcp_mem
+      net.ipv4.tcp_fin_timeout net.ipv4.tcp_keepalive_intvl
+      net.ipv4.tcp_keepalive_probes net.ipv4.tcp_keepalive_time
+      net.ipv4.tcp_max_orphans net.ipv4.tcp_max_syn_backlog
+      net.ipv4.tcp_max_tw_buckets net.ipv4.tcp_syn_retries
+      net.ipv4.tcp_tw_reuse net.ipv4.udp_mem net.ipv4.udp_rmem_min
+      net.ipv4.udp_wmem_min net.netfilter.nf_conntrack_generic_timeout
+      net.netfilter.nf_conntrack_max
+      net.netfilter.nf_conntrack_tcp_timeout_close_wait
+      net.netfilter.nf_conntrack_tcp_timeout_established
   """
 
   @encoding.MapUnrecognizedFields('additionalProperties')
   class SysctlsValue(_messages.Message):
     r"""The Linux kernel parameters to be applied to the nodes and all pods
-    running on the nodes.
+    running on the nodes.  The following parameters are supported.
+    kernel.pid_max kernel.threads-max fs.inotify.max_queued_events
+    fs.inotify.max_user_instances fs.inotify.max_user_watches
+    net.core.netdev_budget net.core.netdev_budget_usecs
+    net.core.netdev_max_backlog net.core.rmem_default net.core.rmem_max
+    net.core.wmem_default net.core.wmem_max net.core.optmem_max
+    net.core.somaxconn net.ipv4.tcp_rmem net.ipv4.tcp_wmem net.ipv4.tcp_mem
+    net.ipv4.tcp_fin_timeout net.ipv4.tcp_keepalive_intvl
+    net.ipv4.tcp_keepalive_probes net.ipv4.tcp_keepalive_time
+    net.ipv4.tcp_max_orphans net.ipv4.tcp_max_syn_backlog
+    net.ipv4.tcp_max_tw_buckets net.ipv4.tcp_syn_retries net.ipv4.tcp_tw_reuse
+    net.ipv4.udp_mem net.ipv4.udp_rmem_min net.ipv4.udp_wmem_min
+    net.netfilter.nf_conntrack_generic_timeout net.netfilter.nf_conntrack_max
+    net.netfilter.nf_conntrack_tcp_timeout_close_wait
+    net.netfilter.nf_conntrack_tcp_timeout_established
 
     Messages:
       AdditionalProperty: An additional property for a SysctlsValue object.
@@ -1740,6 +1863,24 @@ class ListClustersResponse(_messages.Message):
 
   clusters = _messages.MessageField('Cluster', 1, repeated=True)
   missingZones = _messages.StringField(2, repeated=True)
+
+
+class ListLocationsResponse(_messages.Message):
+  r"""ListLocationsResponse returns the list of all GKE locations and their
+  recommendation state.
+
+  Fields:
+    locations: A full list of GKE locations.
+    nextPageToken: Only return ListLocationsResponse that occur after the
+      page_token. This value should be populated from the
+      ListLocationsResponse.next_page_token if that response token was set
+      (which happens when listing more Locations than fit in a single
+      ListLocationsResponse). This is currently not used and will be honored
+      once we use pagination.
+  """
+
+  locations = _messages.MessageField('Location', 1, repeated=True)
+  nextPageToken = _messages.StringField(2)
 
 
 class ListNodePoolsResponse(_messages.Message):
@@ -1815,44 +1956,110 @@ class LocalSsdVolumeConfig(_messages.Message):
   type = _messages.StringField(3)
 
 
+class Location(_messages.Message):
+  r"""Location returns the location name, and if the location is recommended
+  for GKE cluster scheduling.
+
+  Enums:
+    TypeValueValuesEnum: Contains the type of location this Location is for.
+      Regional or Zonal.
+
+  Fields:
+    name: Contains the name of the resource requested. Specified in the format
+      'projects/*/locations/*'.
+    recommended: Recommended is a bool combining the drain state of the
+      location (ie- has the region been drained manually?), and the stockout
+      status of any zone according to Zone Advisor. This will be internal only
+      for use by pantheon.
+    type: Contains the type of location this Location is for. Regional or
+      Zonal.
+  """
+
+  class TypeValueValuesEnum(_messages.Enum):
+    r"""Contains the type of location this Location is for. Regional or Zonal.
+
+    Values:
+      LOCATION_TYPE_UNSPECIFIED: LOCATION_TYPE_UNSPECIFIED means the location
+        type was not determined.
+      ZONE: A GKE Location where Zonal clusters can be created.
+      REGION: A GKE Location where Regional clusters can be created.
+    """
+    LOCATION_TYPE_UNSPECIFIED = 0
+    ZONE = 1
+    REGION = 2
+
+  name = _messages.StringField(1)
+  recommended = _messages.BooleanField(2)
+  type = _messages.EnumField('TypeValueValuesEnum', 3)
+
+
 class MaintenancePolicy(_messages.Message):
   r"""MaintenancePolicy defines the maintenance policy to be used for the
   cluster.
 
   Fields:
+    resourceVersion: A hash identifying the version of this policy, so that
+      updates to fields of the policy won't accidentally undo intermediate
+      changes (and so that users of the API unaware of some fields won't
+      accidentally remove other fields). Make a <code>get()</code> request to
+      the cluster to get the current resource version and include it with
+      requests to set the policy.
     window: Specifies the maintenance window in which maintenance may be
       performed.
   """
 
-  window = _messages.MessageField('MaintenanceWindow', 1)
+  resourceVersion = _messages.StringField(1)
+  window = _messages.MessageField('MaintenanceWindow', 2)
 
 
 class MaintenanceWindow(_messages.Message):
   r"""MaintenanceWindow defines the maintenance window to be used for the
   cluster.
 
+  Messages:
+    MaintenanceExclusionsValue: Exceptions to maintenance window. Non-
+      emergency maintenance should not occur in these windows.
+
   Fields:
     dailyMaintenanceWindow: DailyMaintenanceWindow specifies a daily
       maintenance operation window.
+    maintenanceExclusions: Exceptions to maintenance window. Non-emergency
+      maintenance should not occur in these windows.
+    recurringWindow: RecurringWindow specifies some number of recurring time
+      periods for maintenance to occur. The time windows may be overlapping.
+      If no maintenance windows are set, maintenance can occur at any time.
   """
+
+  @encoding.MapUnrecognizedFields('additionalProperties')
+  class MaintenanceExclusionsValue(_messages.Message):
+    r"""Exceptions to maintenance window. Non-emergency maintenance should not
+    occur in these windows.
+
+    Messages:
+      AdditionalProperty: An additional property for a
+        MaintenanceExclusionsValue object.
+
+    Fields:
+      additionalProperties: Additional properties of type
+        MaintenanceExclusionsValue
+    """
+
+    class AdditionalProperty(_messages.Message):
+      r"""An additional property for a MaintenanceExclusionsValue object.
+
+      Fields:
+        key: Name of the additional property.
+        value: A TimeWindow attribute.
+      """
+
+      key = _messages.StringField(1)
+      value = _messages.MessageField('TimeWindow', 2)
+
+    additionalProperties = _messages.MessageField('AdditionalProperty', 1, repeated=True)
 
   dailyMaintenanceWindow = _messages.MessageField('DailyMaintenanceWindow', 1)
-
-
-class ManagedPodIdentityConfig(_messages.Message):
-  r"""Configuration for the use of GCP IAM Service Accounts in applications in
-  this cluster.  Deprecated, use WorkloadIdentityConfig instead.
-
-  Fields:
-    enabled: [Output only] Deprecated. This field has no effect. To enable
-      Managed Pod Identity, specify a federating service account.
-    federatingServiceAccount: Email of the federating GCP SA that has
-      permission to act on behalf of customer SAs through Managed Pod
-      Identity.
-  """
-
-  enabled = _messages.BooleanField(1)
-  federatingServiceAccount = _messages.StringField(2)
+  maintenanceExclusions = _messages.MessageField('MaintenanceExclusionsValue', 2)
+  recurringWindow = _messages.MessageField('RecurringTimeWindow', 3)
 
 
 class MasterAuth(_messages.Message):
@@ -1920,7 +2127,7 @@ class Metric(_messages.Message):
   Fields:
     doubleValue: For metrics with floating point value.
     intValue: For metrics with integer value.
-    name: Metric name, required. e.g., "nodes total", "percent done"
+    name: Required. Metric name, e.g., "nodes total", "percent done".
     stringValue: For metrics with custom values (ratios, visual progress,
       etc.).
   """
@@ -1935,9 +2142,15 @@ class NetworkConfig(_messages.Message):
   r"""Parameters for cluster networking.
 
   Fields:
+    disableDefaultSnat: Whether the cluster disables default in-node sNAT
+      rules. In-node sNAT rules will be disabled when this flag is true. When
+      set to false, default IP masquerade rules will be applied to the nodes
+      to prevent sNAT on cluster internal traffic. Deprecated. Use
+      default_snat_status instead
     enableCloudNat: Whether GKE Cloud NAT is enabled for this cluster.
       Requires that the cluster has already set
-      IPAllocationPolicy.use_ip_aliases to true.
+      IPAllocationPolicy.use_ip_aliases to true. Deprecated: use
+      disable_default_snat instead.
     enableIntraNodeVisibility: Whether Intra-node visibility is enabled for
       this cluster. This enables flow logs for same node pod to pod traffic.
     enablePrivateIpv6Access: Whether or not Private IPv6 access is enabled.
@@ -1954,12 +2167,13 @@ class NetworkConfig(_messages.Message):
       Example: projects/my-project/regions/us-central1/subnetworks/my-subnet
   """
 
-  enableCloudNat = _messages.BooleanField(1)
-  enableIntraNodeVisibility = _messages.BooleanField(2)
-  enablePrivateIpv6Access = _messages.BooleanField(3)
-  enableSharedNetwork = _messages.BooleanField(4)
-  network = _messages.StringField(5)
-  subnetwork = _messages.StringField(6)
+  disableDefaultSnat = _messages.BooleanField(1)
+  enableCloudNat = _messages.BooleanField(2)
+  enableIntraNodeVisibility = _messages.BooleanField(3)
+  enablePrivateIpv6Access = _messages.BooleanField(4)
+  enableSharedNetwork = _messages.BooleanField(5)
+  network = _messages.StringField(6)
+  subnetwork = _messages.StringField(7)
 
 
 class NetworkPolicy(_messages.Message):
@@ -2019,17 +2233,26 @@ class NodeConfig(_messages.Message):
       conflict with any other metadata keys for the project or be one of the
       reserved keys:  "cluster-location"  "cluster-name"  "cluster-uid"
       "configure-sh"  "containerd-configure-sh"  "enable-os-login"  "gci-
-      update-strategy"  "gci-ensure-gke-docker"  "instance-template"  "kube-
-      env"  "startup-script"  "user-data"  Values are free-form strings, and
-      only have meaning as interpreted by the image running in the instance.
-      The only restriction placed on them is that each value's size must be
-      less than or equal to 32 KB.  The total size of all keys and values must
-      be less than 512 KB.
+      ensure-gke-docker"  "gci-metrics-enabled"  "gci-update-strategy"
+      "instance-template"  "kube-env"  "startup-script"  "user-data"
+      "disable-address-manager"  "windows-startup-script-ps1"  "common-psm1"
+      "k8s-node-setup-psm1"  "install-ssh-psm1"  "user-profile-psm1"  "serial-
+      port-logging-enable" Values are free-form strings, and only have meaning
+      as interpreted by the image running in the instance. The only
+      restriction placed on them is that each value's size must be less than
+      or equal to 32 KB.  The total size of all keys and values must be less
+      than 512 KB.
 
   Fields:
     accelerators: A list of hardware accelerators to be attached to each node.
       See https://cloud.google.com/compute/docs/gpus for more information
       about support for GPUs.
+    bootDiskKmsKey:  The Customer Managed Encryption Key used to encrypt the
+      boot disk attached to each node in the node pool. This should be of the
+      form projects/[KEY_PROJECT_ID]/locations/[LOCATION]/keyRings/[RING_NAME]
+      /cryptoKeys/[KEY_NAME]. For more information about protecting resources
+      with Cloud KMS Keys please see:
+      https://cloud.google.com/compute/docs/disks/customer-managed-encryption
     diskSizeGb: Size of the disk attached to each node, specified in GB. The
       smallest allowed disk size is 10GB.  If unspecified, the default disk
       size is 100GB.
@@ -2037,6 +2260,7 @@ class NodeConfig(_messages.Message):
       'pd-ssd')  If unspecified, the default disk type is 'pd-standard'
     imageType: The image type to use for this node. Note that for a given
       image type, the latest version of it will be used.
+    kubeletConfig: Node kubelet configs.
     labels: The map of Kubernetes labels (key/value pairs) to be applied to
       each node. These will added in addition to any default label(s) that
       Kubernetes may apply to the node. In case of conflict in label keys, the
@@ -2047,10 +2271,10 @@ class NodeConfig(_messages.Message):
       objects/labels/
     linuxNodeConfig: Parameters that can be configured on Linux nodes.
     localSsdCount: The number of local SSD disks to be attached to the node.
-      The limit for this value is dependant upon the maximum number of disks
+      The limit for this value is dependent upon the maximum number of disks
       available on a machine per zone. See:
-      https://cloud.google.com/compute/docs/disks/local-ssd#local_ssd_limits
-      for more information.
+      https://cloud.google.com/compute/docs/disks/local-ssd for more
+      information.
     localSsdVolumeConfigs: Parameters for using Local SSD with extra options
       as hostpath or local volumes
     machineType: The name of a Google Compute Engine [machine
@@ -2063,12 +2287,15 @@ class NodeConfig(_messages.Message):
       conflict with any other metadata keys for the project or be one of the
       reserved keys:  "cluster-location"  "cluster-name"  "cluster-uid"
       "configure-sh"  "containerd-configure-sh"  "enable-os-login"  "gci-
-      update-strategy"  "gci-ensure-gke-docker"  "instance-template"  "kube-
-      env"  "startup-script"  "user-data"  Values are free-form strings, and
-      only have meaning as interpreted by the image running in the instance.
-      The only restriction placed on them is that each value's size must be
-      less than or equal to 32 KB.  The total size of all keys and values must
-      be less than 512 KB.
+      ensure-gke-docker"  "gci-metrics-enabled"  "gci-update-strategy"
+      "instance-template"  "kube-env"  "startup-script"  "user-data"
+      "disable-address-manager"  "windows-startup-script-ps1"  "common-psm1"
+      "k8s-node-setup-psm1"  "install-ssh-psm1"  "user-profile-psm1"  "serial-
+      port-logging-enable" Values are free-form strings, and only have meaning
+      as interpreted by the image running in the instance. The only
+      restriction placed on them is that each value's size must be less than
+      or equal to 32 KB.  The total size of all keys and values must be less
+      than 512 KB.
     minCpuPlatform: Minimum CPU platform to be used by this instance. The
       instance may be scheduled on the specified or newer CPU platform.
       Applicable values are the friendly names of CPU platforms, such as
@@ -2103,7 +2330,8 @@ class NodeConfig(_messages.Message):
       node pool.
     sandboxConfig: Sandbox configuration for this node.
     serviceAccount: The Google Cloud Platform Service Account to be used by
-      the node VMs. If no Service Account is specified, the "default" service
+      the node VMs. Specify the email address of the Service Account;
+      otherwise, if no Service Account is specified, the "default" service
       account is used.
     shieldedInstanceConfig: Shielded Instance options.
     tags: The list of instance tags applied to all nodes. Tags are used to
@@ -2154,12 +2382,15 @@ class NodeConfig(_messages.Message):
     Additionally, to avoid ambiguity, keys must not conflict with any other
     metadata keys for the project or be one of the reserved keys:  "cluster-
     location"  "cluster-name"  "cluster-uid"  "configure-sh"  "containerd-
-    configure-sh"  "enable-os-login"  "gci-update-strategy"  "gci-ensure-gke-
-    docker"  "instance-template"  "kube-env"  "startup-script"  "user-data"
-    Values are free-form strings, and only have meaning as interpreted by the
-    image running in the instance. The only restriction placed on them is that
-    each value's size must be less than or equal to 32 KB.  The total size of
-    all keys and values must be less than 512 KB.
+    configure-sh"  "enable-os-login"  "gci-ensure-gke-docker"  "gci-metrics-
+    enabled"  "gci-update-strategy"  "instance-template"  "kube-env"
+    "startup-script"  "user-data"  "disable-address-manager"  "windows-
+    startup-script-ps1"  "common-psm1"  "k8s-node-setup-psm1"  "install-ssh-
+    psm1"  "user-profile-psm1"  "serial-port-logging-enable" Values are free-
+    form strings, and only have meaning as interpreted by the image running in
+    the instance. The only restriction placed on them is that each value's
+    size must be less than or equal to 32 KB.  The total size of all keys and
+    values must be less than 512 KB.
 
     Messages:
       AdditionalProperty: An additional property for a MetadataValue object.
@@ -2182,27 +2413,58 @@ class NodeConfig(_messages.Message):
     additionalProperties = _messages.MessageField('AdditionalProperty', 1, repeated=True)
 
   accelerators = _messages.MessageField('AcceleratorConfig', 1, repeated=True)
-  diskSizeGb = _messages.IntegerField(2, variant=_messages.Variant.INT32)
-  diskType = _messages.StringField(3)
-  imageType = _messages.StringField(4)
-  labels = _messages.MessageField('LabelsValue', 5)
-  linuxNodeConfig = _messages.MessageField('LinuxNodeConfig', 6)
-  localSsdCount = _messages.IntegerField(7, variant=_messages.Variant.INT32)
-  localSsdVolumeConfigs = _messages.MessageField('LocalSsdVolumeConfig', 8, repeated=True)
-  machineType = _messages.StringField(9)
-  metadata = _messages.MessageField('MetadataValue', 10)
-  minCpuPlatform = _messages.StringField(11)
-  nodeGroup = _messages.StringField(12)
-  nodeImageConfig = _messages.MessageField('CustomImageConfig', 13)
-  oauthScopes = _messages.StringField(14, repeated=True)
-  preemptible = _messages.BooleanField(15)
-  reservationAffinity = _messages.MessageField('ReservationAffinity', 16)
-  sandboxConfig = _messages.MessageField('SandboxConfig', 17)
-  serviceAccount = _messages.StringField(18)
-  shieldedInstanceConfig = _messages.MessageField('ShieldedInstanceConfig', 19)
-  tags = _messages.StringField(20, repeated=True)
-  taints = _messages.MessageField('NodeTaint', 21, repeated=True)
-  workloadMetadataConfig = _messages.MessageField('WorkloadMetadataConfig', 22)
+  bootDiskKmsKey = _messages.StringField(2)
+  diskSizeGb = _messages.IntegerField(3, variant=_messages.Variant.INT32)
+  diskType = _messages.StringField(4)
+  imageType = _messages.StringField(5)
+  kubeletConfig = _messages.MessageField('NodeKubeletConfig', 6)
+  labels = _messages.MessageField('LabelsValue', 7)
+  linuxNodeConfig = _messages.MessageField('LinuxNodeConfig', 8)
+  localSsdCount = _messages.IntegerField(9, variant=_messages.Variant.INT32)
+  localSsdVolumeConfigs = _messages.MessageField('LocalSsdVolumeConfig', 10, repeated=True)
+  machineType = _messages.StringField(11)
+  metadata = _messages.MessageField('MetadataValue', 12)
+  minCpuPlatform = _messages.StringField(13)
+  nodeGroup = _messages.StringField(14)
+  nodeImageConfig = _messages.MessageField('CustomImageConfig', 15)
+  oauthScopes = _messages.StringField(16, repeated=True)
+  preemptible = _messages.BooleanField(17)
+  reservationAffinity = _messages.MessageField('ReservationAffinity', 18)
+  sandboxConfig = _messages.MessageField('SandboxConfig', 19)
+  serviceAccount = _messages.StringField(20)
+  shieldedInstanceConfig = _messages.MessageField('ShieldedInstanceConfig', 21)
+  tags = _messages.StringField(22, repeated=True)
+  taints = _messages.MessageField('NodeTaint', 23, repeated=True)
+  workloadMetadataConfig = _messages.MessageField('WorkloadMetadataConfig', 24)
+
+
+class NodeKubeletConfig(_messages.Message):
+  r"""Node kubelet configs. NOTE: This is an Alpha only API.
+
+  Fields:
+    cpuCfsQuota: Enable CPU CFS quota enforcement for containers that specify
+      CPU limits.  If this option is enabled, kubelet uses CFS quota
+      (https://www.kernel.org/doc/Documentation/scheduler/sched-bwc.txt) to
+      enforce container CPU limits. Otherwise, CPU limits will not be enforced
+      at all.  Disable this option to mitigate CPU throttling problems while
+      still having your pods to be in Guaranteed QoS class by specifying the
+      CPU limits.  The default value is 'true' if unspecified.
+    cpuCfsQuotaPeriod: Set the CPU CFS quota period value 'cpu.cfs_period_us'.
+      The string must be a sequence of decimal numbers, each with optional
+      fraction and a unit suffix, such as "300ms". Valid time units are "ns",
+      "us" (or "\xb5s"), "ms", "s", "m", "h". The value must be a positive
+      duration.
+    cpuManagerPolicy: Control the CPU management policy on the node. See
+      https://kubernetes.io/docs/tasks/administer-cluster/cpu-management-
+      policies/  The following values are allowed.   - "none": the default,
+      which represents the existing scheduling behavior.   - "static": allows
+      pods with certain resource characteristics to be               granted
+      increased CPU affinity and exclusivity on the node.
+  """
+
+  cpuCfsQuota = _messages.BooleanField(1)
+  cpuCfsQuotaPeriod = _messages.StringField(2)
+  cpuManagerPolicy = _messages.StringField(3)
 
 
 class NodeManagement(_messages.Message):
@@ -2259,7 +2521,8 @@ class NodePool(_messages.Message):
     statusMessage: [Output only] Additional information about the current
       status of this node pool instance, if available. Deprecated, use the
       field conditions instead.
-    upgradeSettings: Upgrade settings (disruption budget and speed).
+    upgradeSettings: Upgrade settings control disruption and speed of the
+      upgrade.
     version: The version of the Kubernetes of this node.
   """
 
@@ -2382,13 +2645,14 @@ class Operation(_messages.Message):
     name: The server-assigned ID for the operation.
     nodepoolConditions: Which conditions caused the current node pool state.
     operationType: The operation type.
-    progress: [Output only] Progress information for an operation.
+    progress: Output only. [Output only] Progress information for an
+      operation.
     selfLink: Server-defined URL for the resource.
     startTime: [Output only] The time the operation started, in
       [RFC3339](https://www.ietf.org/rfc/rfc3339.txt) text format.
     status: The current status of the operation.
-    statusMessage: If an error has occurred, a textual description of the
-      error. Deprecated, use the field conditions instead.
+    statusMessage: Output only. If an error has occurred, a textual
+      description of the error.
     targetLink: Server-defined URL for the target of the operation.
     zone: The name of the Google Compute Engine
       [zone](/compute/docs/zones#available) in which the operation is taking
@@ -2520,6 +2784,18 @@ class PodSecurityPolicyConfig(_messages.Message):
   enabled = _messages.BooleanField(1)
 
 
+class PremiumConfig(_messages.Message):
+  r"""PremiumConfig is the configuration for all premium features and tiers.
+
+  Fields:
+    features: The features that GKE provides.
+    tiers: The tiers that are part of the premium offering.
+  """
+
+  features = _messages.MessageField('FeatureConfig', 1, repeated=True)
+  tiers = _messages.MessageField('TierConfig', 2, repeated=True)
+
+
 class PrivateClusterConfig(_messages.Message):
   r"""Configuration options for private clusters.
 
@@ -2536,6 +2812,8 @@ class PrivateClusterConfig(_messages.Message):
       addresses to the master or set of masters, as well as the ILB VIP. This
       range must not overlap with any other ranges in use within the cluster's
       network.
+    peeringName: Output only. The peering name in the customer VPC used by
+      this cluster.
     privateEndpoint: Output only. The internal IP address of this cluster's
       endpoint.
     publicEndpoint: Output only. The external IP address of this cluster's
@@ -2546,8 +2824,9 @@ class PrivateClusterConfig(_messages.Message):
   enablePrivateEndpoint = _messages.BooleanField(2)
   enablePrivateNodes = _messages.BooleanField(3)
   masterIpv4CidrBlock = _messages.StringField(4)
-  privateEndpoint = _messages.StringField(5)
-  publicEndpoint = _messages.StringField(6)
+  peeringName = _messages.StringField(5)
+  privateEndpoint = _messages.StringField(6)
+  publicEndpoint = _messages.StringField(7)
 
 
 class PrivateIPv6Status(_messages.Message):
@@ -2563,36 +2842,123 @@ class PrivateIPv6Status(_messages.Message):
   enabled = _messages.BooleanField(1)
 
 
+class RecurringTimeWindow(_messages.Message):
+  r"""Represents an arbitrary window of time that recurs.
+
+  Fields:
+    recurrence: An RRULE (https://tools.ietf.org/html/rfc5545#section-3.8.5.3)
+      for how this window reccurs. They go on for the span of time between the
+      start and end time.  For example, to have something repeat every
+      weekday, you'd use:   <code>FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR</code> To
+      repeat some window daily (equivalent to the DailyMaintenanceWindow):
+      <code>FREQ=DAILY</code> For the first weekend of every month:
+      <code>FREQ=MONTHLY;BYSETPOS=1;BYDAY=SA,SU</code> This specifies how
+      frequently the window starts. Eg, if you wanted to have a 9-5 UTC-4
+      window every weekday, you'd use something like: <code>   start time =
+      2019-01-01T09:00:00-0400   end time = 2019-01-01T17:00:00-0400
+      recurrence = FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR </code> Windows can span
+      multiple days. Eg, to make the window encompass every weekend from
+      midnight Saturday till the last minute of Sunday UTC: <code>   start
+      time = 2019-01-05T00:00:00Z   end time = 2019-01-07T23:59:00Z
+      recurrence = FREQ=WEEKLY;BYDAY=SA </code> Note the start and end time's
+      specific dates are largely arbitrary except to specify duration of the
+      window and when it first starts. The FREQ values of HOURLY, MINUTELY,
+      and SECONDLY are not supported.
+    window: The window of the first recurrence.
+  """
+
+  recurrence = _messages.StringField(1)
+  window = _messages.MessageField('TimeWindow', 2)
+
+
 class ReleaseChannel(_messages.Message):
   r"""ReleaseChannel indicates which release channel a cluster is subscribed
-  to. Release channels are arranged in order of risk and frequency of updates;
-  RAPID channel clusters are the first to receive the latest releases of
-  Kubernetes and other components.  When a cluster is subscribed to a release
-  channel, Google maintains both the master version and the node version. Node
-  auto-upgrade defaults to true and cannot be disabled. Updates to version
-  related fields (e.g. current_master_version) return an error.
+  to. Release channels are arranged in order of risk and frequency of updates.
+  When a cluster is subscribed to a release channel, Google maintains both the
+  master version and the node version. Node auto-upgrade defaults to true and
+  cannot be disabled. Updates to version related fields (e.g.
+  current_master_version) return an error.
 
   Enums:
-    ChannelValueValuesEnum: channel specified which release channel the
+    ChannelValueValuesEnum: channel specifies which release channel the
       cluster is subscribed to.
 
   Fields:
-    channel: channel specified which release channel the cluster is subscribed
+    channel: channel specifies which release channel the cluster is subscribed
       to.
   """
 
   class ChannelValueValuesEnum(_messages.Enum):
-    r"""channel specified which release channel the cluster is subscribed to.
+    r"""channel specifies which release channel the cluster is subscribed to.
 
     Values:
       UNSPECIFIED: No channel specified.
-      RAPID: Clusters subscribed to RAPID receive the latest qualified
-        components, before any other channel.
+      RAPID: RAPID channel is offered on an early access basis for customers
+        who want to test new releases before they are qualified for production
+        use or general availability. New upgrades will occur roughly weekly.
+        WARNING: Versions available in the RAPID Channel may be subject to
+        unresolved issues with no known workaround and are not for use with
+        production workloads or subject to any SLAs.
+      REGULAR: Clusters subscribed to REGULAR receive versions that are
+        considered GA quality. REGULAR is intended for production users who
+        want to take advantage of new features. New upgrades will occur
+        roughly every few weeks.
+      STABLE: Clusters subscribed to STABLE receive versions that are known to
+        be stable and reliable in production. STABLE is intended for
+        production users who need stability above all else, or for whom
+        frequent upgrades are too risky. New upgrades will occur roughly every
+        few months.
     """
     UNSPECIFIED = 0
     RAPID = 1
+    REGULAR = 2
+    STABLE = 3
 
   channel = _messages.EnumField('ChannelValueValuesEnum', 1)
+
+
+class ReleaseChannelConfig(_messages.Message):
+  r"""ReleaseChannelConfig exposes configuration for a release channel.
+
+  Enums:
+    ChannelValueValuesEnum: The release channel this configuration applies to.
+
+  Fields:
+    availableVersions: List of available versions for the release channel.
+    channel: The release channel this configuration applies to.
+    defaultVersion: The default version for newly created clusters on the
+      channel.
+  """
+
+  class ChannelValueValuesEnum(_messages.Enum):
+    r"""The release channel this configuration applies to.
+
+    Values:
+      UNSPECIFIED: No channel specified.
+      RAPID: RAPID channel is offered on an early access basis for customers
+        who want to test new releases before they are qualified for production
+        use or general availability. New upgrades will occur roughly weekly.
+        WARNING: Versions available in the RAPID Channel may be subject to
+        unresolved issues with no known workaround and are not for use with
+        production workloads or subject to any SLAs.
+      REGULAR: Clusters subscribed to REGULAR receive versions that are
+        considered GA quality. REGULAR is intended for production users who
+        want to take advantage of new features. New upgrades will occur
+        roughly every few weeks.
+      STABLE: Clusters subscribed to STABLE receive versions that are known to
+        be stable and reliable in production. STABLE is intended for
+        production users who need stability above all else, or for whom
+        frequent upgrades are too risky. New upgrades will occur roughly every
+        few months.
+    """
+    UNSPECIFIED = 0
+    RAPID = 1
+    REGULAR = 2
+    STABLE = 3
+
+  availableVersions = _messages.MessageField('AvailableVersion', 1, repeated=True)
+  channel = _messages.EnumField('ChannelValueValuesEnum', 2)
+  defaultVersion = _messages.StringField(3)
 
 
 class ReservationAffinity(_messages.Message):
@@ -2607,7 +2973,9 @@ class ReservationAffinity(_messages.Message):
   Fields:
     consumeReservationType: Corresponds to the type of reservation
       consumption.
-    key: Corresponds to the label key of reservation resource.
+    key: Corresponds to the label key of a reservation resource. To target a
+      SPECIFIC_RESERVATION by name, specify "googleapis.com/reservation-name"
+      as the key and specify the name of your reservation as its value.
     values: Corresponds to the label value(s) of reservation resource(s).
   """
 
@@ -2652,13 +3020,16 @@ class ResourceUsageExportConfig(_messages.Message):
   Fields:
     bigqueryDestination: Configuration to use BigQuery as usage export
       destination.
+    consumptionMeteringConfig: Configuration to enable resource consumption
+      metering.
     enableNetworkEgressMetering: Whether to enable network egress metering for
       this cluster. If enabled, a daemonset will be created in the cluster to
       meter network egress traffic.
   """
 
   bigqueryDestination = _messages.MessageField('BigQueryDestination', 1)
-  enableNetworkEgressMetering = _messages.BooleanField(2)
+  consumptionMeteringConfig = _messages.MessageField('ConsumptionMeteringConfig', 2)
+  enableNetworkEgressMetering = _messages.BooleanField(3)
 
 
 class RollbackNodePoolUpgradeRequest(_messages.Message):
@@ -2693,11 +3064,26 @@ class SandboxConfig(_messages.Message):
   r"""SandboxConfig contains configurations of the sandbox to use for the
   node.
 
+  Enums:
+    TypeValueValuesEnum: Type of the sandbox to use for the node.
+
   Fields:
     sandboxType: Type of the sandbox to use for the node (e.g. 'gvisor')
+    type: Type of the sandbox to use for the node.
   """
 
+  class TypeValueValuesEnum(_messages.Enum):
+    r"""Type of the sandbox to use for the node.
+
+    Values:
+      UNSPECIFIED: Default value. This should not be used.
+      GVISOR: Run sandbox using gvisor.
+    """
+    UNSPECIFIED = 0
+    GVISOR = 1
+
   sandboxType = _messages.StringField(1)
+  type = _messages.EnumField('TypeValueValuesEnum', 2)
 
 
 class SecurityProfile(_messages.Message):
@@ -2720,29 +3106,23 @@ class ServerConfig(_messages.Message):
   r"""Kubernetes Engine service configuration.
 
   Fields:
+    channels: List of release channel configurations.
     defaultClusterVersion: Version of Kubernetes the service deploys by
       default.
     defaultImageType: Default image type.
+    premiumConfig: Premium configuration for the service.
     validImageTypes: List of valid image types.
     validMasterVersions: List of valid master versions.
     validNodeVersions: List of valid node upgrade target versions.
   """
 
-  defaultClusterVersion = _messages.StringField(1)
-  defaultImageType = _messages.StringField(2)
-  validImageTypes = _messages.StringField(3, repeated=True)
-  validMasterVersions = _messages.StringField(4, repeated=True)
-  validNodeVersions = _messages.StringField(5, repeated=True)
-
-
-class ServerlessConfig(_messages.Message):
-  r"""Configuration options for the serverless feature.
-
-  Fields:
-    disabled: Whether serverless is enabled for this cluster.
-  """
-
-  disabled = _messages.BooleanField(1)
+  channels = _messages.MessageField('ReleaseChannelConfig', 1, repeated=True)
+  defaultClusterVersion = _messages.StringField(2)
+  defaultImageType = _messages.StringField(3)
+  premiumConfig = _messages.MessageField('PremiumConfig', 4)
+  validImageTypes = _messages.StringField(5, repeated=True)
+  validMasterVersions = _messages.StringField(6, repeated=True)
+  validNodeVersions = _messages.StringField(7, repeated=True)
 
 
 class SetAddonsConfigRequest(_messages.Message):
@@ -3252,21 +3632,118 @@ class StatusCondition(_messages.Message):
 
     Values:
       UNKNOWN: UNKNOWN indicates a generic condition.
-      GCE_STOCKOUT: GCE_STOCKOUT indicates a Google Compute Engine stockout.
+      GCE_STOCKOUT: GCE_STOCKOUT indicates that Google Compute Engine
+        resources are temporarily unavailable.
       GKE_SERVICE_ACCOUNT_DELETED: GKE_SERVICE_ACCOUNT_DELETED indicates that
         the user deleted their robot service account.
       GCE_QUOTA_EXCEEDED: Google Compute Engine quota was exceeded.
       SET_BY_OPERATOR: Cluster state was manually changed by an SRE due to a
-        system logic error. More codes TBA
+        system logic error.
+      CLOUD_KMS_KEY_ERROR: Unable to perform an encrypt operation against the
+        CloudKMS key used for etcd level encryption. More codes TBA
     """
     UNKNOWN = 0
     GCE_STOCKOUT = 1
     GKE_SERVICE_ACCOUNT_DELETED = 2
     GCE_QUOTA_EXCEEDED = 3
     SET_BY_OPERATOR = 4
+    CLOUD_KMS_KEY_ERROR = 5
 
   code = _messages.EnumField('CodeValueValuesEnum', 1)
   message = _messages.StringField(2)
+
+
+class TierConfig(_messages.Message):
+  r"""TierConfig is the configuration for a tier offering.  For example the
+  GKE standard or advanced offerings which contain different levels of
+  functionality and possibly cost.
+
+  Enums:
+    ParentValueValuesEnum: The tier from which the tier being configured
+      inherits.  The configured tier will inherit all the features from its
+      parent tier.
+    TierValueValuesEnum: The tier that is being configured with this value.
+
+  Fields:
+    parent: The tier from which the tier being configured inherits.  The
+      configured tier will inherit all the features from its parent tier.
+    tier: The tier that is being configured with this value.
+  """
+
+  class ParentValueValuesEnum(_messages.Enum):
+    r"""The tier from which the tier being configured inherits.  The
+    configured tier will inherit all the features from its parent tier.
+
+    Values:
+      TIER_UNSPECIFIED: TIER_UNSPECIFIED is the default value. If this value
+        is set during create or update, it defaults to the project level tier
+        setting.
+      STANDARD: Represents the standard tier or base Google Kubernetes Engine
+        offering.
+      ADVANCED: Represents the advanced tier.
+    """
+    TIER_UNSPECIFIED = 0
+    STANDARD = 1
+    ADVANCED = 2
+
+  class TierValueValuesEnum(_messages.Enum):
+    r"""The tier that is being configured with this value.
+
+    Values:
+      TIER_UNSPECIFIED: TIER_UNSPECIFIED is the default value. If this value
+        is set during create or update, it defaults to the project level tier
+        setting.
+      STANDARD: Represents the standard tier or base Google Kubernetes Engine
+        offering.
+      ADVANCED: Represents the advanced tier.
+    """
+    TIER_UNSPECIFIED = 0
+    STANDARD = 1
+    ADVANCED = 2
+
+  parent = _messages.EnumField('ParentValueValuesEnum', 1)
+  tier = _messages.EnumField('TierValueValuesEnum', 2)
+
+
+class TierSettings(_messages.Message):
+  r"""Cluster tier settings.
+
+  Enums:
+    TierValueValuesEnum: Cluster tier.
+
+  Fields:
+    tier: Cluster tier.
+  """
+
+  class TierValueValuesEnum(_messages.Enum):
+    r"""Cluster tier.
+
+    Values:
+      TIER_UNSPECIFIED: TIER_UNSPECIFIED is the default value. If this value
+        is set during create or update, it defaults to the project level tier
+        setting.
+      STANDARD: Represents the standard tier or base Google Kubernetes Engine
+        offering.
+      ADVANCED: Represents the advanced tier.
+    """
+    TIER_UNSPECIFIED = 0
+    STANDARD = 1
+    ADVANCED = 2
+
+  tier = _messages.EnumField('TierValueValuesEnum', 1)
+
+
+class TimeWindow(_messages.Message):
+  r"""Represents an arbitrary window of time.
+
+  Fields:
+    endTime: The time that the window ends. The end time should take place
+      after the start time.
+    startTime: The time that the window first starts.
+  """
+
+  endTime = _messages.StringField(1)
+  startTime = _messages.StringField(2)
 
 
 class UpdateClusterRequest(_messages.Message):
@@ -3360,7 +3837,10 @@ class UpdateNodePoolRequest(_messages.Message):
     updatedNodePool: The updated node pool object. This field must be empty if
       any other node pool field is set (e.g. 'node_version', 'image_type',
       'locations', etc.)
-    workloadMetadataConfig: The desired image type for the node pool.
+    upgradeSettings: Upgrade settings control disruption and speed of the
+      upgrade.
+    workloadMetadataConfig: The desired workload metadata config for the node
+      pool.
     zone: Deprecated. The name of the Google Compute Engine
       [zone](/compute/docs/zones#available) in which the cluster resides. This
       field has been deprecated and replaced by the name field.
@@ -3376,20 +3856,33 @@ class UpdateNodePoolRequest(_messages.Message):
   nodeVersion = _messages.StringField(8)
   projectId = _messages.StringField(9)
   updatedNodePool = _messages.MessageField('NodePool', 10)
-  workloadMetadataConfig = _messages.MessageField('WorkloadMetadataConfig', 11)
-  zone = _messages.StringField(12)
+  upgradeSettings = _messages.MessageField('UpgradeSettings', 11)
+  workloadMetadataConfig = _messages.MessageField('WorkloadMetadataConfig', 12)
+  zone = _messages.StringField(13)
 
 
 class UpgradeSettings(_messages.Message):
-  r"""Upgrade settings. When provided, enables Cluster API on the pool.
-  Mirrors the fields and defaults of MachineRollingUpdateDeployment
-  https://github.com/kubernetes-sigs/cluster-api/blob/302479ecef8149c5a05e0a49
-  55b0871f85b7d991/pkg/apis/cluster/v1alpha1/machinedeployment_types.go#L93
+  r"""These upgrade settings control the level of parallelism and the level of
+  disruption caused by an upgrade.  maxUnavailable controls the number of
+  nodes that can be simultaneously unavailable.  maxSurge controls the number
+  of additional nodes that can be added to the node pool temporarily for the
+  time of the upgrade to increase the number of available nodes.
+  (maxUnavailable + maxSurge) determines the level of parallelism (how many
+  nodes are being upgraded at the same time).  Note: upgrades inevitably
+  introduce some disruption since workloads need to be moved from old nodes to
+  new, upgraded ones. Even if maxUnavailable=0, this holds true. (Disruption
+  stays within the limits of PodDisruptionBudget, if it is configured.)    For
+  example, a 5-node pool is created with maxSurge set to 2 and maxUnavailable
+  set to 1. During an upgrade, GKE creates 2 upgraded nodes, then brings down
+  up to 3 existing nodes after the upgraded nodes are ready. GKE will only
+  bring down 1 node at a time.
 
   Fields:
-    maxSurge: Disruption budget: how many machines to create before upgrading
-      a node.
-    maxUnavailable: Speed/concurrency: how many nodes at a time to upgrade.
+    maxSurge: The maximum number of nodes that can be created beyond the
+      current size of the node pool during the upgrade process.
+    maxUnavailable: The maximum number of nodes that can be simultaneously
+      unavailable during the upgrade process. A node is considered available
+      if its status is Ready.
   """
 
   maxSurge = _messages.IntegerField(1, variant=_messages.Variant.INT32)
@@ -3482,9 +3975,12 @@ class WorkloadIdentityConfig(_messages.Message):
   Fields:
     identityNamespace: IAM Identity Namespace to attach all k8s Service
       Accounts to.
+    workloadPool: The workload pool to attach all Kubernetes service accounts
+      to.
   """
 
   identityNamespace = _messages.StringField(1)
+  workloadPool = _messages.StringField(2)
 
 
 class WorkloadMetadataConfig(_messages.Message):
@@ -3492,13 +3988,34 @@ class WorkloadMetadataConfig(_messages.Message):
   workloads on the node pool.
 
   Enums:
+    ModeValueValuesEnum: Mode is the configuration for how to expose metadata
+      to workloads running on the node pool.
     NodeMetadataValueValuesEnum: NodeMetadata is the configuration for how to
       expose metadata to the workloads running on the node.
 
   Fields:
+    mode: Mode is the configuration for how to expose metadata to workloads
+      running on the node pool.
     nodeMetadata: NodeMetadata is the configuration for how to expose metadata
       to the workloads running on the node.
   """
+
+  class ModeValueValuesEnum(_messages.Enum):
+    r"""Mode is the configuration for how to expose metadata to workloads
+    running on the node pool.
+
+    Values:
+      MODE_UNSPECIFIED: Not set.
+      GCE_METADATA: Expose all GCE metadata to pods.
+      GKE_METADATA: Run the GKE Metadata Server on this node. The GKE Metadata
+        Server exposes a metadata API to workloads that is compatible with the
+        V1 Compute Metadata APIs exposed by the Compute Engine and App Engine
+        Metadata Servers. This feature can only be enabled if Workload
+        Identity is enabled at the cluster level.
+    """
+    MODE_UNSPECIFIED = 0
+    GCE_METADATA = 1
+    GKE_METADATA = 2
 
   class NodeMetadataValueValuesEnum(_messages.Enum):
     r"""NodeMetadata is the configuration for how to expose metadata to the
@@ -3525,7 +4042,8 @@ class WorkloadMetadataConfig(_messages.Message):
     EXPOSE = 2
     GKE_METADATA_SERVER = 3
 
-  nodeMetadata = _messages.EnumField('NodeMetadataValueValuesEnum', 1)
+  mode = _messages.EnumField('ModeValueValuesEnum', 1)
+  nodeMetadata = _messages.EnumField('NodeMetadataValueValuesEnum', 2)
 
 
 encoding.AddCustomJsonFieldMapping(

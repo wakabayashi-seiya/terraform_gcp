@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -37,25 +37,30 @@ class CommandData(object):
   """A general holder object for yaml command schema."""
 
   def __init__(self, name, data):
-    self.is_hidden = data.get('is_hidden', False)
+    self.hidden = data.get('hidden', False)
     self.release_tracks = [
-        base.ReleaseTrack.FromId(i) for i in data.get('release_tracks', [])]
+        base.ReleaseTrack.FromId(i) for i in data.get('release_tracks', [])
+    ]
     self.command_type = CommandType.ForName(data.get('command_type', name))
     self.help_text = data['help_text']
-    self.request = Request(self.command_type, data['request'])
+    request_data = data.get('request')
+    self.request = Request(self.command_type, request_data)
     self.response = Response(data.get('response', {}))
     async_data = data.get('async')
     iam_data = data.get('iam')
     update_data = data.get('update')
+    import_data = data.get('import')
     if self.command_type == CommandType.WAIT and not async_data:
       raise util.InvalidSchemaError(
           'Wait commands must include an async section.')
-    self.async = Async(async_data) if async_data else None
+    self.async_ = Async(async_data) if async_data else None
     self.iam = IamData(iam_data) if iam_data else None
     self.arguments = Arguments(data['arguments'])
     self.input = Input(self.command_type, data.get('input', {}))
     self.output = Output(data.get('output', {}))
     self.update = UpdateData(update_data) if update_data else None
+    self.import_ = ImportData(import_data, request_data,
+                              async_data) if import_data else None
 
 
 class CommandType(Enum):
@@ -68,6 +73,8 @@ class CommandType(Enum):
   DESCRIBE = 'get'
   LIST = 'list'
   DELETE = 'delete'
+  IMPORT = 'patch'
+  EXPORT = 'get'
   CREATE = 'create'
   WAIT = 'get'
   UPDATE = 'patch'
@@ -104,6 +111,7 @@ class Request(object):
     self.disable_resource_check = data.get('disable_resource_check')
     self.display_resource_type = data.get('display_resource_type')
     self.api_version = data.get('api_version')
+    self.use_google_auth = data.get('use_google_auth', False)
     self.method = data.get('method', command_type.default_method)
     if not self.method:
       raise util.InvalidSchemaError(
@@ -147,6 +155,7 @@ class Async(object):
     self.collection = data['collection']
     self.api_version = data.get('api_version')
     self.method = data.get('method', 'get')
+    self.request_issued_message = data.get('request_issued_message')
     self.response_name_field = data.get('response_name_field', 'name')
     self.extract_resource_result = data.get('extract_resource_result', True)
     resource_get_method = data.get('resource_get_method')
@@ -160,6 +169,8 @@ class Async(object):
     self.result_attribute = data.get('result_attribute')
     self.state = AsyncStateField(data.get('state', {}))
     self.error = AsyncErrorField(data.get('error', {}))
+    self.modify_request_hooks = [
+        util.Hook.FromPath(p) for p in data.get('modify_request_hooks', [])]
 
 
 class IamData(object):
@@ -169,6 +180,10 @@ class IamData(object):
     self.message_type_overrides = data.get('message_type_overrides', {})
     self.set_iam_policy_request_path = data.get('set_iam_policy_request_path')
     self.enable_condition = data.get('enable_condition', False)
+    self.policy_version = data.get('policy_version', None)
+    self.get_iam_policy_version_path = data.get(
+        'get_iam_policy_version_path',
+        'options.requestedPolicyVersion')
 
 
 class AsyncStateField(object):
@@ -195,6 +210,14 @@ class Arguments(object):
         data, 'additional_arguments_hook')
     self.params = [
         Argument.FromData(param_data) for param_data in data.get('params', [])]
+    self.labels = Labels(data.get('labels')) if data.get('labels') else None
+
+
+class Labels(object):
+  """Everything about labels of GCP resources."""
+
+  def __init__(self, data):
+    self.api_field = data['api_field']
 
 
 class Argument(object):
@@ -424,6 +447,7 @@ class Output(object):
 
   def __init__(self, data):
     self.format = data.get('format')
+    self.flatten = data.get('flatten')
 
 
 class UpdateData(object):
@@ -433,3 +457,36 @@ class UpdateData(object):
     self.mask_field = data.get('mask_field', None)
     self.read_modify_update = data.get('read_modify_update', False)
     self.disable_auto_field_mask = data.get('disable_auto_field_mask', False)
+
+
+class ImportData(object):
+  """A holder object for yaml import command."""
+
+  def __init__(self, data, orig_request, orig_async):
+    self.abort_if_equivalent = data.get('abort_if_equivalent', False)
+    self.create_if_not_exists = data.get('create_if_not_exists', False)
+    self.no_create_async = data.get('no_create_async', False)
+
+    # Populate create request data if any is specified.
+    create_request = data.get('create_request', None)
+    if create_request:
+      # Use original request data while overwriting specified fields.
+      overlayed_create_request = self._OverlayData(create_request, orig_request)
+      self.create_request = Request(CommandType.CREATE,
+                                    overlayed_create_request)
+    else:
+      self.create_request = None
+
+    # Populate create async data if any is specified.
+    create_async = data.get('create_async', None)
+    if create_async:
+      overlayed_create_async = self._OverlayData(create_async, orig_async)
+      self.create_async = Async(overlayed_create_async)
+    else:
+      self.create_async = None
+
+  def _OverlayData(self, create_data, orig_data):
+    """Uses data from the original configuration unless explicitly defined."""
+    for k, v in orig_data.items():
+      create_data[k] = create_data.get(k) or v
+    return create_data

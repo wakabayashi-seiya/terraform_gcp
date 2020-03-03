@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ from apitools.base.py import exceptions as apitools_exceptions
 from apitools.base.py import list_pager
 from googlecloudsdk.api_lib.dns import export_util
 from googlecloudsdk.api_lib.dns import util
-from googlecloudsdk.api_lib.util import apis
 from googlecloudsdk.calliope import base
 from googlecloudsdk.calliope import exceptions as calliope_exceptions
 from googlecloudsdk.command_lib.dns import flags
@@ -43,16 +42,16 @@ class Export(base.Command):
 
   To export record-sets into a yaml file, run:
 
-    $ {command} records.yaml --zone examplezonename
+    $ {command} records.yaml --zone=examplezonename
 
   To export record-sets into a BIND zone formatted file instead, run:
 
-    $ {command} pathto.zonefile --zone examplezonename --zone-file-format
+    $ {command} pathto.zonefile --zone=examplezonename --zone-file-format
 
   Similarly, to import record-sets into a BIND zone formatted zone file, run:
 
     $ gcloud dns record-sets import pathto.zonefile --zone-file-format \
-      --zone examplezonename
+      --zone=examplezonename
   """
 
   @staticmethod
@@ -78,8 +77,10 @@ class Export(base.Command):
     # this patter of checking ReleaseTrack. Break this into multiple classes.
     if self.ReleaseTrack() == base.ReleaseTrack.BETA:
       api_version = 'v1beta2'
+    if self.ReleaseTrack() == base.ReleaseTrack.ALPHA:
+      api_version = 'v1alpha2'
 
-    dns = apis.GetClientInstance('dns', api_version)
+    dns = util.GetApiClient(api_version)
 
     # Get the managed-zone.
     zone_ref = util.GetRegistry(api_version).Parse(

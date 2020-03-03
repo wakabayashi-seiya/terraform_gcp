@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -38,11 +38,12 @@ class AddBackend(base.UpdateCommand):
   backend is a group of tasks that can handle requests sent to a
   backend service. Currently, the group of tasks can be one or
   more Google Compute Engine virtual machine instances grouped
-  together using an instance group.
+  together using an instance group or network endpoint group.
 
-  Traffic is first spread evenly across all virtual machines in
-  the group. When the group is full, traffic is sent to the next
-  nearest group(s) that still have remaining capacity.
+  Traffic is first spread evenly across all virtual machines or
+  network endpoints in the group. When the group is full, traffic
+  is sent to the next nearest group(s) that still have remaining
+  capacity.
 
   To modify the parameters of a backend after it has been added
   to the backend service, use
@@ -50,14 +51,33 @@ class AddBackend(base.UpdateCommand):
   `gcloud compute backend-services edit`.
   """
 
-  @staticmethod
-  def Args(parser):
+  support_global_neg = False
+  support_region_neg = False
+  support_failover = False
+
+  @classmethod
+  def Args(cls, parser):
     flags.GLOBAL_REGIONAL_BACKEND_SERVICE_ARG.AddArgument(parser)
     backend_flags.AddDescription(parser)
-    flags.AddInstanceGroupAndNetworkEndpointGroupArgs(parser, 'add to')
-    backend_flags.AddBalancingMode(parser)
-    backend_flags.AddCapacityLimits(parser)
-    backend_flags.AddCapacityScalar(parser)
+    flags.AddInstanceGroupAndNetworkEndpointGroupArgs(
+        parser,
+        'add to',
+        support_global_neg=cls.support_global_neg,
+        support_region_neg=cls.support_region_neg)
+    backend_flags.AddBalancingMode(
+        parser,
+        support_global_neg=cls.support_global_neg,
+        support_region_neg=cls.support_region_neg)
+    backend_flags.AddCapacityLimits(
+        parser,
+        support_global_neg=cls.support_global_neg,
+        support_region_neg=cls.support_region_neg)
+    backend_flags.AddCapacityScalar(
+        parser,
+        support_global_neg=cls.support_global_neg,
+        support_region_neg=cls.support_region_neg)
+    if cls.support_failover:
+      backend_flags.AddFailover(parser, default=None)
 
   def _GetGetRequest(self, client, backend_service_ref):
     if backend_service_ref.Collection() == 'compute.regionBackendServices':
@@ -96,16 +116,18 @@ class AddBackend(base.UpdateCommand):
           resources,
           scope_lister=compute_flags.GetDefaultScopeLister(client))
     if args.network_endpoint_group:
-      return flags.NETWORK_ENDPOINT_GROUP_ARG.ResolveAsResource(
-          args,
-          resources,
-          scope_lister=compute_flags.GetDefaultScopeLister(client))
+      return flags.GetNetworkEndpointGroupArg(
+          support_global_neg=self.support_global_neg,
+          support_region_neg=self.support_region_neg).ResolveAsResource(
+              args,
+              resources,
+              scope_lister=compute_flags.GetDefaultScopeLister(client))
 
   def _CreateBackendMessage(self, messages, group_uri, balancing_mode, args):
     """Create a backend message.
 
     Args:
-      messages: The avalible API proto messages.
+      messages: The available API proto messages.
       group_uri: String. The backend instance group uri.
       balancing_mode: Backend.BalancingModeValueValuesEnum. The backend load
         balancing mode.
@@ -204,15 +226,8 @@ class AddBackendBeta(AddBackend):
   `gcloud compute backend-services edit`.
   """
 
-  @staticmethod
-  def Args(parser):
-    flags.GLOBAL_REGIONAL_BACKEND_SERVICE_ARG.AddArgument(parser)
-    flags.AddInstanceGroupAndNetworkEndpointGroupArgs(parser, 'add to')
-    backend_flags.AddDescription(parser)
-    backend_flags.AddBalancingMode(parser)
-    backend_flags.AddCapacityLimits(parser)
-    backend_flags.AddCapacityScalar(parser)
-    backend_flags.AddFailover(parser, default=None)
+  support_failover = True
+  support_global_neg = True
 
   def _CreateBackendMessage(self, messages, group_uri, balancing_mode, args):
     """Overrides."""
@@ -254,30 +269,4 @@ class AddBackendAlpha(AddBackendBeta):
   `gcloud compute backend-services edit`.
   """
 
-  @staticmethod
-  def Args(parser):
-    flags.GLOBAL_REGIONAL_BACKEND_SERVICE_ARG.AddArgument(parser)
-    flags.AddInstanceGroupAndNetworkEndpointGroupArgs(parser, 'add to')
-    backend_flags.AddDescription(parser)
-    backend_flags.AddBalancingMode(parser)
-    backend_flags.AddCapacityLimits(parser)
-    backend_flags.AddCapacityScalar(parser)
-    backend_flags.AddFailover(parser, default=None)
-
-  def _CreateBackendMessage(self, messages, group_uri, balancing_mode, args):
-    """Overrides."""
-
-    backend_services_utils.ValidateBalancingModeArgs(messages, args)
-    return messages.Backend(
-        balancingMode=balancing_mode,
-        capacityScaler=args.capacity_scaler,
-        description=args.description,
-        group=group_uri,
-        maxRate=args.max_rate,
-        maxRatePerInstance=args.max_rate_per_instance,
-        maxRatePerEndpoint=args.max_rate_per_endpoint,
-        maxUtilization=args.max_utilization,
-        maxConnections=args.max_connections,
-        maxConnectionsPerInstance=args.max_connections_per_instance,
-        maxConnectionsPerEndpoint=args.max_connections_per_endpoint,
-        failover=args.failover)
+  support_region_neg = True

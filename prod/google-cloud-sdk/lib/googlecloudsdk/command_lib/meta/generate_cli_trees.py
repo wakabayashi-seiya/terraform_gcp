@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -43,6 +43,7 @@ import textwrap
 from googlecloudsdk.calliope import cli_tree
 from googlecloudsdk.command_lib.static_completion import generate as generate_static
 from googlecloudsdk.command_lib.static_completion import lookup
+from googlecloudsdk.core import argv_utils
 from googlecloudsdk.core import exceptions
 from googlecloudsdk.core import http
 from googlecloudsdk.core import log
@@ -80,7 +81,8 @@ def _DisableLongRunningCliTreeGeneration(command):
     return False
   # Only generate these CLI trees on the fly for explicit requests.
   # It can take ~1minute, not good, especially at the interactive prompt.
-  if 'update-cli-trees' in sys.argv or '--update-cli-trees' in sys.argv:
+  decoded_argv = argv_utils.GetDecodedArgv()
+  if 'update-cli-trees' in decoded_argv or '--update-cli-trees' in decoded_argv:
     return False
   # It's a long running generator, not explicitly requested -- disable.
   return True
@@ -1338,7 +1340,7 @@ def LoadAll(directory=None, ignore_out_of_date=False, root=None,
   for directory in directories:
     if not directory or not os.path.exists(directory):
       continue
-    for (dirpath, _, filenames) in os.walk(directory):
+    for (dirpath, _, filenames) in os.walk(six.text_type(directory)):
       for filename in sorted(filenames):  # For stability across runs.
         command, extension = os.path.splitext(filename)
         if extension != '.json':

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ class Delete(base.DeleteCommand):
     parser.display_info.AddCacheUpdater(None)
 
   def Run(self, args):
-    dns = apis.GetClientInstance('dns', 'v1')
+    dns = util.GetApiClient('v1')
     messages = apis.GetMessagesModule('dns', 'v1')
 
     zone_ref = resources.REGISTRY.Parse(
@@ -88,9 +88,49 @@ class DeleteBeta(base.DeleteCommand):
     parser.display_info.AddCacheUpdater(None)
 
   def Run(self, args):
-    dns = apis.GetClientInstance('dns', 'v1beta2')
+    api_version = util.GetApiFromTrack(self.ReleaseTrack())
+    dns = util.GetApiClient(api_version)
 
-    zone_ref = util.GetRegistry('v1beta2').Parse(
+    zone_ref = util.GetRegistry(api_version).Parse(
+        args.dns_zone,
+        params={
+            'project': properties.VALUES.core.project.GetOrFail,
+        },
+        collection='dns.managedZones')
+
+    result = dns.managedZones.Delete(
+        dns.MESSAGES_MODULE.DnsManagedZonesDeleteRequest(
+            managedZone=zone_ref.managedZone,
+            project=zone_ref.project))
+    log.DeletedResource(zone_ref)
+    return result
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class DeleteAlpha(base.DeleteCommand):
+  """Delete an empty Cloud DNS managed-zone.
+
+  This command deletes an empty Cloud DNS managed-zone. An empty managed-zone
+  has only SOA and NS record-sets.
+
+  ## EXAMPLES
+
+  To delete an empty managed-zone, run:
+
+    $ {command} my_zone
+  """
+
+  @staticmethod
+  def Args(parser):
+    flags.GetDnsZoneArg(
+        'The name of the empty managed-zone to be deleted.').AddToParser(parser)
+    parser.display_info.AddCacheUpdater(None)
+
+  def Run(self, args):
+    api_version = util.GetApiFromTrack(self.ReleaseTrack())
+    dns = util.GetApiClient(api_version)
+
+    zone_ref = util.GetRegistry(api_version).Parse(
         args.dns_zone,
         params={
             'project': properties.VALUES.core.project.GetOrFail,

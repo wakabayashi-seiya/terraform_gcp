@@ -97,9 +97,9 @@ class Bucket(_messages.Message):
       storageClass is specified for a newly-created object. This defines how
       objects in the bucket are stored and determines the SLA and the cost of
       storage. Values include MULTI_REGIONAL, REGIONAL, STANDARD, NEARLINE,
-      COLDLINE, and DURABLE_REDUCED_AVAILABILITY. If this value is not
-      specified when the bucket is created, it will default to STANDARD. For
-      more information, see storage classes.
+      COLDLINE, ARCHIVE, and DURABLE_REDUCED_AVAILABILITY. If this value is
+      not specified when the bucket is created, it will default to STANDARD.
+      For more information, see storage classes.
     timeCreated: The creation time of the bucket in RFC 3339 format.
     updated: The modification time of the bucket in RFC 3339 format.
     versioning: The bucket's versioning configuration.
@@ -152,19 +152,37 @@ class Bucket(_messages.Message):
     r"""The bucket's IAM configuration.
 
     Messages:
-      BucketPolicyOnlyValue: The bucket's Bucket Policy Only configuration.
+      BucketPolicyOnlyValue: The bucket's uniform bucket-level access
+        configuration. The feature was formerly known as Bucket Policy Only.
+        For backward compatibility, this field will be populated with
+        identical information as the uniformBucketLevelAccess field. We
+        recommend using the uniformBucketLevelAccess field to enable and
+        disable the feature.
+      UniformBucketLevelAccessValue: The bucket's uniform bucket-level access
+        configuration.
 
     Fields:
-      bucketPolicyOnly: The bucket's Bucket Policy Only configuration.
+      bucketPolicyOnly: The bucket's uniform bucket-level access
+        configuration. The feature was formerly known as Bucket Policy Only.
+        For backward compatibility, this field will be populated with
+        identical information as the uniformBucketLevelAccess field. We
+        recommend using the uniformBucketLevelAccess field to enable and
+        disable the feature.
+      uniformBucketLevelAccess: The bucket's uniform bucket-level access
+        configuration.
     """
 
     class BucketPolicyOnlyValue(_messages.Message):
-      r"""The bucket's Bucket Policy Only configuration.
+      r"""The bucket's uniform bucket-level access configuration. The feature
+      was formerly known as Bucket Policy Only. For backward compatibility,
+      this field will be populated with identical information as the
+      uniformBucketLevelAccess field. We recommend using the
+      uniformBucketLevelAccess field to enable and disable the feature.
 
       Fields:
-        enabled: If set, access checks only use bucket-level IAM policies or
-          above.
-        lockedTime: The deadline time for changing
+        enabled: If set, access is controlled only by bucket-level or above
+          IAM policies.
+        lockedTime: The deadline for changing
           iamConfiguration.bucketPolicyOnly.enabled from true to false in RFC
           3339 format. iamConfiguration.bucketPolicyOnly.enabled may be
           changed from true to false until the locked time, after which the
@@ -174,7 +192,25 @@ class Bucket(_messages.Message):
       enabled = _messages.BooleanField(1)
       lockedTime = _message_types.DateTimeField(2)
 
+    class UniformBucketLevelAccessValue(_messages.Message):
+      r"""The bucket's uniform bucket-level access configuration.
+
+      Fields:
+        enabled: If set, access is controlled only by bucket-level or above
+          IAM policies.
+        lockedTime: The deadline for changing
+          iamConfiguration.uniformBucketLevelAccess.enabled from true to false
+          in RFC 3339  format.
+          iamConfiguration.uniformBucketLevelAccess.enabled may be changed
+          from true to false until the locked time, after which the field is
+          immutable.
+      """
+
+      enabled = _messages.BooleanField(1)
+      lockedTime = _message_types.DateTimeField(2)
+
     bucketPolicyOnly = _messages.MessageField('BucketPolicyOnlyValue', 1)
+    uniformBucketLevelAccess = _messages.MessageField('UniformBucketLevelAccessValue', 2)
 
   @encoding.MapUnrecognizedFields('additionalProperties')
   class LabelsValue(_messages.Message):
@@ -257,8 +293,8 @@ class Bucket(_messages.Message):
             incompatible ways and that it is not guaranteed to be released.
           matchesStorageClass: Objects having any of the storage classes
             specified by this condition will be matched. Values include
-            MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, STANDARD, and
-            DURABLE_REDUCED_AVAILABILITY.
+            MULTI_REGIONAL, REGIONAL, NEARLINE, COLDLINE, ARCHIVE, STANDARD,
+            and DURABLE_REDUCED_AVAILABILITY.
           numNewerVersions: Relevant only for versioned objects. If the value
             is N, this condition is satisfied when there are at least N
             versions (including the live version) newer than this version of
@@ -479,7 +515,7 @@ class Channel(_messages.Message):
       a Unix timestamp, in milliseconds. Optional.
     id: A UUID or similar unique string that identifies this channel.
     kind: Identifies this as a notification channel used to watch for changes
-      to a resource. Value: the fixed string "api#channel".
+      to a resource, which is "api#channel".
     params: Additional parameters controlling delivery channel behavior.
       Optional.
     payload: A Boolean value to indicate whether payload is wanted. Optional.
@@ -621,8 +657,6 @@ class Expr(_messages.Message):
     expression: Textual representation of an expression in Common Expression
       Language syntax. The application context of the containing message
       determines which well-known feature set of CEL is supported.
-    kind: The kind of item this is. For storage, this is always storage#expr.
-      This field is ignored on input.
     location: An optional string indicating the location of the expression for
       error reporting, e.g. a file name and a position in the file.
     title: An optional title for the expression, i.e. a short string
@@ -632,9 +666,8 @@ class Expr(_messages.Message):
 
   description = _messages.StringField(1)
   expression = _messages.StringField(2)
-  kind = _messages.StringField(3, default=u'storage#expr')
-  location = _messages.StringField(4)
-  title = _messages.StringField(5)
+  location = _messages.StringField(3)
+  title = _messages.StringField(4)
 
 
 class HmacKey(_messages.Message):
@@ -1052,6 +1085,7 @@ class Policy(_messages.Message):
       the object name, e.g. projects/_/buckets/my-bucket/objects/data.txt#17.
       The current generation can be denoted with #0. This field is ignored on
       input.
+    version: The IAM policy format version.
   """
 
   class BindingsValueListEntry(_messages.Message):
@@ -1113,6 +1147,7 @@ class Policy(_messages.Message):
   etag = _messages.BytesField(2)
   kind = _messages.StringField(3, default=u'storage#policy')
   resourceId = _messages.StringField(4)
+  version = _messages.IntegerField(5, variant=_messages.Variant.INT32)
 
 
 class RewriteResponse(_messages.Message):
@@ -1350,6 +1385,10 @@ class StorageBucketsGetIamPolicyRequest(_messages.Message):
 
   Fields:
     bucket: Name of a bucket.
+    optionsRequestedPolicyVersion: The IAM policy format version to be
+      returned. If the optionsRequestedPolicyVersion is for an older version
+      that doesn't support part of the requested IAM policy, the request
+      fails.
     provisionalUserProject: The project to be billed for this request if the
       target bucket is requester-pays bucket.
     userProject: The project to be billed for this request. Required for
@@ -1357,8 +1396,9 @@ class StorageBucketsGetIamPolicyRequest(_messages.Message):
   """
 
   bucket = _messages.StringField(1, required=True)
-  provisionalUserProject = _messages.StringField(2)
-  userProject = _messages.StringField(3)
+  optionsRequestedPolicyVersion = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  provisionalUserProject = _messages.StringField(3)
+  userProject = _messages.StringField(4)
 
 
 class StorageBucketsGetRequest(_messages.Message):

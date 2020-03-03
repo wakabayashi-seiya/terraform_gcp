@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ from __future__ import unicode_literals
 
 import collections
 import io
+import re
 
 from googlecloudsdk.core.document_renderers import text_renderer
+import six
 
 
 class LinterRenderer(text_renderer.TextRenderer):
@@ -29,8 +31,10 @@ class LinterRenderer(text_renderer.TextRenderer):
 
   _HEADINGS_TO_LINT = ["NAME", "EXAMPLES", "DESCRIPTION"]
   _NAME_WORD_LIMIT = 20
-  _PERSONAL_PRONOUNS = [" me ", " we ", " I ", " us ", " he ", " she ", " him ",
-                        " her ", " them ", " they "]
+  _PERSONAL_PRONOUNS = {"me", "we", "I", "us", "he", "she", "him", "her"}
+  # gcloud does not recognize the following flags as not requiring a value so
+  # they would be marked as violations in _analyze_example_flags_equals.
+  _NON_BOOL_FLAGS_WHITELIST = ["--quiet", "--help"]
 
   def __init__(self, *args, **kwargs):
     super(LinterRenderer, self).__init__(*args, **kwargs)
@@ -69,16 +73,18 @@ class LinterRenderer(text_renderer.TextRenderer):
     self._analyze[heading](section)
 
   def check_for_personal_pronouns(self, section):
-    warnings = False
+    """Raise violation if the section contains personal pronouns."""
+    words_in_section = set(re.compile(r"\w+").findall(section.lower()))
+    found_pronouns = words_in_section.intersection(self._PERSONAL_PRONOUNS)
     key_object = "# " + self._heading + "_PRONOUN_CHECK FAILED"
-    value_object = ("Please remove personal pronouns in the " +
-                    self._heading + " section.")
-    for pronoun in self._PERSONAL_PRONOUNS:
-      if pronoun in section:
-        self.json_object[key_object] = value_object
-        warnings = True
-        break
-    return warnings
+    value_object = ("Please remove the following personal pronouns in the " +
+                    self._heading + " section:\n")
+    if found_pronouns:
+      found_pronouns_list = list(found_pronouns)
+      found_pronouns_list.sort()
+      value_object += "\n".join(found_pronouns_list)
+      self.json_object[key_object] = value_object
+    return found_pronouns
 
   def Finish(self):
     if self._buffer.getvalue() and self._prev_heading:
@@ -92,10 +98,11 @@ class LinterRenderer(text_renderer.TextRenderer):
       self.json_object["# EXAMPLE_PRESENT_CHECK FAILED"] = value_object
     for element in self.json_object:
       if self.json_object[element]:
-        self._file_out.write(str(element) + ": " +
-                             str(self.json_object[element]) + "\n")
+        self._file_out.write(
+            six.text_type(element) + ": " +
+            six.text_type(self.json_object[element]) + "\n")
       else:
-        self._file_out.write(str(element) + "\n")
+        self._file_out.write(six.text_type(element) + "\n")
 
   def Heading(self, level, heading):
     self._heading = heading
@@ -112,7 +119,7 @@ class LinterRenderer(text_renderer.TextRenderer):
       # if previous line ended in a backslash, it is not the last line of the
       # command so append new line of command to command_text
       if self.command_text and self.command_text.endswith("\\"):
-        self.command_text += line.strip()
+        self.command_text = self.command_text.rstrip("\\") + line.strip()
       # This is the first line of the command and ignore the `$ ` in it.
       else:
         self.command_text = line.replace("$ ", "")
@@ -145,16 +152,16 @@ class LinterRenderer(text_renderer.TextRenderer):
 
   def _analyze_example_flags_equals(self, flags):
     for flag in flags:
-      if "=" not in flag and flag not in self.command_metadata.bool_flags:
+      if ("=" not in flag and flag not in self.command_metadata.bool_flags and
+          flag not in self._NON_BOOL_FLAGS_WHITELIST):
         self.equals_violation_flags.append(flag)
 
   def _analyze_name(self, section):
     warnings = self.check_for_personal_pronouns(section)
     if not warnings:
       self.json_object["# NAME_PRONOUN_CHECK SUCCESS"] = ""
-      # successful_linters.append("# NAME_PRONOUN_CHECK SUCCESS")
     self.command_name = section.strip().split(" -")[0]
-    if len(section.strip().split(" - ")) == 1:
+    if len(section.replace("\n", " ").strip().split(" - ")) == 1:
       self.name_section = ""
       value_object = "Please add an explanation for the command."
       self.json_object["# NAME_DESCRIPTION_CHECK FAILED"] = value_object
@@ -166,7 +173,8 @@ class LinterRenderer(text_renderer.TextRenderer):
     # check that name section is not too long
     if len(self.name_section.split()) > self._NAME_WORD_LIMIT:
       value_object = ("Please shorten the name section description to "
-                      "less than " + str(self._NAME_WORD_LIMIT) + " words.")
+                      "less than " + six.text_type(self._NAME_WORD_LIMIT) +
+                      " words.")
       self.json_object["# NAME_LENGTH_CHECK FAILED"] = value_object
       warnings = True
     else:
@@ -183,8 +191,9 @@ class LinterRenderer(text_renderer.TextRenderer):
         warnings = True
         list_contents = ""
         for flag in range(len(self.equals_violation_flags) - 1):
-          list_contents += str(self.equals_violation_flags[flag]) + ", "
-        list_contents += str(self.equals_violation_flags[-1])
+          list_contents += six.text_type(
+              self.equals_violation_flags[flag]) + ", "
+        list_contents += six.text_type(self.equals_violation_flags[-1])
         value_object = ("There should be an `=` between the flag name and "
                         "the value for the following flags: " +  list_contents)
         self.json_object["# EXAMPLE_FLAG_EQUALS_CHECK FAILED"] = value_object
@@ -195,8 +204,9 @@ class LinterRenderer(text_renderer.TextRenderer):
         warnings = True
         list_contents = ""
         for flag in range(len(self.nonexistent_violation_flags) - 1):
-          list_contents += str(self.nonexistent_violation_flags[flag]) + ", "
-        list_contents += str(self.nonexistent_violation_flags[-1])
+          list_contents += six.text_type(
+              self.nonexistent_violation_flags[flag]) + ", "
+        list_contents += six.text_type(self.nonexistent_violation_flags[-1])
         key_object = "# EXAMPLE_NONEXISTENT_FLAG_CHECK FAILED"
         value_object = ("The following flags are not valid for the command: " +
                         list_contents)
@@ -212,4 +222,3 @@ class LinterRenderer(text_renderer.TextRenderer):
       self.json_object["# DESCRIPTION_PRONOUN_CHECK SUCCESS"] = ""
     if not warnings:
       self.json_object["There are no errors for the DESCRIPTION section."] = ""
-

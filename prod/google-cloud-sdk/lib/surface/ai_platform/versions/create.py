@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,12 +18,25 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import sys
+
 from googlecloudsdk.api_lib.ml_engine import operations
 from googlecloudsdk.api_lib.ml_engine import versions_api
+from googlecloudsdk.calliope import arg_parsers
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.ml_engine import flags
 from googlecloudsdk.command_lib.ml_engine import versions_util
 from googlecloudsdk.command_lib.util.args import labels_util
+
+DETAILED_HELP = {
+    'EXAMPLES':
+        """\
+        To create an AI Platform version model with the version ID 'versionId'
+        and with the name 'model-name', run:
+
+          $ {command} versionId --model=model-name
+        """,
+}
 
 
 def _AddCreateArgs(parser):
@@ -95,6 +108,8 @@ class CreateGA(base.CreateCommand):
   https://cloud.google.com/ml-engine/docs/how-tos/managing-models-jobs
   """
 
+  detailed_help = DETAILED_HELP
+
   @staticmethod
   def Args(parser):
     _AddCreateArgs(parser)
@@ -112,7 +127,7 @@ class CreateGA(base.CreateCommand):
         staging_bucket=args.staging_bucket,
         runtime_version=args.runtime_version,
         config_file=args.config,
-        asyncronous=args.async,
+        asyncronous=args.async_,
         description=args.description,
         labels=labels,
         framework=framework,
@@ -132,13 +147,17 @@ class CreateBeta(CreateGA):
   @staticmethod
   def Args(parser):
     _AddCreateArgs(parser)
+    flags.SERVICE_ACCOUNT.AddToParser(parser)
     flags.AddMachineTypeFlagToParser(parser)
     flags.AddUserCodeArgs(parser)
+    flags.GetAcceleratorFlag().AddToParser(parser)
+    flags.AddExplainabilityFlags(parser)
 
   def Run(self, args):
     versions_client = versions_api.VersionsClient()
     labels = versions_util.ParseCreateLabels(versions_client, args)
     framework = flags.FRAMEWORK_MAPPER.GetEnumForChoice(args.framework)
+    accelerator = flags.ParseAcceleratorFlag(args.accelerator)
     return versions_util.Create(
         versions_client,
         operations.OperationsClient(),
@@ -148,18 +167,23 @@ class CreateBeta(CreateGA):
         staging_bucket=args.staging_bucket,
         runtime_version=args.runtime_version,
         config_file=args.config,
-        asyncronous=args.async,
+        asyncronous=args.async_,
         description=args.description,
         labels=labels,
         machine_type=args.machine_type,
         framework=framework,
         python_version=args.python_version,
+        service_account=args.service_account,
         prediction_class=args.prediction_class,
-        package_uris=args.package_uris)
+        package_uris=args.package_uris,
+        accelerator_config=accelerator,
+        explanation_method=args.explanation_method,
+        num_integral_steps=args.num_integral_steps,
+        num_paths=args.num_paths)
 
 
 @base.ReleaseTracks(base.ReleaseTrack.ALPHA)
-class CreateAlpha(base.CreateCommand):
+class CreateAlpha(CreateBeta):
   """Create a new AI Platform version.
 
   Creates a new version of an AI Platform model.
@@ -167,14 +191,6 @@ class CreateAlpha(base.CreateCommand):
   For more details on managing AI Platform models and versions see
   https://cloud.google.com/ml-engine/docs/how-tos/managing-models-jobs
   """
-
-  @staticmethod
-  def Args(parser):
-    _AddCreateArgs(parser)
-    flags.SERVICE_ACCOUNT.AddToParser(parser)
-    flags.AddMachineTypeFlagToParser(parser)
-    flags.AddUserCodeArgs(parser)
-    flags.GetAcceleratorFlag().AddToParser(parser)
 
   def Run(self, args):
     versions_client = versions_api.VersionsClient()
@@ -189,7 +205,7 @@ class CreateAlpha(base.CreateCommand):
                                 staging_bucket=args.staging_bucket,
                                 runtime_version=args.runtime_version,
                                 config_file=args.config,
-                                asyncronous=args.async,
+                                asyncronous=args.async_,
                                 labels=labels,
                                 description=args.description,
                                 machine_type=args.machine_type,
@@ -198,4 +214,7 @@ class CreateAlpha(base.CreateCommand):
                                 prediction_class=args.prediction_class,
                                 package_uris=args.package_uris,
                                 service_account=args.service_account,
-                                accelerator_config=accelerator)
+                                accelerator_config=accelerator,
+                                explanation_method=args.explanation_method,
+                                num_integral_steps=args.num_integral_steps,
+                                num_paths=args.num_paths)

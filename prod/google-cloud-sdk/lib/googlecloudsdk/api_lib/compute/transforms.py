@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2015 Google Inc. All Rights Reserved.
+# Copyright 2015 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -213,7 +213,7 @@ def TransformProject(r, undefined=''):
 
 
 def TransformName(r, undefined=''):
-  """Returns a resorce name from an URI.
+  """Returns a resource name from an URI.
 
   Args:
     r: JSON-serializable object.

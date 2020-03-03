@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -97,7 +97,7 @@ class UpdateBackend(base.UpdateCommand):
           resources,
           scope_lister=compute_flags.GetDefaultScopeLister(client))
     if args.network_endpoint_group:
-      return flags.NETWORK_ENDPOINT_GROUP_ARG.ResolveAsResource(
+      return flags.GetNetworkEndpointGroupArg().ResolveAsResource(
           args,
           resources,
           scope_lister=compute_flags.GetDefaultScopeLister(client))
@@ -110,7 +110,9 @@ class UpdateBackend(base.UpdateCommand):
     backend_to_update = None
     for backend in replacement.backends:
       # At most one backend will match
-      if group_ref.SelfLink() == backend.group:
+
+      if group_ref.RelativeName() == resources.ParseURL(
+          backend.group).RelativeName():
         backend_to_update = backend
         break
 
@@ -306,7 +308,8 @@ class UpdateBackendAlpha(UpdateBackendBeta):
     backend_to_update = None
     for backend in replacement.backends:
       # At most one backend will match
-      if group_ref.SelfLink() == backend.group:
+      if group_ref.RelativeName() == resources.ParseURL(
+          backend.group).RelativeName():
         backend_to_update = backend
         break
 

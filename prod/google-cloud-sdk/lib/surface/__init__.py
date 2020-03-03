@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@ from __future__ import unicode_literals
 
 from googlecloudsdk.calliope import actions
 from googlecloudsdk.calliope import base
-from googlecloudsdk.command_lib.resource_manager import completers as resource_manager_completers
+from googlecloudsdk.command_lib.util.args import common_args
 from googlecloudsdk.core import properties
 
 
@@ -61,21 +61,21 @@ class Gcloud(base.Group):
              'this permission or you may create a custom role.',
         action=actions.StoreProperty(
             properties.VALUES.auth.impersonate_service_account))
-
+    common_args.ProjectArgument().AddToParser(parser)
     parser.add_argument(
-        '--project',
-        metavar='PROJECT_ID',
-        dest='project',
+        '--billing-project',
+        metavar='BILLING_PROJECT',
         category=base.COMMONLY_USED_FLAGS,
-        suggestion_aliases=['--application'],
-        completer=resource_manager_completers.ProjectCompleter,
-        action=actions.StoreProperty(properties.VALUES.core.project),
-        help="""\
-        The Google Cloud Platform project name to use for this invocation. If
-        omitted, then the current project is assumed; the current project can be
-        listed using `gcloud config list --format='text(core.project)'` and
-        can be set using `gcloud config set project PROJECTID`.
-        """)
+        help='The Google Cloud Platform project that will be charged quota for '
+             'operations performed in gcloud. If you need to operate on one '
+             'project, but need quota against a different project, you can use '
+             'this flag to specify the billing project. If both '
+             '`billing/quota_project` and `--billing-project` are specified, '
+             '`--billing-project` takes precedence. '
+             'Run `$ gcloud config set --help` to see more information about '
+             '`billing/quota_project`.',
+        action=actions.StoreProperty(
+            properties.VALUES.billing.quota_project))
     # Must have a None default so properties are not always overridden when the
     # arg is not provided.
     parser.add_argument(
@@ -89,9 +89,8 @@ class Gcloud(base.Group):
         Disable all interactive prompts when running gcloud commands. If input
         is required, defaults will be used, or an error will be raised.
         Overrides the default core/disable_prompts property value for this
-        command invocation. Must be used at the beginning of commands. This
-        is equivalent to setting the environment variable
-        `CLOUDSDK_CORE_DISABLE_PROMPTS` to 1.
+        command invocation. This is equivalent to setting the environment
+        variable `CLOUDSDK_CORE_DISABLE_PROMPTS` to 1.
         """)
 
     trace_group = parser.add_mutually_exclusive_group()

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2015 Google Inc. All Rights Reserved.
+# Copyright 2015 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -20,8 +20,10 @@ from __future__ import division
 from __future__ import unicode_literals
 
 from googlecloudsdk.api_lib.dataflow import apis
+from googlecloudsdk.calliope import actions
 from googlecloudsdk.calliope import arg_parsers
 from googlecloudsdk.calliope import base
+from googlecloudsdk.command_lib.dataflow import dataflow_util
 from googlecloudsdk.core import properties
 
 
@@ -74,10 +76,23 @@ def _CommonArgs(parser):
       action=arg_parsers.UpdateAction,
       help='The parameters to pass to the job.')
 
+  # TODO(b/139889563): Mark as required when default region is removed
   parser.add_argument(
       '--region',
       metavar='REGION_ID',
-      help='The region ID of the job\'s regional endpoint.')
+      help=('The region ID of the job\'s regional endpoint. ' +
+            dataflow_util.DEFAULT_REGION_MESSAGE))
+
+  parser.add_argument(
+      '--disable-public-ips',
+      action=actions.StoreBooleanProperty(
+          properties.VALUES.dataflow.disable_public_ips),
+      help='The Cloud Dataflow workers must not use public IP addresses.'
+  )
+
+  parser.add_argument(
+      '--dataflow-kms-key',
+      help='The Cloud KMS key to protect the job resources.')
 
 
 def _CommonRun(args, support_beta_features=False):
@@ -94,29 +109,36 @@ def _CommonRun(args, support_beta_features=False):
   worker_machine_type = None
   network = None
   subnetwork = None
+  dataflow_kms_key = None
 
   if support_beta_features:
     num_workers = args.num_workers
     worker_machine_type = args.worker_machine_type
     network = args.network
     subnetwork = args.subnetwork
-
-  job = apis.Templates.Create(
+    dataflow_kms_key = args.dataflow_kms_key
+  arguments = apis.TemplateArguments(
       project_id=properties.VALUES.core.project.Get(required=True),
-      region_id=args.region,
-      gcs_location=args.gcs_location,
-      staging_location=args.staging_location,
+      region_id=dataflow_util.GetRegion(args),
       job_name=args.job_name,
-      parameters=args.parameters,
-      service_account_email=args.service_account_email,
+      gcs_location=args.gcs_location,
       zone=args.zone,
       max_workers=args.max_workers,
       num_workers=num_workers,
-      worker_machine_type=worker_machine_type,
       network=network,
-      subnetwork=subnetwork)
-
-  return job
+      subnetwork=subnetwork,
+      worker_machine_type=worker_machine_type,
+      staging_location=args.staging_location,
+      kms_key_name=dataflow_kms_key,
+      disable_public_ips=properties.VALUES.dataflow.disable_public_ips.GetBool(
+      ),
+      parameters=args.parameters,
+      service_account_email=args.service_account_email)
+  flex_template = properties.VALUES.dataflow.flex_template.GetBool()
+  if flex_template:
+    return apis.Templates.CreateJobFromFlexTemplate(arguments)
+  else:
+    return apis.Templates.Create(arguments)
 
 
 @base.ReleaseTracks(base.ReleaseTrack.GA)
@@ -156,6 +178,13 @@ class RunBeta(Run):
         '--network',
         help='The Compute Engine network for launching instances to '
         'run your pipeline.')
+
+    parser.add_argument(
+        '--flex-template',
+        action=actions.StoreBooleanProperty(
+            properties.VALUES.dataflow.flex_template),
+        help='The job template to run is a flex template.'
+    )
 
   def Run(self, args):
     return _CommonRun(args, True)

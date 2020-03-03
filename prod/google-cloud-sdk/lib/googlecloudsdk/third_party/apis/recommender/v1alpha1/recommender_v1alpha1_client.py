@@ -9,6 +9,7 @@ class RecommenderV1alpha1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://recommender.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'recommender'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform']
@@ -76,6 +77,34 @@ Check recommender.*.list and recommender.rule.create IAM permissions.
         request_field=u'googleCloudRecommenderV1alpha1CreateRecommendationRuleRequest',
         request_type_name=u'RecommenderProjectsLocationsRecommendersRecommendationsCreateRuleRequest',
         response_type_name=u'GoogleCloudRecommenderV1alpha1Rule',
+        supports_download=False,
+    )
+
+    def Get(self, request, global_params=None):
+      r"""Gets the requested recommendation and requires the recommendation.*.get.
+IAM permission.
+
+      Args:
+        request: (RecommenderProjectsLocationsRecommendersRecommendationsGetRequest) input message
+        global_params: (StandardQueryParameters, default: None) global arguments
+      Returns:
+        (GoogleCloudRecommenderV1alpha1Recommendation) The response message.
+      """
+      config = self.GetMethodConfig('Get')
+      return self._RunMethod(
+          config, request, global_params=global_params)
+
+    Get.method_config = lambda: base_api.ApiMethodInfo(
+        flat_path=u'v1alpha1/projects/{projectsId}/locations/{locationsId}/recommenders/{recommendersId}/recommendations/{recommendationsId}',
+        http_method=u'GET',
+        method_id=u'recommender.projects.locations.recommenders.recommendations.get',
+        ordered_params=[u'name'],
+        path_params=[u'name'],
+        query_params=[],
+        relative_path=u'v1alpha1/{+name}',
+        request_field='',
+        request_type_name=u'RecommenderProjectsLocationsRecommendersRecommendationsGetRequest',
+        response_type_name=u'GoogleCloudRecommenderV1alpha1Recommendation',
         supports_download=False,
     )
 

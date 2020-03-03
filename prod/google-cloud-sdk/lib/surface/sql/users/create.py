@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -70,17 +70,19 @@ class Create(base.CreateCommand):
 
     host = users.GetHostValue(args)
     new_user = sql_messages.User(
+        kind='sql#user',
         project=instance_ref.project,
         instance=args.instance,
         name=args.username,
         host=host,
         password=args.password)
+
     result_operation = sql_client.users.Insert(new_user)
     operation_ref = client.resource_parser.Create(
         'sql.operations',
         operation=result_operation.name,
         project=instance_ref.project)
-    if args.async:
+    if args.async_:
       result = sql_client.operations.Get(
           sql_messages.SqlOperationsGetRequest(
               project=operation_ref.project, operation=operation_ref.operation))
@@ -88,7 +90,8 @@ class Create(base.CreateCommand):
       operations.OperationsV1Beta4.WaitForOperation(sql_client, operation_ref,
                                                     'Creating Cloud SQL user')
       result = new_user
+      result.kind = None
 
-    log.CreatedResource(args.username, kind='user', is_async=args.async)
+    log.CreatedResource(args.username, kind='user', is_async=args.async_)
 
     return result

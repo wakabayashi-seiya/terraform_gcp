@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ from googlecloudsdk.api_lib.compute import exceptions
 from googlecloudsdk.api_lib.util import waiter
 from googlecloudsdk.core import exceptions as core_exceptions
 from googlecloudsdk.core import resources
+import six
 from six.moves import zip
 
 
@@ -35,6 +36,13 @@ class OperationErrors(Error):
   def __init__(self, errors):
     messages = [error.message for error in errors]
     super(OperationErrors, self).__init__(', '.join(messages))
+
+
+def _IsGAOperation(operation_ref):
+  return (operation_ref.SelfLink().startswith(
+      'https://www.googleapis.com/compute/v1') or
+          operation_ref.SelfLink().startswith(
+              'https://compute.googleapis.com/compute/v1/'))
 
 
 class Poller(waiter.OperationPoller):
@@ -70,9 +78,13 @@ class Poller(waiter.OperationPoller):
       service = self.client.regionOperations
     else:
       service = self.client.globalOperations
-
-    return service.Get(service.GetRequestType('Get')(
-        **operation_ref.AsDict()))
+    # TODO(b/112841455) Switch GA to Wait
+    if _IsGAOperation(operation_ref):
+      return service.Get(
+          service.GetRequestType('Get')(**operation_ref.AsDict()))
+    else:
+      return service.Wait(
+          service.GetRequestType('Wait')(**operation_ref.AsDict()))
 
   def GetResult(self, operation):
     """Overrides."""
@@ -105,7 +117,8 @@ class OperationBatch(object):
     return iter(self._operation_refs)
 
   def __str__(self):
-    return '[{0}]'.format(', '.join(str(r) for r in self._operation_refs))
+    return '[{0}]'.format(', '.join(
+        six.text_type(r) for r in self._operation_refs))
 
 
 class BatchPoller(waiter.OperationPoller):
@@ -151,10 +164,15 @@ class BatchPoller(waiter.OperationPoller):
       else:
         service = self._client.globalOperations
 
-      request_type = service.GetRequestType('Get')
-      requests.append((service,
-                       'Get',
-                       request_type(**operation_ref.AsDict())))
+      # TODO(b/112841455) Switch GA to Wait
+      if _IsGAOperation(operation_ref):
+        request_type = service.GetRequestType('Get')
+        requests.append((service, 'Get',
+                         request_type(**operation_ref.AsDict())))
+      else:
+        request_type = service.GetRequestType('Wait')
+        requests.append((service, 'Wait',
+                         request_type(**operation_ref.AsDict())))
 
     errors_to_collect = []
     responses = self._compute_adapter.BatchRequests(

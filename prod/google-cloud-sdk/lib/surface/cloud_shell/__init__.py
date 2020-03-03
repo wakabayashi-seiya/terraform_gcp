@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,6 +27,8 @@ from googlecloudsdk.calliope import base
 class Shell(base.Group):
   """Manage Google Cloud Shell."""
 
+  category = base.MANAGEMENT_TOOLS_CATEGORY
+
   detailed_help = {
       'DESCRIPTION':
           """\
@@ -46,3 +48,11 @@ class Shell(base.Group):
   @staticmethod
   def Args(parser):
     pass
+
+  def Filter(self, context, args):
+    del context, args
+    # Intentionally disable the user project override.  Cloud Shell is inteded
+    # to be able to be used without first creating a GCP project.
+    # Additionally, Cloud Shell is a free product with per user quota, so
+    # enabling the API on gcloud will not cost gcloud money.
+    base.DisableUserProjectQuota()

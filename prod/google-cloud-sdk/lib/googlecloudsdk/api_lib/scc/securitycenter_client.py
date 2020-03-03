@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ from googlecloudsdk.core import exceptions
 API_NAME = 'securitycenter'
 BETA_API_VERSION = 'v1beta1'
 V1_API_VERSION = 'v1'
+V1P1BETA1_API_VERSION = 'v1p1beta1'
 
 
 def GetClient(version=V1_API_VERSION):

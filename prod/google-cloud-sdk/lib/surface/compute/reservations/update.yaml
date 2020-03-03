@@ -1,8 +1,12 @@
-- release_tracks: [ALPHA, BETA]
+- release_tracks: [ALPHA, BETA, GA]
 
   help_text:
     brief: Update a Compute Engine reservation.
     description: Update a Compute Engine reservation.
+    examples: |
+      To update a given Compute Enginer reservation with 500 VM instances, run:
+
+        $ {command} my-reservation --zone=ZONE --vm-count=500
 
   arguments:
     resource:
@@ -19,17 +23,22 @@
 
   request:
     collection: compute.reservations
-    api_version: beta
     method: resize
+    api_version: v1
+    BETA:
+      api_version: beta
     ALPHA:
       api_version: alpha
 
   async:
-    api_version: beta
+    api_version: v1
+    BETA:
+      api_version: beta
+    ALPHA:
+      api_version: alpha
+    method: wait
     collection: compute.zoneOperations
     response_name_field: selfLink
     state:
       field: status
       success_values: ['DONE']
-    ALPHA:
-      api_version: alpha

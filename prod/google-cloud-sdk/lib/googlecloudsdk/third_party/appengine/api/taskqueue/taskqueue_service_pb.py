@@ -1,4 +1,4 @@
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -69,6 +69,7 @@ class TaskQueueServiceError(ProtocolBuffer.ProtocolMessage):
   TASK_LEASE_EXPIRED =   25 
   QUEUE_PAUSED =   26 
   INVALID_TAG  =   27 
+  INVALID_LOGGING_CONFIG =   28 
   DATASTORE_ERROR = 10000 
 
   _ErrorCode_NAMES = {
@@ -100,6 +101,7 @@ class TaskQueueServiceError(ProtocolBuffer.ProtocolMessage):
     25: "TASK_LEASE_EXPIRED",
     26: "QUEUE_PAUSED",
     27: "INVALID_TAG",
+    28: "INVALID_LOGGING_CONFIG",
     10000: "DATASTORE_ERROR",
   }
 
@@ -1165,7 +1167,7 @@ class TaskQueueAddRequest(ProtocolBuffer.ProtocolMessage):
     if self.transaction_ is None:
       self.lazy_init_lock_.acquire()
       try:
-        if self.transaction_ is None: self.transaction_ = Transaction()
+        if self.transaction_ is None: self.transaction_ = googlecloudsdk.third_party.appengine.datastore.datastore_v3_pb.Transaction()
       finally:
         self.lazy_init_lock_.release()
     return self.transaction_

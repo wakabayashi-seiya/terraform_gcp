@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -82,7 +82,14 @@ def AddEnableLogging(parser, default):
       default=default,
       help="""\
       Enable logging for the firewall rule. Logs will be exported to
-      StackDriver. Firewall logging is disabled by default.
+      StackDriver. Firewall logging is disabled by default. To enable logging
+      for an existing rule, run:
+
+        $ {command} MY-RULE --enable-logging
+
+      To disable logging on an existing rule, run:
+
+        $ {command} MY-RULE --no-enable-logging
       """)
 
 
@@ -94,9 +101,9 @@ def GetLoggingMetadataArg(messages):
           'INCLUDE_ALL_METADATA': 'include-all',
           'EXCLUDE_ALL_METADATA': 'exclude-all'
       },
-      help_str=('Can only be specified if --enable-logging is true. Configures '
-                'whether metadata fields should be added to the reported '
-                'firewall logs.'))
+      help_str=('Configures whether metadata fields should be added to the '
+                'reported firewall logs. Can only be specified if '
+                '--enable-logging is true.'))
 
 
 def AddLoggingMetadata(parser, messages):

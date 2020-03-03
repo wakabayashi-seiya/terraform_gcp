@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,10 +19,9 @@ from __future__ import division
 from __future__ import unicode_literals
 
 from apitools.base.py import list_pager
-from googlecloudsdk.api_lib.compute.os_config import osconfig_utils
+from googlecloudsdk.api_lib.compute.os_config import utils as osconfig_api_utils
 from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.compute.os_config import resource_args
-from googlecloudsdk.core import properties
 from googlecloudsdk.core.resource import resource_projector
 
 
@@ -41,13 +40,13 @@ def _PostProcessListResult(results):
   return results_json
 
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+@base.ReleaseTracks(base.ReleaseTrack.BETA, base.ReleaseTrack.ALPHA)
 class ListInstanceDetails(base.ListCommand):
   """List the instance details for an OS patch job.
 
   ## EXAMPLES
 
-  To list the instance details for each instance in the patch job 'job1', run:
+  To list the instance details for each instance in the patch job `job1`, run:
 
         $ {command} job1
 
@@ -69,16 +68,14 @@ class ListInstanceDetails(base.ListCommand):
         {'failure_reason': _TransformFailureReason})
 
   def Run(self, args):
-    project = properties.VALUES.core.project.GetOrFail()
     patch_job_ref = args.CONCEPTS.patch_job.Parse()
 
     release_track = self.ReleaseTrack()
-    client = osconfig_utils.GetClientInstance(release_track)
-    messages = osconfig_utils.GetClientMessages(release_track)
+    client = osconfig_api_utils.GetClientInstance(release_track)
+    messages = osconfig_api_utils.GetClientMessages(release_track)
 
     request = messages.OsconfigProjectsPatchJobsInstanceDetailsListRequest(
-        pageSize=args.page_size,
-        parent=osconfig_utils.GetPatchJobUriPath(project, patch_job_ref.Name()))
+        pageSize=args.page_size, parent=patch_job_ref.RelativeName())
 
     results = list(
         list_pager.YieldFromList(
@@ -87,6 +84,6 @@ class ListInstanceDetails(base.ListCommand):
             limit=args.limit,
             batch_size=args.page_size,
             field='patchJobInstanceDetails',
-            batch_size_attribute='pageSize'))
+            batch_size_attribute='pageSize'),)
 
     return _PostProcessListResult(results)

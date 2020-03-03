@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*- #
 #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -77,10 +77,10 @@ def main():
          'This usually indicates corruption in your gcloud installation or '
          'problems with your Python interpreter.\n\n'
          'Please verify that the following is the path to a working Python 2.7 '
-         'executable:\n'
+         'or 3.5+ executable:\n'
          '    {2}\n\n'
          'If it is not, please set the CLOUDSDK_PYTHON environment variable to '
-         'point to a working Python 2.7 executable.\n\n'
+         'point to a working Python 2.7 or 3.5+ executable.\n\n'
          'If you are still experiencing problems, please reinstall the Cloud '
          'SDK using the instructions here:\n'
          '    https://cloud.google.com/sdk/\n').format(

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
-from googlecloudsdk.api_lib.app import appengine_client
 from googlecloudsdk.api_lib.app import yaml_parsing
+from googlecloudsdk.api_lib.datastore import index_api
 from googlecloudsdk.calliope import base
 from googlecloudsdk.calliope import exceptions
 from googlecloudsdk.command_lib.app import output_helpers
@@ -74,6 +74,4 @@ Any indexes in your index file that do not exist will be created.
     output_helpers.DisplayProposedConfigDeployments(project, [info])
     console_io.PromptContinue(
         default=True, throw_if_unattended=False, cancel_on_no=True)
-
-    client = appengine_client.AppengineClient()
-    client.UpdateIndexes(info.parsed)
+    index_api.CreateMissingIndexes(project, info.parsed)

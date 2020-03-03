@@ -9,6 +9,7 @@ class StorageV1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://www.googleapis.com/storage/v1/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'storage'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform', u'https://www.googleapis.com/auth/cloud-platform.read-only', u'https://www.googleapis.com/auth/devstorage.full_control', u'https://www.googleapis.com/auth/devstorage.read_only', u'https://www.googleapis.com/auth/devstorage.read_write']
@@ -292,7 +293,7 @@ class StorageV1(base_api.BaseApiClient):
         method_id=u'storage.buckets.getIamPolicy',
         ordered_params=[u'bucket'],
         path_params=[u'bucket'],
-        query_params=[u'provisionalUserProject', u'userProject'],
+        query_params=[u'optionsRequestedPolicyVersion', u'provisionalUserProject', u'userProject'],
         relative_path=u'b/{bucket}/iam',
         request_field='',
         request_type_name=u'StorageBucketsGetIamPolicyRequest',

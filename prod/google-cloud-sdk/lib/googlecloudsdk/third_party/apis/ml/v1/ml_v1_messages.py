@@ -80,7 +80,7 @@ class GoogleCloudMlV1AblationAttribution(_messages.Message):
   delta per feature. The term "ablation" is in reference to running an
   "ablation study" to analyze input effects on the outcome of interest, which
   in this case is the model's output. This attribution method is supported for
-  Tensorflow and XGBoost models.
+  TensorFlow and XGBoost models.
 
   Fields:
     numFeatureInteractions: Number of feature interactions to account for in
@@ -92,7 +92,11 @@ class GoogleCloudMlV1AblationAttribution(_messages.Message):
 
 
 class GoogleCloudMlV1AcceleratorConfig(_messages.Message):
-  r"""Represents a hardware accelerator request config.
+  r"""Represents a hardware accelerator request config. Note that the
+  AcceleratorConfig can be used in both Jobs and Versions. Learn more about
+  [accelerators for training](/ml-engine/docs/using-gpus) and [accelerators
+  for online prediction](/ml-engine/docs/machine-types-online-
+  prediction#gpus).
 
   Enums:
     TypeValueValuesEnum: The type of accelerator to use.
@@ -115,6 +119,9 @@ class GoogleCloudMlV1AcceleratorConfig(_messages.Message):
       NVIDIA_TESLA_P4: Nvidia Tesla P4 GPU.
       NVIDIA_TESLA_T4: Nvidia Tesla T4 GPU.
       TPU_V2: TPU v2.
+      TPU_V3: TPU v3.
+      TPU_V2_POD: TPU v2 POD.
+      TPU_V3_POD: TPU v3 POD.
     """
     ACCELERATOR_TYPE_UNSPECIFIED = 0
     NVIDIA_TESLA_K80 = 1
@@ -123,6 +130,9 @@ class GoogleCloudMlV1AcceleratorConfig(_messages.Message):
     NVIDIA_TESLA_P4 = 4
     NVIDIA_TESLA_T4 = 5
     TPU_V2 = 6
+    TPU_V3 = 7
+    TPU_V2_POD = 8
+    TPU_V3_POD = 9
 
   count = _messages.IntegerField(1)
   type = _messages.EnumField('TypeValueValuesEnum', 2)
@@ -143,15 +153,23 @@ class GoogleCloudMlV1AutoScaling(_messages.Message):
       service will automatically add nodes to handle the increased load as
       well as scale back as traffic drops, always maintaining at least
       `min_nodes`. You will be charged for the time in which additional nodes
-      are used.  If not specified, `min_nodes` defaults to 0, in which case,
-      when traffic to a model stops (and after a cool-down period), nodes will
-      be shut down and no charges will be incurred until traffic to the model
-      resumes.  You can set `min_nodes` when creating the model version, and
-      you can also update `min_nodes` for an existing version: <pre>
+      are used.  If `min_nodes` is not specified and AutoScaling is used with
+      a [legacy (MLS1) machine type](/ml-engine/docs/machine-types-online-
+      prediction), `min_nodes` defaults to 0, in which case, when traffic to a
+      model stops (and after a cool-down period), nodes will be shut down and
+      no charges will be incurred until traffic to the model resumes.  If
+      `min_nodes` is not specified and AutoScaling is used with a [Compute
+      Engine (N1) machine type](/ml-engine/docs/machine-types-online-
+      prediction), `min_nodes` defaults to 1. `min_nodes` must be at least 1
+      for use with a Compute Engine machine type.  Note that you cannot use
+      AutoScaling if your version uses
+      [GPUs](#Version.FIELDS.accelerator_config). Instead, you must use
+      ManualScaling.  You can set `min_nodes` when creating the model version,
+      and you can also update `min_nodes` for an existing version: <pre>
       update_body.json: {   'autoScaling': {     'minNodes': 5   } } </pre>
-      HTTP request: <pre> PATCH https://ml.googleapis.com/v1/{name=projects/*/
-      models/*/versions/*}?update_mask=autoScaling.minNodes -d
-      @./update_body.json </pre>
+      HTTP request: <pre style="max-width: 626px;"> PATCH https://ml.googleapi
+      s.com/v1/{name=projects/*/models/*/versions/*}?update_mask=autoScaling.m
+      inNodes -d @./update_body.json </pre>
   """
 
   minNodes = _messages.IntegerField(1, variant=_messages.Variant.INT32)
@@ -203,6 +221,9 @@ class GoogleCloudMlV1Capability(_messages.Message):
       NVIDIA_TESLA_P4: <no description>
       NVIDIA_TESLA_T4: <no description>
       TPU_V2: <no description>
+      TPU_V3: <no description>
+      TPU_V2_POD: <no description>
+      TPU_V3_POD: <no description>
     """
     ACCELERATOR_TYPE_UNSPECIFIED = 0
     NVIDIA_TESLA_K80 = 1
@@ -211,6 +232,9 @@ class GoogleCloudMlV1Capability(_messages.Message):
     NVIDIA_TESLA_P4 = 4
     NVIDIA_TESLA_T4 = 5
     TPU_V2 = 6
+    TPU_V3 = 7
+    TPU_V2_POD = 8
+    TPU_V3_POD = 9
 
   class TypeValueValuesEnum(_messages.Enum):
     r"""TypeValueValuesEnum enum type.
@@ -240,25 +264,112 @@ class GoogleCloudMlV1Config(_messages.Message):
   tpuServiceAccount = _messages.StringField(1)
 
 
-class GoogleCloudMlV1ExplanationConfig(_messages.Message):
-  r"""Message holding configuration options for explaining model predictions.
-  Currently, the only supported mechanism to explain a model's prediction is
-  through attributing its output back to its inputs which is essentially a
-  credit assignment task. We support multiple attribution methods, some
-  specific to particular frameworks like Tensorflow and XGBoost.
+class GoogleCloudMlV1ContainerPort(_messages.Message):
+  r"""ContainerPort represents a network port in a single container.
 
   Fields:
-    ablationAttribution: A GoogleCloudMlV1AblationAttribution attribute.
+    containerPort: Number of port to expose on the pod's IP address. This must
+      be a valid port number, 0 < x < 65536.
+  """
+
+  containerPort = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+
+
+class GoogleCloudMlV1ContainerSpec(_messages.Message):
+  r"""Specify a custom container to deploy. Our ContainerSpec is a subset of
+  the Kubernetes Container specification.
+  https://kubernetes.io/docs/reference/generated/kubernetes-
+  api/v1.10/#container-v1-core
+
+  Fields:
+    args: Arguments to the entrypoint. The docker image's CMD is used if this
+      is not provided. Variable references $(VAR_NAME) are expanded using the
+      container's environment. If a variable cannot be resolved, the reference
+      in the input string will be unchanged. The $(VAR_NAME) syntax can be
+      escaped with a double $$, ie: $$(VAR_NAME). Escaped references will
+      never be expanded, regardless of whether the variable exists or not.
+      Cannot be updated. More info: https://kubernetes.io/docs/tasks/inject-
+      data-application/define-command-argument-container/#running-a-command-
+      in-a-shell
+    command: Entrypoint array. Not executed within a shell. The docker image's
+      ENTRYPOINT is used if this is not provided. Variable references
+      $(VAR_NAME) are expanded using the container's environment. If a
+      variable cannot be resolved, the reference in the input string will be
+      unchanged. The $(VAR_NAME) syntax can be escaped with a double $$, ie:
+      $$(VAR_NAME). Escaped references will never be expanded, regardless of
+      whether the variable exists or not. Cannot be updated. More info:
+      https://kubernetes.io/docs/tasks/inject-data-application/define-command-
+      argument-container/#running-a-command-in-a-shell
+    env: List of environment variables to set in the container. Cannot be
+      updated.
+    image: Docker image name. More info:
+      https://kubernetes.io/docs/concepts/containers/images
+    ports: List of ports to expose from the container. Exposing a port here
+      gives the system additional information about the network connections a
+      container uses, but is primarily informational. Not specifying a port
+      here DOES NOT prevent that port from being exposed. Any port which is
+      listening on the default "0.0.0.0" address inside a container will be
+      accessible from the network. Cannot be updated.
+  """
+
+  args = _messages.StringField(1, repeated=True)
+  command = _messages.StringField(2, repeated=True)
+  env = _messages.MessageField('GoogleCloudMlV1EnvVar', 3, repeated=True)
+  image = _messages.StringField(4)
+  ports = _messages.MessageField('GoogleCloudMlV1ContainerPort', 5, repeated=True)
+
+
+class GoogleCloudMlV1EnvVar(_messages.Message):
+  r"""EnvVar represents an environment variable present in a Container.
+
+  Fields:
+    name: Name of the environment variable. Must be a C_IDENTIFIER.
+    value: Variable references $(VAR_NAME) are expanded using the previous
+      defined environment variables in the container and any service
+      environment variables. If a variable cannot be resolved, the reference
+      in the input string will be unchanged. The $(VAR_NAME) syntax can be
+      escaped with a double $$, ie: $$(VAR_NAME). Escaped references will
+      never be expanded, regardless of whether the variable exists or not.
+      Defaults to "".
+  """
+
+  name = _messages.StringField(1)
+  value = _messages.StringField(2)
+
+
+class GoogleCloudMlV1ExplainRequest(_messages.Message):
+  r"""Request for explanations to be issued against a trained model.
+
+  Fields:
+    httpBody: Required. The explanation request body.
+  """
+
+  httpBody = _messages.MessageField('GoogleApiHttpBody', 1)
+
+
+class GoogleCloudMlV1ExplanationConfig(_messages.Message):
+  r"""Message holding configuration options for explaining model predictions.
+  There are two feature attribution methods supported for TensorFlow models:
+  integrated gradients and sampled Shapley. <a href="/ml-engine/docs/ai-
+  explanations/overview">Learn more about feature attributions</a>.
+
+  Fields:
+    ablationAttribution: TensorFlow framework explanation methods.
     integratedGradientsAttribution: A
       GoogleCloudMlV1IntegratedGradientsAttribution attribute.
-    sabaasAttribution: A GoogleCloudMlV1SaabasAttribution attribute.
-    treeShapAttribution: A GoogleCloudMlV1TreeShapAttribution attribute.
+    saabasAttribution: A GoogleCloudMlV1SaabasAttribution attribute.
+    sampledShapleyAttribution: A GoogleCloudMlV1SampledShapleyAttribution
+      attribute.
+    treeShapAttribution: XGBoost framework explanation methods.
+    xraiAttribution: A GoogleCloudMlV1XraiAttribution attribute.
   """
 
   ablationAttribution = _messages.MessageField('GoogleCloudMlV1AblationAttribution', 1)
   integratedGradientsAttribution = _messages.MessageField('GoogleCloudMlV1IntegratedGradientsAttribution', 2)
-  sabaasAttribution = _messages.MessageField('GoogleCloudMlV1SaabasAttribution', 3)
-  treeShapAttribution = _messages.MessageField('GoogleCloudMlV1TreeShapAttribution', 4)
+  saabasAttribution = _messages.MessageField('GoogleCloudMlV1SaabasAttribution', 3)
+  sampledShapleyAttribution = _messages.MessageField('GoogleCloudMlV1SampledShapleyAttribution', 4)
+  treeShapAttribution = _messages.MessageField('GoogleCloudMlV1TreeShapAttribution', 5)
+  xraiAttribution = _messages.MessageField('GoogleCloudMlV1XraiAttribution', 6)
 
 
 class GoogleCloudMlV1ExplanationInput(_messages.Message):
@@ -441,6 +552,9 @@ class GoogleCloudMlV1HyperparameterOutput(_messages.Message):
   completion of a training job with hyperparameter tuning includes a list of
   HyperparameterOutput objects, one for each successful trial.
 
+  Enums:
+    StateValueValuesEnum: Output only. The detailed state of the trial.
+
   Messages:
     HyperparametersValue: The hyperparameters given to this trial.
 
@@ -449,11 +563,39 @@ class GoogleCloudMlV1HyperparameterOutput(_messages.Message):
       currently populated.
     builtInAlgorithmOutput: Details related to built-in algorithms jobs. Only
       set for trials of built-in algorithms jobs that have succeeded.
+    endTime: Output only. End time for the trial.
     finalMetric: The final objective metric seen for this trial.
     hyperparameters: The hyperparameters given to this trial.
     isTrialStoppedEarly: True if the trial is stopped early.
+    startTime: Output only. Start time for the trial.
+    state: Output only. The detailed state of the trial.
     trialId: The trial id for these results.
   """
+
+  class StateValueValuesEnum(_messages.Enum):
+    r"""Output only. The detailed state of the trial.
+
+    Values:
+      STATE_UNSPECIFIED: The job state is unspecified.
+      QUEUED: The job has been just created and processing has not yet begun.
+      PREPARING: The service is preparing to run the job.
+      RUNNING: The job is in progress.
+      SUCCEEDED: The job completed successfully.
+      FAILED: The job failed. `error_message` should contain the details of
+        the failure.
+      CANCELLING: The job is being cancelled. `error_message` should describe
+        the reason for the cancellation.
+      CANCELLED: The job has been cancelled. `error_message` should describe
+        the reason for the cancellation.
+    """
+    STATE_UNSPECIFIED = 0
+    QUEUED = 1
+    PREPARING = 2
+    RUNNING = 3
+    SUCCEEDED = 4
+    FAILED = 5
+    CANCELLING = 6
+    CANCELLED = 7
 
   @encoding.MapUnrecognizedFields('additionalProperties')
   class HyperparametersValue(_messages.Message):
@@ -482,10 +624,13 @@ class GoogleCloudMlV1HyperparameterOutput(_messages.Message):
 
   allMetrics = _messages.MessageField('GoogleCloudMlV1HyperparameterOutputHyperparameterMetric', 1, repeated=True)
   builtInAlgorithmOutput = _messages.MessageField('GoogleCloudMlV1BuiltInAlgorithmOutput', 2)
-  finalMetric = _messages.MessageField('GoogleCloudMlV1HyperparameterOutputHyperparameterMetric', 3)
-  hyperparameters = _messages.MessageField('HyperparametersValue', 4)
-  isTrialStoppedEarly = _messages.BooleanField(5)
-  trialId = _messages.StringField(6)
+  endTime = _messages.StringField(3)
+  finalMetric = _messages.MessageField('GoogleCloudMlV1HyperparameterOutputHyperparameterMetric', 4)
+  hyperparameters = _messages.MessageField('HyperparametersValue', 5)
+  isTrialStoppedEarly = _messages.BooleanField(6)
+  startTime = _messages.StringField(7)
+  state = _messages.EnumField('StateValueValuesEnum', 8)
+  trialId = _messages.StringField(9)
 
 
 class GoogleCloudMlV1HyperparameterOutputHyperparameterMetric(_messages.Message):
@@ -518,10 +663,10 @@ class GoogleCloudMlV1HyperparameterSpec(_messages.Message):
       job enables auto trial early stopping.
     goal: Required. The type of goal to use for tuning. Available types are
       `MAXIMIZE` and `MINIMIZE`.  Defaults to `MAXIMIZE`.
-    hyperparameterMetricTag: Optional. The Tensorflow summary tag name to use
-      for optimizing trials. For current versions of Tensorflow, this tag name
-      should exactly match what is shown in Tensorboard, including all scopes.
-      For versions of Tensorflow prior to 0.12, this should be only the tag
+    hyperparameterMetricTag: Optional. The TensorFlow summary tag name to use
+      for optimizing trials. For current versions of TensorFlow, this tag name
+      should exactly match what is shown in TensorBoard, including all scopes.
+      For versions of TensorFlow prior to 0.12, this should be only the tag
       passed to tf.Summary. By default, "training/hptuning/metric" will be
       used.
     maxFailedTrials: Optional. The number of failed trials that need to be
@@ -556,10 +701,12 @@ class GoogleCloudMlV1HyperparameterSpec(_messages.Message):
         search, all parameters must be `INTEGER`, `CATEGORICAL`, or
         `DISCRETE`.
       RANDOM_SEARCH: Simple random search within the feasible space.
+      POPULATION_BASED_TRAINING: Population Based Training Algorithm.
     """
     ALGORITHM_UNSPECIFIED = 0
     GRID_SEARCH = 1
     RANDOM_SEARCH = 2
+    POPULATION_BASED_TRAINING = 3
 
   class GoalValueValuesEnum(_messages.Enum):
     r"""Required. The type of goal to use for tuning. Available types are
@@ -802,8 +949,7 @@ class GoogleCloudMlV1Model(_messages.Message):
     defaultVersion: Output only. The default version of the model. This
       version will be used to handle prediction requests that do not specify a
       version.  You can change the default version by calling
-      [projects.methods.versions.setDefault](/ml-
-      engine/reference/rest/v1/projects.models.versions/setDefault).
+      projects.models.versions.setDefault.
     description: Optional. The description specified for the model when it was
       created.
     etag: `etag` is used for optimistic concurrency control as a way to help
@@ -882,6 +1028,179 @@ class GoogleCloudMlV1Model(_messages.Message):
   onlinePredictionConsoleLogging = _messages.BooleanField(6)
   onlinePredictionLogging = _messages.BooleanField(7)
   regions = _messages.StringField(8, repeated=True)
+
+
+class GoogleCloudMlV1NasJobOutput(_messages.Message):
+  r"""The output of Neural Archhitecture Search (NAS) jobs.
+
+  Fields:
+    multiTrialJobOutputs: The output of a multi-trial Neural Architecture
+      Search (NAS) job.
+  """
+
+  multiTrialJobOutputs = _messages.MessageField('GoogleCloudMlV1NasJobOutputMultiTrialJobOutputs', 1)
+
+
+class GoogleCloudMlV1NasJobOutputMultiTrialJobOutput(_messages.Message):
+  r"""The output of Multi-trial Neural Architecture Search (NAS) jobs.
+
+  Enums:
+    StateValueValuesEnum: Output only. The detailed state of the trial.
+
+  Fields:
+    allMetrics: All objective metrics for this Neural Architecture Search
+      (NAS) job.
+    endTime: Output only. End time for the trial.
+    finalMetric: The final objective metric seen for this Neural Architecture
+      Search (NAS) job.
+    nasParamsStr: The parameters that are associated with this Neural
+      Architecture Search (NAS) job.
+    startTime: Output only. Start time for the trial.
+    state: Output only. The detailed state of the trial.
+    trialId: The trial id for these results.
+  """
+
+  class StateValueValuesEnum(_messages.Enum):
+    r"""Output only. The detailed state of the trial.
+
+    Values:
+      STATE_UNSPECIFIED: The job state is unspecified.
+      QUEUED: The job has been just created and processing has not yet begun.
+      PREPARING: The service is preparing to run the job.
+      RUNNING: The job is in progress.
+      SUCCEEDED: The job completed successfully.
+      FAILED: The job failed. `error_message` should contain the details of
+        the failure.
+      CANCELLING: The job is being cancelled. `error_message` should describe
+        the reason for the cancellation.
+      CANCELLED: The job has been cancelled. `error_message` should describe
+        the reason for the cancellation.
+    """
+    STATE_UNSPECIFIED = 0
+    QUEUED = 1
+    PREPARING = 2
+    RUNNING = 3
+    SUCCEEDED = 4
+    FAILED = 5
+    CANCELLING = 6
+    CANCELLED = 7
+
+  allMetrics = _messages.MessageField('GoogleCloudMlV1NasJobOutputMultiTrialJobOutputNasParameterMetric', 1, repeated=True)
+  endTime = _messages.StringField(2)
+  finalMetric = _messages.MessageField('GoogleCloudMlV1NasJobOutputMultiTrialJobOutputNasParameterMetric', 3)
+  nasParamsStr = _messages.StringField(4)
+  startTime = _messages.StringField(5)
+  state = _messages.EnumField('StateValueValuesEnum', 6)
+  trialId = _messages.StringField(7)
+
+
+class GoogleCloudMlV1NasJobOutputMultiTrialJobOutputNasParameterMetric(_messages.Message):
+  r"""An observed value of a metric of the trial.
+
+  Fields:
+    objectiveValue: The objective value at this training step.
+    trainingStep: The global training step for this metric.
+  """
+
+  objectiveValue = _messages.FloatField(1)
+  trainingStep = _messages.IntegerField(2)
+
+
+class GoogleCloudMlV1NasJobOutputMultiTrialJobOutputs(_messages.Message):
+  r"""The list of all MultiTrialJobOutput.
+
+  Fields:
+    multiTrialJobOutput: A GoogleCloudMlV1NasJobOutputMultiTrialJobOutput
+      attribute.
+  """
+
+  multiTrialJobOutput = _messages.MessageField('GoogleCloudMlV1NasJobOutputMultiTrialJobOutput', 1, repeated=True)
+
+
+class GoogleCloudMlV1NasSpec(_messages.Message):
+  r"""Spec for Neural Architecture Search (NAS) jobs.
+
+  Fields:
+    multiTrialAlgorithmSpec: The spec of multi-trial algorithms.
+    oneShotAlgorithmSpec: The spec of one-shot algorithms.
+    searchSpaceSpec: Required. It defines the search space for Neural
+      Architecture Search (NAS).
+  """
+
+  multiTrialAlgorithmSpec = _messages.MessageField('GoogleCloudMlV1NasSpecMultiTrialAlgorithmSpec', 1)
+  oneShotAlgorithmSpec = _messages.MessageField('GoogleCloudMlV1NasSpecOneShotAlgorithmSpec', 2)
+  searchSpaceSpec = _messages.StringField(3)
+
+
+class GoogleCloudMlV1NasSpecMultiTrialAlgorithmSpec(_messages.Message):
+  r"""The spec of multi-trial Neural Architecture Search (NAS).
+
+  Enums:
+    MultiTrialAlgorithmValueValuesEnum: Optional. The multi-trial Neural
+      Architecture Search (NAS) algorithm type. Defaults to
+      `NAS_MULTI_TRIAL_ALGORITHM_REINFORCEMENT_LEARNING`.
+
+  Fields:
+    maxFailedNasTrials: Optional. It decides when a Neural Architecture Search
+      (NAS) job should fail. Defaults to zero.
+    maxNasTrials: Optional. How many Neural Architecture Search (NAS) trials
+      should be attempted.
+    maxParallelNasTrials: Required. The number of Neural Architecture Search
+      (NAS) trials to run concurrently.
+    multiTrialAlgorithm: Optional. The multi-trial Neural Architecture Search
+      (NAS) algorithm type. Defaults to
+      `NAS_MULTI_TRIAL_ALGORITHM_REINFORCEMENT_LEARNING`.
+    nasTargetRewardMetric: Required. The TensorFlow summary tag that the
+      controller tries to optimize. Its value needs to be consistent with the
+      TensorFlow summary tag that is reported by trainer (customer provided
+      dockers).
+  """
+
+  class MultiTrialAlgorithmValueValuesEnum(_messages.Enum):
+    r"""Optional. The multi-trial Neural Architecture Search (NAS) algorithm
+    type. Defaults to `NAS_MULTI_TRIAL_ALGORITHM_REINFORCEMENT_LEARNING`.
+
+    Values:
+      MULTI_TRIAL_ALGORITHM_UNSPECIFIED: <no description>
+      REINFORCEMENT_LEARNING: The Reinforcement Learning Algorithm for Multi-
+        trial Neural Architecture Search (NAS).
+    """
+    MULTI_TRIAL_ALGORITHM_UNSPECIFIED = 0
+    REINFORCEMENT_LEARNING = 1
+
+  maxFailedNasTrials = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+  maxNasTrials = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  maxParallelNasTrials = _messages.IntegerField(3, variant=_messages.Variant.INT32)
+  multiTrialAlgorithm = _messages.EnumField('MultiTrialAlgorithmValueValuesEnum', 4)
+  nasTargetRewardMetric = _messages.StringField(5)
+
+
+class GoogleCloudMlV1NasSpecOneShotAlgorithmSpec(_messages.Message):
+  r"""The spec of one shot Neural Architecture Search (NAS).
+
+  Enums:
+    OneShotAlgorithmValueValuesEnum: Optional. The one-shot Neural
+      Architecture Search (NAS) algorithm type. Defaults to
+      `ONE_SHOT_ALGORITHM_REINFORCEMENT_LEARNING`.
+
+  Fields:
+    oneShotAlgorithm: Optional. The one-shot Neural Architecture Search (NAS)
+      algorithm type. Defaults to `ONE_SHOT_ALGORITHM_REINFORCEMENT_LEARNING`.
+  """
+
+  class OneShotAlgorithmValueValuesEnum(_messages.Enum):
+    r"""Optional. The one-shot Neural Architecture Search (NAS) algorithm
+    type. Defaults to `ONE_SHOT_ALGORITHM_REINFORCEMENT_LEARNING`.
+
+    Values:
+      ONE_SHOT_ALGORITHM_UNSPECIFIED: <no description>
+      REINFORCEMENT_LEARNING: The Reinforcement Learning Algorithm for one-
+        shot Neural Architecture Search (NAS).
+    """
+    ONE_SHOT_ALGORITHM_UNSPECIFIED = 0
+    REINFORCEMENT_LEARNING = 1
+
+  oneShotAlgorithm = _messages.EnumField('OneShotAlgorithmValueValuesEnum', 1)
 
 
 class GoogleCloudMlV1OperationMetadata(_messages.Message):
@@ -1048,7 +1367,9 @@ class GoogleCloudMlV1PredictRequest(_messages.Message):
   r"""Request for predictions to be issued against a trained model.
 
   Fields:
-    httpBody:  Required. The prediction request body.
+    httpBody:  Required. The prediction request body. Refer to the [request
+      body details section](#request-body-details) for more information on how
+      to structure your request.
   """
 
   httpBody = _messages.MessageField('GoogleApiHttpBody', 1)
@@ -1239,28 +1560,74 @@ class GoogleCloudMlV1ReplicaConfig(_messages.Message):
     imageUri: The Docker image to run on the replica. This image must be in
       Container Registry. Learn more about [configuring custom containers
       ](/ml-engine/docs/distributed-training-containers).
+    tpuTfVersion: The AI Platform runtime version that includes a TensorFlow
+      version matching the one used in the custom container. This field is
+      required if the replica is a TPU worker that uses a custom container.
+      Otherwise, do not specify this field. This must be a [runtime version
+      that currently supports training with TPUs](/ml-engine/docs/tensorflow
+      /runtime-version-list#tpu-support).  Note that the version of TensorFlow
+      included in a runtime version may differ from the numbering of the
+      runtime version itself, because it may have a different [patch version](
+      https://www.tensorflow.org/guide/version_compat#semantic_versioning_20).
+      In this field, you must specify the runtime version (TensorFlow minor
+      version). For example, if your custom container runs TensorFlow `1.x.y`,
+      specify `1.x`.
   """
 
   acceleratorConfig = _messages.MessageField('GoogleCloudMlV1AcceleratorConfig', 1)
   imageUri = _messages.StringField(2)
+  tpuTfVersion = _messages.StringField(3)
 
 
 class GoogleCloudMlV1RequestLoggingConfig(_messages.Message):
-  r"""Configurations for logging request-response pairs. Currently only
-  BigQuery logging is supported. The request and response will be converted to
-  raw string and stored within the specified BigQuery table. The schema is:
-  model: STRING   version: STRING   time: Timestamp   raw_data: STRING
-  raw_prediction: STRING   ground_truth: STRING
+  r"""Configuration for logging request-response pairs to a BigQuery table.
+  Online prediction requests to a model version and the responses to these
+  requests are converted to raw strings and saved to the specified BigQuery
+  table. Logging is constrained by [BigQuery quotas and
+  limits](/bigquery/quotas). If your project exceeds BigQuery quotas or
+  limits, AI Platform Prediction does not log request-response pairs, but it
+  continues to serve predictions.  If you are using [continuous evaluation
+  ](/ml-engine/docs/continuous-evaluation/), you do not need to specify this
+  configuration manually. Setting up continuous evaluation automatically
+  enables logging of request-response pairs.
 
   Fields:
-    bigqueryTableName: Fully qualified BigQuery table name in the format of
-      "[project_id].[dataset_name].[table_name]".
-    samplingPercentage: Percentage of the request being logged. The sampling
-      window is the lifetime of the Version. Defaults to 0.
+    bigqueryTableName: Required. Fully qualified BigQuery table name in the
+      following format:
+      "<var>project_id</var>.<var>dataset_name</var>.<var>table_name</var>"
+      The specified table must already exist, and the "Cloud ML Service Agent"
+      for your project must have permission to write to it. The table must
+      have the following [schema](/bigquery/docs/schemas):  <table>
+      <tr><th>Field name</th><th style="display: table-cell">Type</th>     <th
+      style="display: table-cell">Mode</th></tr>
+      <tr><td>model</td><td>STRING</td><td>REQUIRED</td></tr>
+      <tr><td>model_version</td><td>STRING</td><td>REQUIRED</td></tr>
+      <tr><td>time</td><td>TIMESTAMP</td><td>REQUIRED</td></tr>
+      <tr><td>raw_data</td><td>STRING</td><td>REQUIRED</td></tr>
+      <tr><td>raw_prediction</td><td>STRING</td><td>NULLABLE</td></tr>
+      <tr><td>groundtruth</td><td>STRING</td><td>NULLABLE</td></tr> </table>
+    samplingPercentage: Percentage of requests to be logged, expressed as a
+      fraction from 0 to 1. For example, if you want to log 10% of requests,
+      enter `0.1`. The sampling window is the lifetime of the model version.
+      Defaults to 0.
   """
 
   bigqueryTableName = _messages.StringField(1)
   samplingPercentage = _messages.FloatField(2)
+
+
+class GoogleCloudMlV1RouteMap(_messages.Message):
+  r"""RouteMap is used to override HTTP paths sent to a Custom Container. If
+  specified, the HTTP server implemented in the ContainerSpec must support the
+  route. If unspecified, standard HTTP paths will be used.
+
+  Fields:
+    health: HTTP path to send health check requests.
+    predict: HTTP path to send prediction requests.
+  """
+
+  health = _messages.StringField(1)
+  predict = _messages.StringField(2)
 
 
 class GoogleCloudMlV1SaabasAttribution(_messages.Message):
@@ -1270,6 +1637,39 @@ class GoogleCloudMlV1SaabasAttribution(_messages.Message):
   method is only supported for XGBoost models.
   """
 
+
+
+class GoogleCloudMlV1SampledShapleyAttribution(_messages.Message):
+  r"""An attribution method that approximates Shapley values for features that
+  contribute to the label being predicted. A sampling strategy is used to
+  approximate the value rather than considering all subsets of features.
+
+  Fields:
+    numPaths: The number of feature permutations to consider when
+      approximating the Shapley values.
+  """
+
+  numPaths = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+
+
+class GoogleCloudMlV1Scheduling(_messages.Message):
+  r"""All parameters related to scheduling of training jobs.
+
+  Fields:
+    maxRunningTime: Optional. The maximum job running time, expressed in
+      seconds. The field can contain up to nine fractional digits, terminated
+      by `s`. By default there is no limit to the running time.  If the
+      training job is still running after this duration, AI Platform Training
+      cancels it.  For example, if you want to ensure your job runs for no
+      more than 2 hours, set this field to `7200s` (2 hours * 60 minutes /
+      hour * 60 seconds / minute).  If you submit your training job using the
+      `gcloud` tool, you can [provide this field in a `config.yaml` file](/ai-
+      platform/training/docs/training-
+      jobs#formatting_your_configuration_parameters). For example:  ```yaml
+      trainingInput:   ...   scheduling:     maxRunningTime: 7200s   ... ```
+  """
+
+  maxRunningTime = _messages.StringField(1)
 
 
 class GoogleCloudMlV1SetDefaultVersionRequest(_messages.Message):
@@ -1305,51 +1705,27 @@ class GoogleCloudMlV1TrainingInput(_messages.Message):
       about [configuring custom containers](/ml-engine/docs/distributed-
       training-containers).
     masterType: Optional. Specifies the type of virtual machine to use for
-      your training job's master worker.  The following types are supported:
-      <dl>   <dt>standard</dt>   <dd>   A basic machine configuration suitable
-      for training simple models with   small to moderate datasets.   </dd>
-      <dt>large_model</dt>   <dd>   A machine with a lot of memory, specially
-      suited for parameter servers   when your model is large (having many
-      hidden layers or layers with very   large numbers of nodes).   </dd>
-      <dt>complex_model_s</dt>   <dd>   A machine suitable for the master and
-      workers of the cluster when your   model requires more computation than
-      the standard machine can handle   satisfactorily.   </dd>
-      <dt>complex_model_m</dt>   <dd>   A machine with roughly twice the
-      number of cores and roughly double the   memory of
-      <i>complex_model_s</i>.   </dd>   <dt>complex_model_l</dt>   <dd>   A
-      machine with roughly twice the number of cores and roughly double the
-      memory of <i>complex_model_m</i>.   </dd>   <dt>standard_gpu</dt>   <dd>
-      A machine equivalent to <i>standard</i> that   also includes a single
-      NVIDIA Tesla K80 GPU. See more about   <a href="/ml-
-      engine/docs/tensorflow/using-gpus">using GPUs to   train your model</a>.
-      </dd>   <dt>complex_model_m_gpu</dt>   <dd>   A machine equivalent to
-      <i>complex_model_m</i> that also includes   four NVIDIA Tesla K80 GPUs.
-      </dd>   <dt>complex_model_l_gpu</dt>   <dd>   A machine equivalent to
-      <i>complex_model_l</i> that also includes   eight NVIDIA Tesla K80 GPUs.
-      </dd>   <dt>standard_p100</dt>   <dd>   A machine equivalent to
-      <i>standard</i> that   also includes a single NVIDIA Tesla P100 GPU.
-      </dd>   <dt>complex_model_m_p100</dt>   <dd>   A machine equivalent to
-      <i>complex_model_m</i> that also includes   four NVIDIA Tesla P100 GPUs.
-      </dd>   <dt>standard_v100</dt>   <dd>   A machine equivalent to
-      <i>standard</i> that   also includes a single NVIDIA Tesla V100 GPU.
-      </dd>   <dt>large_model_v100</dt>   <dd>   A machine equivalent to
-      <i>large_model</i> that   also includes a single NVIDIA Tesla V100 GPU.
-      </dd>   <dt>complex_model_m_v100</dt>   <dd>   A machine equivalent to
-      <i>complex_model_m</i> that   also includes four NVIDIA Tesla V100 GPUs.
-      </dd>   <dt>complex_model_l_v100</dt>   <dd>   A machine equivalent to
-      <i>complex_model_l</i> that   also includes eight NVIDIA Tesla V100
-      GPUs.   </dd>   <dt>cloud_tpu</dt>   <dd>   A TPU VM including one Cloud
-      TPU. See more about   <a href="/ml-engine/docs/tensorflow/using-
-      tpus">using TPUs to train   your model</a>.   </dd> </dl>  You may also
-      use certain Compute Engine machine types directly in this field. The
-      following types are supported:  - `n1-standard-4` - `n1-standard-8` -
-      `n1-standard-16` - `n1-standard-32` - `n1-standard-64` -
-      `n1-standard-96` - `n1-highmem-2` - `n1-highmem-4` - `n1-highmem-8` -
-      `n1-highmem-16` - `n1-highmem-32` - `n1-highmem-64` - `n1-highmem-96` -
-      `n1-highcpu-16` - `n1-highcpu-32` - `n1-highcpu-64` - `n1-highcpu-96`
-      See more about [using Compute Engine machine types](/ml-
-      engine/docs/tensorflow/machine-types#compute-engine-machine-types).  You
-      must set this value when `scaleTier` is set to `CUSTOM`.
+      your training job's master worker. You must specify this field when
+      `scaleTier` is set to `CUSTOM`.  You can use certain Compute Engine
+      machine types directly in this field. The following types are supported:
+      - `n1-standard-4` - `n1-standard-8` - `n1-standard-16` -
+      `n1-standard-32` - `n1-standard-64` - `n1-standard-96` - `n1-highmem-2`
+      - `n1-highmem-4` - `n1-highmem-8` - `n1-highmem-16` - `n1-highmem-32` -
+      `n1-highmem-64` - `n1-highmem-96` - `n1-highcpu-16` - `n1-highcpu-32` -
+      `n1-highcpu-64` - `n1-highcpu-96`  Learn more about [using Compute
+      Engine machine types](/ml-engine/docs/machine-types#compute-engine-
+      machine-types).  Alternatively, you can use the following legacy machine
+      types:  - `standard` - `large_model` - `complex_model_s` -
+      `complex_model_m` - `complex_model_l` - `standard_gpu` -
+      `complex_model_m_gpu` - `complex_model_l_gpu` - `standard_p100` -
+      `complex_model_m_p100` - `standard_v100` - `large_model_v100` -
+      `complex_model_m_v100` - `complex_model_l_v100`  Learn more about [using
+      legacy machine types](/ml-engine/docs/machine-types#legacy-machine-
+      types).  Finally, if you want to use a TPU for training, specify
+      `cloud_tpu` in this field. Learn more about the [special configuration
+      options for training with TPUs](/ml-engine/docs/tensorflow/using-
+      tpus#configuring_a_custom_tpu_machine).
+    nasJobSpec: Optional. The spec of a Neural Architecture Search (NAS) job.
     packageUris: Required. The Google Cloud Storage location of the packages
       with the training program and any additional dependencies. The maximum
       number of package URIs is 100.
@@ -1372,27 +1748,39 @@ class GoogleCloudMlV1TrainingInput(_messages.Message):
       use for your training job's parameter server.  The supported values are
       the same as those described in the entry for `master_type`.  This value
       must be consistent with the category of machine type that `masterType`
-      uses. In other words, both must be AI Platform machine types or both
-      must be Compute Engine machine types.  This value must be present when
+      uses. In other words, both must be Compute Engine machine types or both
+      must be legacy machine types.  This value must be present when
       `scaleTier` is set to `CUSTOM` and `parameter_server_count` is greater
       than zero.
     pythonModule: Required. The Python module name to run after installing the
       packages.
     pythonVersion: Optional. The version of Python used in training. If not
-      set, the default version is '2.7'. Python '3.5' is available when
-      `runtime_version` is set to '1.4' and above. Python '2.7' works with all
-      supported <a href="/ml-engine/docs/runtime-version-list">runtime
-      versions</a>.
+      set, the default version is '2.7'. Starting [January 13, 2020](/ml-
+      engine/docs/release-notes#december_10_2019), this field is required.
+      The following Python versions are available:  * Python '3.7' is
+      available when `runtime_version` is set to '1.15' or   later. * Python
+      '3.5' is available when `runtime_version` is set to a version   from
+      '1.4' to '1.14'. * Python '2.7' is available when `runtime_version` is
+      set to '1.15' or   earlier. (Runtime versions released [after January 1,
+      2020](/ml-engine/docs/release-notes#december_10_2019) do not support
+      Python 2.7.)  Read more about the Python versions available for [each
+      runtime version](/ml-engine/docs/runtime-version-list).
     region: Required. The Google Compute Engine region to run the training job
       in. See the <a href="/ml-engine/docs/tensorflow/regions">available
       regions</a> for AI Platform services.
     runtimeVersion: Optional. The AI Platform runtime version to use for
       training. If not set, AI Platform uses the default stable version, 1.0.
-      For more information, see the <a href="/ml-engine/docs/runtime-version-
-      list">runtime version list</a> and <a href="/ml-
-      engine/docs/versioning">how to manage runtime versions</a>.
+      Starting [January 13, 2020](/ml-engine/docs/release-
+      notes#december_10_2019), this field is required.  For more information,
+      see the <a href="/ml-engine/docs/runtime-version-list">runtime version
+      list</a> and <a href="/ml-engine/docs/versioning">how to manage runtime
+      versions</a>.
     scaleTier: Required. Specifies the machine types, the number of replicas
       for workers and parameter servers.
+    scheduling: Optional. Scheduling options for a training job.
+    useChiefInTfConfig: Optional. Use 'chief' instead of 'master' in TF_CONFIG
+      when Custom Container is used and evaluator is not specified.  Defaults
+      to false.
     workerConfig: Optional. The configuration for workers.  You should only
       set `workerConfig.acceleratorConfig` if `workerType` is set to a Compute
       Engine machine type. [Learn about restrictions on accelerator
@@ -1411,9 +1799,9 @@ class GoogleCloudMlV1TrainingInput(_messages.Message):
       your training job's worker nodes.  The supported values are the same as
       those described in the entry for `masterType`.  This value must be
       consistent with the category of machine type that `masterType` uses. In
-      other words, both must be AI Platform machine types or both must be
-      Compute Engine machine types.  If you use `cloud_tpu` for this value,
-      see special instructions for [configuring a custom TPU machine](/ml-
+      other words, both must be Compute Engine machine types or both must be
+      legacy machine types.  If you use `cloud_tpu` for this value, see
+      special instructions for [configuring a custom TPU machine](/ml-
       engine/docs/tensorflow/using-tpus#configuring_a_custom_tpu_machine).
       This value must be present when `scaleTier` is set to `CUSTOM` and
       `workerCount` is greater than zero.
@@ -1463,18 +1851,21 @@ class GoogleCloudMlV1TrainingInput(_messages.Message):
   jobDir = _messages.StringField(3)
   masterConfig = _messages.MessageField('GoogleCloudMlV1ReplicaConfig', 4)
   masterType = _messages.StringField(5)
-  packageUris = _messages.StringField(6, repeated=True)
-  parameterServerConfig = _messages.MessageField('GoogleCloudMlV1ReplicaConfig', 7)
-  parameterServerCount = _messages.IntegerField(8)
-  parameterServerType = _messages.StringField(9)
-  pythonModule = _messages.StringField(10)
-  pythonVersion = _messages.StringField(11)
-  region = _messages.StringField(12)
-  runtimeVersion = _messages.StringField(13)
-  scaleTier = _messages.EnumField('ScaleTierValueValuesEnum', 14)
-  workerConfig = _messages.MessageField('GoogleCloudMlV1ReplicaConfig', 15)
-  workerCount = _messages.IntegerField(16)
-  workerType = _messages.StringField(17)
+  nasJobSpec = _messages.MessageField('GoogleCloudMlV1NasSpec', 6)
+  packageUris = _messages.StringField(7, repeated=True)
+  parameterServerConfig = _messages.MessageField('GoogleCloudMlV1ReplicaConfig', 8)
+  parameterServerCount = _messages.IntegerField(9)
+  parameterServerType = _messages.StringField(10)
+  pythonModule = _messages.StringField(11)
+  pythonVersion = _messages.StringField(12)
+  region = _messages.StringField(13)
+  runtimeVersion = _messages.StringField(14)
+  scaleTier = _messages.EnumField('ScaleTierValueValuesEnum', 15)
+  scheduling = _messages.MessageField('GoogleCloudMlV1Scheduling', 16)
+  useChiefInTfConfig = _messages.BooleanField(17)
+  workerConfig = _messages.MessageField('GoogleCloudMlV1ReplicaConfig', 18)
+  workerCount = _messages.IntegerField(19)
+  workerType = _messages.StringField(20)
 
 
 class GoogleCloudMlV1TrainingOutput(_messages.Message):
@@ -1486,9 +1877,14 @@ class GoogleCloudMlV1TrainingOutput(_messages.Message):
     completedTrialCount: The number of hyperparameter tuning trials that
       completed successfully. Only set for hyperparameter tuning jobs.
     consumedMLUnits: The amount of ML units consumed by the job.
+    hyperparameterMetricTag: The TensorFlow summary tag name used for
+      optimizing hyperparameter tuning trials. See [`HyperparameterSpec.hyperp
+      arameterMetricTag`](#HyperparameterSpec.FIELDS.hyperparameter_metric_tag
+      ) for more information. Only set for hyperparameter tuning jobs.
     isBuiltInAlgorithmJob: Whether this job is a built-in Algorithm job.
     isHyperparameterTuningJob: Whether this job is a hyperparameter tuning
       job.
+    nasJobOutput: The output of a Neural Architecture Search (NAS) job.
     trials: Results for individual Hyperparameter trials. Only set for
       hyperparameter tuning jobs.
   """
@@ -1496,9 +1892,11 @@ class GoogleCloudMlV1TrainingOutput(_messages.Message):
   builtInAlgorithmOutput = _messages.MessageField('GoogleCloudMlV1BuiltInAlgorithmOutput', 1)
   completedTrialCount = _messages.IntegerField(2)
   consumedMLUnits = _messages.FloatField(3)
-  isBuiltInAlgorithmJob = _messages.BooleanField(4)
-  isHyperparameterTuningJob = _messages.BooleanField(5)
-  trials = _messages.MessageField('GoogleCloudMlV1HyperparameterOutput', 6, repeated=True)
+  hyperparameterMetricTag = _messages.StringField(4)
+  isBuiltInAlgorithmJob = _messages.BooleanField(5)
+  isHyperparameterTuningJob = _messages.BooleanField(6)
+  nasJobOutput = _messages.MessageField('GoogleCloudMlV1NasJobOutput', 7)
+  trials = _messages.MessageField('GoogleCloudMlV1HyperparameterOutput', 8, repeated=True)
 
 
 class GoogleCloudMlV1TreeShapAttribution(_messages.Message):
@@ -1514,8 +1912,7 @@ class GoogleCloudMlV1Version(_messages.Message):
   r"""Represents a version of the model.  Each version is a trained model
   deployed in the cloud, ready to handle prediction requests. A model can have
   multiple versions. You can get information about all of the versions of a
-  given model by calling [projects.models.versions.list](/ml-
-  engine/reference/rest/v1/projects.models.versions/list).
+  given model by calling projects.models.versions.list.
 
   Enums:
     FrameworkValueValuesEnum: Optional. The machine learning framework AI
@@ -1525,7 +1922,10 @@ class GoogleCloudMlV1Version(_messages.Message):
       determine a framework. If you choose `SCIKIT_LEARN` or `XGBOOST`, you
       must also set the runtime version of the model to 1.4 or greater.  Do
       **not** specify a framework if you're deploying a [custom prediction
-      routine](/ml-engine/docs/tensorflow/custom-prediction-routines).
+      routine](/ml-engine/docs/tensorflow/custom-prediction-routines).  If you
+      specify a [Compute Engine (N1) machine type](/ml-engine/docs/machine-
+      types-online-prediction) in the `machineType` field, you must specify
+      `TENSORFLOW` for the framework.
     StateValueValuesEnum: Output only. The state of a version.
 
   Messages:
@@ -1536,21 +1936,28 @@ class GoogleCloudMlV1Version(_messages.Message):
       engine/docs/tensorflow/resource-labels">using labels</a>.
 
   Fields:
-    acceleratorConfig: Accelerator config for GPU serving.
+    acceleratorConfig: Optional. Accelerator config for using GPUs for online
+      prediction (beta). Only specify this field if you have specified a
+      Compute Engine (N1) machine type in the `machineType` field. Learn more
+      about [using GPUs for online prediction](/ml-engine/docs/machine-types-
+      online-prediction#gpus).
     autoScaling: Automatically scale the number of nodes used to serve the
       model in response to increases and decreases in traffic. Care should be
       taken to ramp up traffic according to the model's ability to scale or
-      you will start seeing increases in latency and 429 response codes.
+      you will start seeing increases in latency and 429 response codes.  Note
+      that you cannot use AutoScaling if your version uses
+      [GPUs](#Version.FIELDS.accelerator_config). Instead, you must use
+      specify `manual_scaling`.
+    container: A GoogleCloudMlV1ContainerSpec attribute.
     createTime: Output only. The time the version was created.
     deploymentUri: Required. The Cloud Storage location of the trained model
       used to create the version. See the [guide to model deployment](/ml-
       engine/docs/tensorflow/deploying-models) for more information.  When
-      passing Version to [projects.models.versions.create](/ml-
-      engine/reference/rest/v1/projects.models.versions/create) the model
-      service uses the specified location as the source of the model. Once
-      deployed, the model version is hosted by the prediction service, so this
-      location is useful only as a historical record. The total number of
-      model files can't exceed 1000.
+      passing Version to projects.models.versions.create the model service
+      uses the specified location as the source of the model. Once deployed,
+      the model version is hosted by the prediction service, so this location
+      is useful only as a historical record. The total number of model files
+      can't exceed 1000.
     description: Optional. The description specified for the version when it
       was created.
     errorMessage: Output only. The details of a failure or a cancellation.
@@ -1571,13 +1978,15 @@ class GoogleCloudMlV1Version(_messages.Message):
       framework. If you choose `SCIKIT_LEARN` or `XGBOOST`, you must also set
       the runtime version of the model to 1.4 or greater.  Do **not** specify
       a framework if you're deploying a [custom prediction routine](/ml-
-      engine/docs/tensorflow/custom-prediction-routines).
+      engine/docs/tensorflow/custom-prediction-routines).  If you specify a
+      [Compute Engine (N1) machine type](/ml-engine/docs/machine-types-online-
+      prediction) in the `machineType` field, you must specify `TENSORFLOW`
+      for the framework.
     imageUri: Optional. The docker image to run for custom serving container.
       This image must be in Google Container Registry.
     isDefault: Output only. If true, this version will be used to handle
       prediction requests that do not specify a version.  You can change the
-      default version by calling [projects.methods.versions.setDefault](/ml-
-      engine/reference/rest/v1/projects.models.versions/setDefault).
+      default version by calling projects.methods.versions.setDefault.
     labels: Optional. One or more labels that you can add, to organize your
       model versions. Each label is a key-value pair, where both the key and
       the value are arbitrary strings that you supply. For more information,
@@ -1586,12 +1995,16 @@ class GoogleCloudMlV1Version(_messages.Message):
     lastUseTime: Output only. The time the version was last used for
       prediction.
     machineType: Optional. The type of machine on which to serve the model.
-      Currently only applies to online prediction service. <dl>
-      <dt>mls1-c1-m2</dt>   <dd>   The <b>default</b> machine type, with 1
-      core and 2 GB RAM. The deprecated   name for this machine type is
-      "mls1-highmem-1".   </dd>   <dt>mls1-c4-m2</dt>   <dd>   In <b>Beta</b>.
-      This machine type has 4 cores and 2 GB RAM. The   deprecated name for
-      this machine type is "mls1-highcpu-4".   </dd> </dl>
+      Currently only applies to online prediction service. If this field is
+      not specified, it defaults to `mls1-c1-m2`.  Online prediction supports
+      the following machine types:  * `mls1-c1-m2` * `mls1-c4-m2` *
+      `n1-standard-2` * `n1-standard-4` * `n1-standard-8` * `n1-standard-16` *
+      `n1-standard-32` * `n1-highmem-2` * `n1-highmem-4` * `n1-highmem-8` *
+      `n1-highmem-16` * `n1-highmem-32` * `n1-highcpu-2` * `n1-highcpu-4` *
+      `n1-highcpu-8` * `n1-highcpu-16` * `n1-highcpu-32`  `mls1-c1-m2` is
+      generally available. All other machine types are available in beta.
+      Learn more about the [differences between machine types](/ml-engine/docs
+      /machine-types-online-prediction).
     manualScaling: Manually select the number of nodes to use for serving the
       model. You should generally use `auto_scaling` with an appropriate
       `min_nodes` instead, but this option is available if you want more
@@ -1599,7 +2012,7 @@ class GoogleCloudMlV1Version(_messages.Message):
       if the traffic exceeds that capability of the system to serve it based
       on the selected number of nodes.
     modelClass: A string attribute.
-    name: Required.The name specified for the version when it was created.
+    name: Required. The name specified for the version when it was created.
       The version name must be unique within the model it is created in.
     packageUris: Optional. Cloud Storage paths (`gs://...`) of packages for
       [custom prediction routines](/ml-engine/docs/tensorflow/custom-
@@ -1619,10 +2032,12 @@ class GoogleCloudMlV1Version(_messages.Message):
       The module containing this class should be included in a package
       provided to the [`packageUris` field](#Version.FIELDS.package_uris).
       Specify this field if and only if you are deploying a [custom prediction
-      routine (beta)](/ml-engine/docs/tensorflow/custom-prediction-routine).
+      routine (beta)](/ml-engine/docs/tensorflow/custom-prediction-routines).
       If you specify this field, you must set
-      [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater.
-      The following code sample provides the Predictor interface:  ```py class
+      [`runtimeVersion`](#Version.FIELDS.runtime_version) to 1.4 or greater
+      and you must set `machineType` to a [legacy (MLS1) machine type](/ml-
+      engine/docs/machine-types-online-prediction).  The following code sample
+      provides the Predictor interface:  <pre style="max-width: 626px;"> class
       Predictor(object): " " "Interface for constructing custom predictors." "
       "  def predict(self, instances, **kwargs):     " " "Performs custom
       prediction.      Instances are the decoded values from the request. They
@@ -1638,20 +2053,31 @@ class GoogleCloudMlV1Version(_messages.Message):
       contains the exported model             file along with any additional
       files uploaded when creating the             version resource.
       Returns:         An instance implementing this Predictor class.     " "
-      "     raise NotImplementedError() ```  Learn more about [the Predictor
-      interface and custom prediction routines](/ml-engine/docs/tensorflow
-      /custom-prediction-routines).
+      "     raise NotImplementedError() </pre>  Learn more about [the
+      Predictor interface and custom prediction routines](/ml-
+      engine/docs/tensorflow/custom-prediction-routines).
     pythonVersion: Optional. The version of Python used in prediction. If not
-      set, the default version is '2.7'. Python '3.5' is available when
-      `runtime_version` is set to '1.4' and above. Python '2.7' works with all
-      supported runtime versions.
-    requestLoggingConfig: Optional. Configures the request-response pair
-      logging on predictions from this Version.
+      set, the default version is '2.7'. Starting [January 13, 2020](/ml-
+      engine/docs/release-notes#december_10_2019), this field is required.
+      The following Python versions are available:  * Python '3.7' is
+      available when `runtime_version` is set to '1.15' or   later. * Python
+      '3.5' is available when `runtime_version` is set to a version   from
+      '1.4' to '1.14'. * Python '2.7' is available when `runtime_version` is
+      set to '1.15' or   earlier. (Runtime versions released [after January 1,
+      2020](/ml-engine/docs/release-notes#december_10_2019) do not support
+      Python 2.7.)  Read more about the Python versions available for [each
+      runtime version](/ml-engine/docs/runtime-version-list).
+    requestLoggingConfig: Optional. *Only* specify this field in a
+      projects.models.versions.patch request. Specifying it in a
+      projects.models.versions.create request has no effect.  Configures the
+      request-response pair logging on predictions from this Version.
+    routes: A GoogleCloudMlV1RouteMap attribute.
     runtimeVersion: Optional. The AI Platform runtime version to use for this
       deployment. If not set, AI Platform uses the default stable version,
-      1.0. For more information, see the [runtime version list](/ml-
-      engine/docs/runtime-version-list) and [how to manage runtime versions
-      ](/ml-engine/docs/versioning).
+      1.0. Starting [January 13, 2020](/ml-engine/docs/release-
+      notes#december_10_2019), this field is required.  For more information,
+      see the [runtime version list](/ml-engine/docs/runtime-version-list) and
+      [how to manage runtime versions](/ml-engine/docs/versioning).
     serviceAccount: Optional. Specifies the service account for resource
       access control.
     state: Output only. The state of a version.
@@ -1665,7 +2091,9 @@ class GoogleCloudMlV1Version(_messages.Message):
     `SCIKIT_LEARN` or `XGBOOST`, you must also set the runtime version of the
     model to 1.4 or greater.  Do **not** specify a framework if you're
     deploying a [custom prediction routine](/ml-engine/docs/tensorflow/custom-
-    prediction-routines).
+    prediction-routines).  If you specify a [Compute Engine (N1) machine type
+    ](/ml-engine/docs/machine-types-online-prediction) in the `machineType`
+    field, you must specify `TENSORFLOW` for the framework.
 
     Values:
       FRAMEWORK_UNSPECIFIED: Unspecified framework. Assigns a value based on
@@ -1734,28 +2162,45 @@ class GoogleCloudMlV1Version(_messages.Message):
 
   acceleratorConfig = _messages.MessageField('GoogleCloudMlV1AcceleratorConfig', 1)
   autoScaling = _messages.MessageField('GoogleCloudMlV1AutoScaling', 2)
-  createTime = _messages.StringField(3)
-  deploymentUri = _messages.StringField(4)
-  description = _messages.StringField(5)
-  errorMessage = _messages.StringField(6)
-  etag = _messages.BytesField(7)
-  explanationConfig = _messages.MessageField('GoogleCloudMlV1ExplanationConfig', 8)
-  framework = _messages.EnumField('FrameworkValueValuesEnum', 9)
-  imageUri = _messages.StringField(10)
-  isDefault = _messages.BooleanField(11)
-  labels = _messages.MessageField('LabelsValue', 12)
-  lastUseTime = _messages.StringField(13)
-  machineType = _messages.StringField(14)
-  manualScaling = _messages.MessageField('GoogleCloudMlV1ManualScaling', 15)
-  modelClass = _messages.StringField(16)
-  name = _messages.StringField(17)
-  packageUris = _messages.StringField(18, repeated=True)
-  predictionClass = _messages.StringField(19)
-  pythonVersion = _messages.StringField(20)
-  requestLoggingConfig = _messages.MessageField('GoogleCloudMlV1RequestLoggingConfig', 21)
-  runtimeVersion = _messages.StringField(22)
-  serviceAccount = _messages.StringField(23)
-  state = _messages.EnumField('StateValueValuesEnum', 24)
+  container = _messages.MessageField('GoogleCloudMlV1ContainerSpec', 3)
+  createTime = _messages.StringField(4)
+  deploymentUri = _messages.StringField(5)
+  description = _messages.StringField(6)
+  errorMessage = _messages.StringField(7)
+  etag = _messages.BytesField(8)
+  explanationConfig = _messages.MessageField('GoogleCloudMlV1ExplanationConfig', 9)
+  framework = _messages.EnumField('FrameworkValueValuesEnum', 10)
+  imageUri = _messages.StringField(11)
+  isDefault = _messages.BooleanField(12)
+  labels = _messages.MessageField('LabelsValue', 13)
+  lastUseTime = _messages.StringField(14)
+  machineType = _messages.StringField(15)
+  manualScaling = _messages.MessageField('GoogleCloudMlV1ManualScaling', 16)
+  modelClass = _messages.StringField(17)
+  name = _messages.StringField(18)
+  packageUris = _messages.StringField(19, repeated=True)
+  predictionClass = _messages.StringField(20)
+  pythonVersion = _messages.StringField(21)
+  requestLoggingConfig = _messages.MessageField('GoogleCloudMlV1RequestLoggingConfig', 22)
+  routes = _messages.MessageField('GoogleCloudMlV1RouteMap', 23)
+  runtimeVersion = _messages.StringField(24)
+  serviceAccount = _messages.StringField(25)
+  state = _messages.EnumField('StateValueValuesEnum', 26)
+
+
+class GoogleCloudMlV1XraiAttribution(_messages.Message):
+  r"""Attributes credit by computing the XRAI taking advantage of the model's
+  fully differentiable structure. Refer to this paper for more details:
+  https://arxiv.org/abs/1906.02825 Currently only implemented for models with
+  natural image inputs.
+
+  Fields:
+    numIntegralSteps: Number of steps for approximating the path integral. A
+      good value to start is 50 and gradually increase until the sum to diff
+      property is met within the desired error range.
+  """
+
+  numIntegralSteps = _messages.IntegerField(1, variant=_messages.Variant.INT32)
 
 
 class GoogleIamV1AuditConfig(_messages.Message):
@@ -1769,16 +2214,16 @@ class GoogleIamV1AuditConfig(_messages.Message):
   multiple AuditConfigs:      {       "audit_configs": [         {
   "service": "allServices"           "audit_log_configs": [             {
   "log_type": "DATA_READ",               "exempted_members": [
-  "user:foo@gmail.com"               ]             },             {
+  "user:jose@example.com"               ]             },             {
   "log_type": "DATA_WRITE",             },             {
   "log_type": "ADMIN_READ",             }           ]         },         {
-  "service": "fooservice.googleapis.com"           "audit_log_configs": [
+  "service": "sampleservice.googleapis.com"           "audit_log_configs": [
   {               "log_type": "DATA_READ",             },             {
   "log_type": "DATA_WRITE",               "exempted_members": [
-  "user:bar@gmail.com"               ]             }           ]         }
-  ]     }  For fooservice, this policy enables DATA_READ, DATA_WRITE and
-  ADMIN_READ logging. It also exempts foo@gmail.com from DATA_READ logging,
-  and bar@gmail.com from DATA_WRITE logging.
+  "user:aliya@example.com"               ]             }           ]         }
+  ]     }  For sampleservice, this policy enables DATA_READ, DATA_WRITE and
+  ADMIN_READ logging. It also exempts jose@example.com from DATA_READ logging,
+  and aliya@example.com from DATA_WRITE logging.
 
   Fields:
     auditLogConfigs: The configuration for logging of each type of permission.
@@ -1794,10 +2239,10 @@ class GoogleIamV1AuditConfig(_messages.Message):
 class GoogleIamV1AuditLogConfig(_messages.Message):
   r"""Provides the configuration for logging a type of permissions. Example:
   {       "audit_log_configs": [         {           "log_type": "DATA_READ",
-  "exempted_members": [             "user:foo@gmail.com"           ]
+  "exempted_members": [             "user:jose@example.com"           ]
   },         {           "log_type": "DATA_WRITE",         }       ]     }
   This enables 'DATA_READ' and 'DATA_WRITE' logging, while exempting
-  foo@gmail.com from DATA_READ logging.
+  jose@example.com from DATA_READ logging.
 
   Enums:
     LogTypeValueValuesEnum: The log type that this config enables.
@@ -1840,13 +2285,30 @@ class GoogleIamV1Binding(_messages.Message):
       with or without a Google account.  * `allAuthenticatedUsers`: A special
       identifier that represents anyone    who is authenticated with a Google
       account or a service account.  * `user:{emailid}`: An email address that
-      represents a specific Google    account. For example, `alice@gmail.com`
-      .   * `serviceAccount:{emailid}`: An email address that represents a
-      service    account. For example, `my-other-
+      represents a specific Google    account. For example,
+      `alice@example.com` .   * `serviceAccount:{emailid}`: An email address
+      that represents a service    account. For example, `my-other-
       app@appspot.gserviceaccount.com`.  * `group:{emailid}`: An email address
-      that represents a Google group.    For example, `admins@example.com`.
-      * `domain:{domain}`: The G Suite domain (primary) that represents all
-      the    users of that domain. For example, `google.com` or `example.com`.
+      that represents a Google group.    For example, `admins@example.com`.  *
+      `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique
+      identifier) representing a user that has been recently deleted. For
+      example, `alice@example.com?uid=123456789012345678901`. If the user is
+      recovered, this value reverts to `user:{emailid}` and the recovered user
+      retains the role in the binding.  *
+      `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address
+      (plus    unique identifier) representing a service account that has been
+      recently    deleted. For example,    `my-other-
+      app@appspot.gserviceaccount.com?uid=123456789012345678901`.    If the
+      service account is undeleted, this value reverts to
+      `serviceAccount:{emailid}` and the undeleted service account retains the
+      role in the binding.  * `deleted:group:{emailid}?uid={uniqueid}`: An
+      email address (plus unique    identifier) representing a Google group
+      that has been recently    deleted. For example,
+      `admins@example.com?uid=123456789012345678901`. If    the group is
+      recovered, this value reverts to `group:{emailid}` and the    recovered
+      group retains the role in the binding.   * `domain:{domain}`: The G
+      Suite domain (primary) that represents all the    users of that domain.
+      For example, `google.com` or `example.com`.
     role: Role that is assigned to `members`. For example, `roles/viewer`,
       `roles/editor`, or `roles/owner`.
   """
@@ -1857,29 +2319,42 @@ class GoogleIamV1Binding(_messages.Message):
 
 
 class GoogleIamV1Policy(_messages.Message):
-  r"""Defines an Identity and Access Management (IAM) policy. It is used to
-  specify access control policies for Cloud Platform resources.   A `Policy`
-  consists of a list of `bindings`. A `binding` binds a list of `members` to a
-  `role`, where the members can be user accounts, Google groups, Google
-  domains, and service accounts. A `role` is a named list of permissions
-  defined by IAM.  **JSON Example**      {       "bindings": [         {
-  "role": "roles/owner",           "members": [
+  r"""An Identity and Access Management (IAM) policy, which specifies access
+  controls for Google Cloud resources.   A `Policy` is a collection of
+  `bindings`. A `binding` binds one or more `members` to a single `role`.
+  Members can be user accounts, service accounts, Google groups, and domains
+  (such as G Suite). A `role` is a named list of permissions; each `role` can
+  be an IAM predefined role or a user-created custom role.  Optionally, a
+  `binding` can specify a `condition`, which is a logical expression that
+  allows access to a resource only if the expression evaluates to `true`. A
+  condition can add constraints based on attributes of the request, the
+  resource, or both.  **JSON example:**      {       "bindings": [         {
+  "role": "roles/resourcemanager.organizationAdmin",           "members": [
   "user:mike@example.com",             "group:admins@example.com",
-  "domain:google.com",             "serviceAccount:my-other-
-  app@appspot.gserviceaccount.com"           ]         },         {
-  "role": "roles/viewer",           "members": ["user:sean@example.com"]
-  }       ]     }  **YAML Example**      bindings:     - members:       -
-  user:mike@example.com       - group:admins@example.com       -
-  domain:google.com       - serviceAccount:my-other-
-  app@appspot.gserviceaccount.com       role: roles/owner     - members:
-  - user:sean@example.com       role: roles/viewer   For a description of IAM
-  and its features, see the [IAM developer's
-  guide](https://cloud.google.com/iam/docs).
+  "domain:google.com",             "serviceAccount:my-project-
+  id@appspot.gserviceaccount.com"           ]         },         {
+  "role": "roles/resourcemanager.organizationViewer",           "members":
+  ["user:eve@example.com"],           "condition": {             "title":
+  "expirable access",             "description": "Does not grant access after
+  Sep 2020",             "expression": "request.time <
+  timestamp('2020-10-01T00:00:00.000Z')",           }         }       ],
+  "etag": "BwWWja0YfJA=",       "version": 3     }  **YAML example:**
+  bindings:     - members:       - user:mike@example.com       -
+  group:admins@example.com       - domain:google.com       - serviceAccount
+  :my-project-id@appspot.gserviceaccount.com       role:
+  roles/resourcemanager.organizationAdmin     - members:       -
+  user:eve@example.com       role: roles/resourcemanager.organizationViewer
+  condition:         title: expirable access         description: Does not
+  grant access after Sep 2020         expression: request.time <
+  timestamp('2020-10-01T00:00:00.000Z')     - etag: BwWWja0YfJA=     -
+  version: 3  For a description of IAM and its features, see the [IAM
+  documentation](https://cloud.google.com/iam/docs/).
 
   Fields:
     auditConfigs: Specifies cloud audit logging configuration for this policy.
-    bindings: Associates a list of `members` to a `role`. `bindings` with no
-      members will result in an error.
+    bindings: Associates a list of `members` to a `role`. Optionally, may
+      specify a `condition` that determines how and when the `bindings` are
+      applied. Each of the `bindings` must contain at least one member.
     etag: `etag` is used for optimistic concurrency control as a way to help
       prevent simultaneous updates of a policy from overwriting each other. It
       is strongly suggested that systems make use of the `etag` in the read-
@@ -1887,9 +2362,24 @@ class GoogleIamV1Policy(_messages.Message):
       conditions: An `etag` is returned in the response to `getIamPolicy`, and
       systems are expected to put that etag in the request to `setIamPolicy`
       to ensure that their change will be applied to the same version of the
-      policy.  If no `etag` is provided in the call to `setIamPolicy`, then
-      the existing policy is overwritten blindly.
-    version: Deprecated.
+      policy.  **Important:** If you use IAM Conditions, you must include the
+      `etag` field whenever you call `setIamPolicy`. If you omit this field,
+      then IAM allows you to overwrite a version `3` policy with a version `1`
+      policy, and all of the conditions in the version `3` policy are lost.
+    version: Specifies the format of the policy.  Valid values are `0`, `1`,
+      and `3`. Requests that specify an invalid value are rejected.  Any
+      operation that affects conditional role bindings must specify version
+      `3`. This requirement applies to the following operations:  * Getting a
+      policy that includes a conditional role binding * Adding a conditional
+      role binding to a policy * Changing a conditional role binding in a
+      policy * Removing any role binding, with or without a condition, from a
+      policy   that includes conditions  **Important:** If you use IAM
+      Conditions, you must include the `etag` field whenever you call
+      `setIamPolicy`. If you omit this field, then IAM allows you to overwrite
+      a version `3` policy with a version `1` policy, and all of the
+      conditions in the version `3` policy are lost.  If a policy does not
+      include any conditions, operations on that policy may specify any valid
+      version or leave the field unset.
   """
 
   auditConfigs = _messages.MessageField('GoogleIamV1AuditConfig', 1, repeated=True)
@@ -1984,7 +2474,8 @@ class GoogleLongrunningOperation(_messages.Message):
       if any.
     name: The server-assigned name, which is only unique within the same
       service that originally returns it. If you use the default HTTP mapping,
-      the `name` should have the format of `operations/some/unique/name`.
+      the `name` should be a resource name ending with
+      `operations/{unique_id}`.
     response: The normal response of the operation in case of success.  If the
       original method returns no data on success, such as `Delete`, the
       response is `google.protobuf.Empty`.  If the original method is standard
@@ -2073,37 +2564,10 @@ class GoogleProtobufEmpty(_messages.Message):
 class GoogleRpcStatus(_messages.Message):
   r"""The `Status` type defines a logical error model that is suitable for
   different programming environments, including REST APIs and RPC APIs. It is
-  used by [gRPC](https://github.com/grpc). The error model is designed to be:
-  - Simple to use and understand for most users - Flexible enough to meet
-  unexpected needs  # Overview  The `Status` message contains three pieces of
-  data: error code, error message, and error details. The error code should be
-  an enum value of google.rpc.Code, but it may accept additional error codes
-  if needed.  The error message should be a developer-facing English message
-  that helps developers *understand* and *resolve* the error. If a localized
-  user-facing error message is needed, put the localized message in the error
-  details or localize it in the client. The optional error details may contain
-  arbitrary information about the error. There is a predefined set of error
-  detail types in the package `google.rpc` that can be used for common error
-  conditions.  # Language mapping  The `Status` message is the logical
-  representation of the error model, but it is not necessarily the actual wire
-  format. When the `Status` message is exposed in different client libraries
-  and different wire protocols, it can be mapped differently. For example, it
-  will likely be mapped to some exceptions in Java, but more likely mapped to
-  some error codes in C.  # Other uses  The error model and the `Status`
-  message can be used in a variety of environments, either with or without
-  APIs, to provide a consistent developer experience across different
-  environments.  Example uses of this error model include:  - Partial errors.
-  If a service needs to return partial errors to the client,     it may embed
-  the `Status` in the normal response to indicate the partial     errors.  -
-  Workflow errors. A typical workflow has multiple steps. Each step may
-  have a `Status` message for error reporting.  - Batch operations. If a
-  client uses batch request and batch response, the     `Status` message
-  should be used directly inside batch response, one for     each error sub-
-  response.  - Asynchronous operations. If an API call embeds asynchronous
-  operation     results in its response, the status of those operations should
-  be     represented directly using the `Status` message.  - Logging. If some
-  API errors are stored in logs, the message `Status` could     be used
-  directly after any stripping needed for security/privacy reasons.
+  used by [gRPC](https://github.com/grpc). Each `Status` message contains
+  three pieces of data: error code, error message, and error details.  You can
+  find out more about this error model and how to work with it in the [API
+  Design Guide](https://cloud.google.com/apis/design/errors).
 
   Messages:
     DetailsValueListEntry: A DetailsValueListEntry object.
@@ -2149,21 +2613,33 @@ class GoogleRpcStatus(_messages.Message):
 
 
 class GoogleTypeExpr(_messages.Message):
-  r"""Represents an expression text. Example:      title: "User account
-  presence"     description: "Determines whether the request has a user
-  account"     expression: "size(request.user) > 0"
+  r"""Represents a textual expression in the Common Expression Language (CEL)
+  syntax. CEL is a C-like expression language. The syntax and semantics of CEL
+  are documented at https://github.com/google/cel-spec.  Example (Comparison):
+  title: "Summary size limit"     description: "Determines if a summary is
+  less than 100 chars"     expression: "document.summary.size() < 100"
+  Example (Equality):      title: "Requestor is owner"     description:
+  "Determines if requestor is the document owner"     expression:
+  "document.owner == request.auth.claims.email"  Example (Logic):      title:
+  "Public documents"     description: "Determine whether the document should
+  be publicly visible"     expression: "document.type != 'private' &&
+  document.type != 'internal'"  Example (Data Manipulation):      title:
+  "Notification string"     description: "Create a notification string with a
+  timestamp."     expression: "'New message received at ' +
+  string(document.create_time)"  The exact variables and functions that may be
+  referenced within an expression are determined by the service that evaluates
+  it. See the service documentation for additional information.
 
   Fields:
-    description: An optional description of the expression. This is a longer
+    description: Optional. Description of the expression. This is a longer
       text which describes the expression, e.g. when hovered over it in a UI.
     expression: Textual representation of an expression in Common Expression
-      Language syntax.  The application context of the containing message
-      determines which well-known feature set of CEL is supported.
-    location: An optional string indicating the location of the expression for
+      Language syntax.
+    location: Optional. String indicating the location of the expression for
       error reporting, e.g. a file name and a position in the file.
-    title: An optional title for the expression, i.e. a short string
-      describing its purpose. This can be used e.g. in UIs which allow to
-      enter the expression.
+    title: Optional. Title for the expression, i.e. a short string describing
+      its purpose. This can be used e.g. in UIs which allow to enter the
+      expression.
   """
 
   description = _messages.StringField(1)
@@ -2172,14 +2648,18 @@ class GoogleTypeExpr(_messages.Message):
   title = _messages.StringField(4)
 
 
-class MlOperationsDeleteRequest(_messages.Message):
-  r"""A MlOperationsDeleteRequest object.
+class MlProjectsExplainRequest(_messages.Message):
+  r"""A MlProjectsExplainRequest object.
 
   Fields:
-    name: The name of the operation resource to be deleted.
+    googleCloudMlV1ExplainRequest: A GoogleCloudMlV1ExplainRequest resource to
+      be passed as the request body.
+    name: Required. The resource name of a model or a version.  Authorization:
+      requires the `predict` permission on the specified resource.
   """
 
-  name = _messages.StringField(1, required=True)
+  googleCloudMlV1ExplainRequest = _messages.MessageField('GoogleCloudMlV1ExplainRequest', 1)
+  name = _messages.StringField(2, required=True)
 
 
 class MlProjectsGetConfigRequest(_messages.Message):
@@ -2222,12 +2702,18 @@ class MlProjectsJobsGetIamPolicyRequest(_messages.Message):
   r"""A MlProjectsJobsGetIamPolicyRequest object.
 
   Fields:
+    options_requestedPolicyVersion: Optional. The policy format version to be
+      returned.  Valid values are 0, 1, and 3. Requests specifying an invalid
+      value will be rejected.  Requests for policies with any conditional
+      bindings must specify version 3. Policies without any conditional
+      bindings may specify any valid value or leave the field unset.
     resource: REQUIRED: The resource for which the policy is being requested.
       See the operation documentation for the appropriate value for this
       field.
   """
 
-  resource = _messages.StringField(1, required=True)
+  options_requestedPolicyVersion = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+  resource = _messages.StringField(2, required=True)
 
 
 class MlProjectsJobsGetRequest(_messages.Message):
@@ -2382,12 +2868,18 @@ class MlProjectsModelsGetIamPolicyRequest(_messages.Message):
   r"""A MlProjectsModelsGetIamPolicyRequest object.
 
   Fields:
+    options_requestedPolicyVersion: Optional. The policy format version to be
+      returned.  Valid values are 0, 1, and 3. Requests specifying an invalid
+      value will be rejected.  Requests for policies with any conditional
+      bindings must specify version 3. Policies without any conditional
+      bindings may specify any valid value or leave the field unset.
     resource: REQUIRED: The resource for which the policy is being requested.
       See the operation documentation for the appropriate value for this
       field.
   """
 
-  resource = _messages.StringField(1, required=True)
+  options_requestedPolicyVersion = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+  resource = _messages.StringField(2, required=True)
 
 
 class MlProjectsModelsGetRequest(_messages.Message):
@@ -2492,8 +2984,7 @@ class MlProjectsModelsVersionsDeleteRequest(_messages.Message):
 
   Fields:
     name: Required. The name of the version. You can get the names of all the
-      versions of a model by calling [projects.models.versions.list](/ml-
-      engine/reference/rest/v1/projects.models.versions/list).
+      versions of a model by calling projects.models.versions.list.
   """
 
   name = _messages.StringField(1, required=True)
@@ -2541,9 +3032,12 @@ class MlProjectsModelsVersionsPatchRequest(_messages.Message):
       field to update. Must be present and non-empty.  For example, to change
       the description of a version to "foo", the `update_mask` parameter would
       be specified as `description`, and the `PATCH` request body would
-      specify the new value, as follows:     {       "description": "foo"
-      }  Currently the only supported update mask fields are `description` and
-      `autoScaling.minNodes`.
+      specify the new value, as follows:  ``` {   "description": "foo" } ```
+      Currently the only supported update mask fields are `description`,
+      `requestLoggingConfig`, `autoScaling.minNodes`, and
+      `manualScaling.nodes`. However, you can only update
+      `manualScaling.nodes` if the version uses a [Compute Engine (N1) machine
+      type](/ml-engine/docs/machine-types-online-prediction).
   """
 
   googleCloudMlV1Version = _messages.MessageField('GoogleCloudMlV1Version', 1)
@@ -2560,8 +3054,7 @@ class MlProjectsModelsVersionsSetDefaultRequest(_messages.Message):
       request body.
     name: Required. The name of the version to make the default for the model.
       You can get the names of all the versions of a model by calling
-      [projects.models.versions.list](/ml-
-      engine/reference/rest/v1/projects.models.versions/list).
+      projects.models.versions.list.
   """
 
   googleCloudMlV1SetDefaultVersionRequest = _messages.MessageField('GoogleCloudMlV1SetDefaultVersionRequest', 1)

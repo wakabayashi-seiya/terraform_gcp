@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2015 Google Inc. All Rights Reserved.
+# Copyright 2015 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -247,7 +247,7 @@ class _RcUpdater(object):
       _TraceAction(console_io.FormatRequiredUserAction(
           'Start a new shell for the changes to take effect.'))
 
-    if not self.completion_update:
+    if not self.completion_update and self._CompletionExists():
       _TraceAction(
           '==> Source [{rc}] in your profile to enable shell command '
           'completion for gcloud.'.format(rc=self.completion))

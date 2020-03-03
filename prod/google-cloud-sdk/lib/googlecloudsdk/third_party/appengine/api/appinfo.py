@@ -1,4 +1,4 @@
-# Copyright 2007 Google Inc. All Rights Reserved.
+# Copyright 2007 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -31,6 +31,8 @@ and load from configuration files.
 # to be reflected in the java code. For questions, talk to clouser@ or
 
 from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
 import logging
 import os
 import re
@@ -161,7 +163,7 @@ GCE_RESOURCE_PATH_REGEX = r'^[a-z\d-]+(/[a-z\d-]+)*$'
 
 GCE_RESOURCE_NAME_REGEX = r'^[a-z]([a-z\d-]{0,61}[a-z\d])?$'
 
-VPC_ACCESS_CONNECTOR_NAME_REGEX = r'^[a-z\d-]+(/[a-z\d-]+)*$'
+VPC_ACCESS_CONNECTOR_NAME_REGEX = r'^[a-z\d-]+(/.+)*$'
 
 ALTERNATE_HOSTNAME_SEPARATOR = '-dot-'
 
@@ -175,9 +177,6 @@ RUNTIME_RE_STRING = r'((gs://[a-z0-9\-\._/]+)|([a-z][a-z0-9\-\.]{0,29}))'
 
 API_VERSION_RE_STRING = r'[\w.]{1,32}'
 ENV_RE_STRING = r'(1|2|standard|flex|flexible)'
-
-# MAIN should match any file path or class path (eg with dots).
-MAIN_RE_STRING = r'[\w.\\\/:]+'
 
 SOURCE_LANGUAGE_RE_STRING = r'[\w.\-]{1,32}'
 
@@ -538,6 +537,7 @@ _SUPPORTED_LIBRARIES = [
         'grpcio',
         'http://www.grpc.io/',
         'A high performance general RPC framework',
+        # Note: For documentation this is overridden to display 1.1.0dev0
         ['1.0.0'],
         latest_version='1.0.0',
         experimental_versions=['1.0.0'],
@@ -588,6 +588,13 @@ _SUPPORTED_LIBRARIES = [
         deprecated_versions=['1.2.4b4', '1.2.4'],
         ),
     _VersionedLibrary(
+        'mysqlclient',
+        'http://mysql-python.sourceforge.net/',
+        'A Python DB API v2.0 compatible interface to MySQL.',
+        ['1.4.4'],
+        latest_version='1.4.4',
+        ),
+    _VersionedLibrary(
         'numpy',
         'http://numpy.scipy.org/',
         'A general-purpose library for array-processing.',
@@ -603,7 +610,7 @@ _SUPPORTED_LIBRARIES = [
         ),
     _VersionedLibrary(
         'protorpc',
-        'https://code.google.com/p/google-protorpc/',
+        'https://github.com/google/protorpc',
         'A framework for implementing HTTP-based remote procedure call (RPC) '
         'services.',
         ['1.0'],
@@ -635,6 +642,13 @@ _SUPPORTED_LIBRARIES = [
         experimental_versions=['3.0.0'],
         ),
     _VersionedLibrary(
+        'psycopg2',
+        'http://initd.org/psycopg/',
+        'A Python DB API v2.0 compatible interface to PostgreSQL.',
+        ['2.8.3'],
+        latest_version='2.8.3',
+        ),
+    _VersionedLibrary(
         'PyAMF',
         'https://pypi.python.org/pypi/PyAMF',
         'A library that provides (AMF) Action Message Format functionality.',
@@ -663,16 +677,17 @@ _SUPPORTED_LIBRARIES = [
         'six',
         'https://pypi.python.org/pypi/six',
         'Abstract differences between py2.x and py3',
-        ['1.9.0'],
-        latest_version='1.9.0',
+        ['1.9.0', '1.12.0'],
+        latest_version='1.12.0',
+        default_version='1.12.0',
         ),
     _VersionedLibrary(
         'ssl',
         'http://docs.python.org/dev/library/ssl.html',
         'The SSL socket wrapper built-in module.',
-        ['2.7', '2.7.11'],
+        ['2.7', '2.7.11', '2.7.16', '2.7.current'],
         latest_version='2.7.11',
-        deprecated_versions=['2.7']
+        deprecated_versions=['2.7', '2.7.16']
         ),
     _VersionedLibrary(
         'ujson',
@@ -731,10 +746,10 @@ REQUIRED_LIBRARIES = {
     ('jinja2', 'latest'): [('markupsafe', 'latest'), ('setuptools', 'latest')],
     ('matplotlib', '1.2.0'): [('numpy', '1.6.1')],
     ('matplotlib', 'latest'): [('numpy', 'latest')],
-    ('protobuf', '3.0.0'): [('six', '1.9.0')],
+    ('protobuf', '3.0.0'): [('six', 'latest')],
     ('protobuf', 'latest'): [('six', 'latest')],
     ('grpcio', '1.0.0'): [('protobuf', '3.0.0'), ('enum', '0.9.23'),
-                          ('futures', '3.0.5'), ('six', '1.9.0'),
+                          ('futures', '3.0.5'), ('six', 'latest'),
                           ('setuptools', '36.6.0')],
     ('grpcio', 'latest'): [('protobuf', 'latest'), ('enum', 'latest'),
                            ('futures', 'latest'), ('six', 'latest'),
@@ -923,7 +938,7 @@ class HttpHeadersDict(validation.ValidatedDict):
             'HTTP header values must not contain non-ASCII data'))
 
       # HTTP headers are case-insensitive.
-      name = name.lower()
+      name = name.lower().decode('ascii')
 
       if not _HTTP_TOKEN_RE.match(name):
         raise appinfo_errors.InvalidHttpHeaderName(
@@ -980,12 +995,12 @@ class HttpHeadersDict(validation.ValidatedDict):
          https://www.ietf.org/rfc/rfc2616.txt
       """
       # Make sure only ASCII data is used.
+      error = appinfo_errors.InvalidHttpHeaderValue(
+          'HTTP header values must not contain non-ASCII data')
       if isinstance(value, six_subset.string_types):
-        value = EnsureAsciiBytes(value, appinfo_errors.InvalidHttpHeaderValue(
-            'HTTP header values must not contain non-ASCII data'))
-        b_value = value
+        b_value = EnsureAsciiBytes(value, error)
       else:
-        b_value = ('%s' % value).encode('ascii')
+        b_value = EnsureAsciiBytes(('%s' % value), error)
 
       # HTTP headers are case-insensitive.
       key = key.lower()
@@ -1005,7 +1020,7 @@ class HttpHeadersDict(validation.ValidatedDict):
 
     @staticmethod
     def AssertHeaderNotTooLong(name, value):
-      header_length = len('%s: %s\r\n' % (name, value))
+      header_length = len(('%s: %s\r\n' % (name, value)).encode('ascii'))
 
       # The `>=` operator here is a little counter-intuitive. The reason for it
       # is that I'm trying to follow the
@@ -2078,19 +2093,20 @@ class AppInclude(validation.Validated):
             `manual_scaling.instances` sets.
 
       Returns:
-        The number of instances as an integer, or `None`.
+        The number of instances as an integer. If the value of
+        `manual_scaling.instances` evaluates to False (e.g. 0 or None), then
+        return 0.
       """
       if appinclude.manual_scaling:
         if appinclude.manual_scaling.instances:
           return int(appinclude.manual_scaling.instances)
-      return None
+      return 0
 
     # We only want to mutate a param if at least one of the given
     # arguments has manual_scaling.instances set.
     if _Instances(appinclude_one) or _Instances(appinclude_two):
       instances = max(_Instances(appinclude_one), _Instances(appinclude_two))
-      if instances is not None:
-        appinclude_one.manual_scaling = ManualScaling(instances=str(instances))
+      appinclude_one.manual_scaling = ManualScaling(instances=str(instances))
     return appinclude_one
 
   @classmethod
@@ -2275,7 +2291,7 @@ class AppInfoExternal(validation.Validated):
       # A new `api_version` requires a release of the `dev_appserver`, so it
       # is ok to hardcode the version names here.
       API_VERSION: validation.Optional(API_VERSION_RE_STRING),
-      MAIN: validation.Optional(MAIN_RE_STRING),
+      MAIN: validation.Optional(_FILES_REGEX),
       # The App Engine environment to run this version in. (VM vs. non-VM, etc.)
       ENV: validation.Optional(ENV_RE_STRING),
       ENDPOINTS_API_SERVICE: validation.Optional(EndpointsApiService),
@@ -2751,7 +2767,6 @@ def ParseExpiration(expiration):
 #   - java/com/google/appengine/tools/admin/AppVersionUpload.java
 #   - java/com/google/apphosting/admin/legacy/LegacyAppInfo.java
 
-# LINT.IfChange
 # Forbid `.`, `..`, and leading `-`, `_ah/` or `/`
 _file_path_negative_1_re = re.compile(r'\.\.|^\./|\.$|/\./|^-|^_ah/|^/')
 
@@ -2797,4 +2812,3 @@ def ValidFilename(filename):
   if _file_path_negative_3_re.search(filename) is not None:
     return 'Any spaces must be in the middle of a filename: %s' % filename
   return ''
-# LINT.ThenChange(

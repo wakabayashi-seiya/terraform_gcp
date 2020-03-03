@@ -1,4 +1,4 @@
-# Copyright 2008 Google Inc. All Rights Reserved.
+# Copyright 2008 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -79,6 +79,7 @@ _VERSION_REGEX = r'^(?:(?:(%s):)?)(%s)$' % (SERVER_ID_RE_STRING,
 
 
 # This is in groc format - see
+# http://g3doc/borg/borgcron/g3doc/userguide.md
 class GrocValidator(validation.Validator):
   """Checks that a schedule is in valid groc format."""
 

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -82,5 +82,12 @@ GetNatMappingInfo.detailed_help = {
 
         shows a mapping of IP:port-ranges
         allocated to each VM's interface that is configured to use NAT via the
-        specified router."""
+        specified router.""",
+    'EXAMPLES':
+        """\
+        To show NAT mappings from all NATs in router 'r1' in region
+        'us-central1', run:
+
+            $ {command} r1 --region=us-central1
+        """
 }

@@ -9,6 +9,7 @@ class IamcredentialsV1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://iamcredentials.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'iamcredentials'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform']
@@ -99,33 +100,6 @@ class IamcredentialsV1(base_api.BaseApiClient):
         request_field=u'generateIdTokenRequest',
         request_type_name=u'IamcredentialsProjectsServiceAccountsGenerateIdTokenRequest',
         response_type_name=u'GenerateIdTokenResponse',
-        supports_download=False,
-    )
-
-    def GenerateIdentityBindingAccessToken(self, request, global_params=None):
-      r"""GenerateIdentityBindingAccessToken method for the projects_serviceAccounts service.
-
-      Args:
-        request: (IamcredentialsProjectsServiceAccountsGenerateIdentityBindingAccessTokenRequest) input message
-        global_params: (StandardQueryParameters, default: None) global arguments
-      Returns:
-        (GenerateIdentityBindingAccessTokenResponse) The response message.
-      """
-      config = self.GetMethodConfig('GenerateIdentityBindingAccessToken')
-      return self._RunMethod(
-          config, request, global_params=global_params)
-
-    GenerateIdentityBindingAccessToken.method_config = lambda: base_api.ApiMethodInfo(
-        flat_path=u'v1/projects/{projectsId}/serviceAccounts/{serviceAccountsId}:generateIdentityBindingAccessToken',
-        http_method=u'POST',
-        method_id=u'iamcredentials.projects.serviceAccounts.generateIdentityBindingAccessToken',
-        ordered_params=[u'name'],
-        path_params=[u'name'],
-        query_params=[],
-        relative_path=u'v1/{+name}:generateIdentityBindingAccessToken',
-        request_field=u'generateIdentityBindingAccessTokenRequest',
-        request_type_name=u'IamcredentialsProjectsServiceAccountsGenerateIdentityBindingAccessTokenRequest',
-        response_type_name=u'GenerateIdentityBindingAccessTokenResponse',
         supports_download=False,
     )
 

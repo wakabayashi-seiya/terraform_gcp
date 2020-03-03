@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ from __future__ import unicode_literals
 
 from apitools.base.py import list_pager
 from googlecloudsdk.api_lib.dns import util
-from googlecloudsdk.api_lib.util import apis
 from googlecloudsdk.calliope import base
 from googlecloudsdk.core import properties
 
@@ -59,7 +58,7 @@ class List(base.ListCommand):
     parser.display_info.AddUriFunc(_GetUriFunction('v1'))
 
   def Run(self, args):
-    dns_client = apis.GetClientInstance('dns', 'v1')
+    dns_client = util.GetApiClient('v1')
 
     project_id = properties.VALUES.core.project.GetOrFail()
 
@@ -67,7 +66,7 @@ class List(base.ListCommand):
         dns_client.managedZones,
         dns_client.MESSAGES_MODULE.DnsManagedZonesListRequest(
             project=project_id),
-        limit=args.limit, field='managedZones')
+        field='managedZones')
 
 
 @base.ReleaseTracks(base.ReleaseTrack.BETA)
@@ -94,7 +93,8 @@ class ListBeta(base.ListCommand):
     parser.display_info.AddUriFunc(_GetUriFunction('v1beta2'))
 
   def Run(self, args):
-    dns_client = apis.GetClientInstance('dns', 'v1beta2')
+    api_version = util.GetApiFromTrack(self.ReleaseTrack())
+    dns_client = util.GetApiClient(api_version)
 
     project_id = properties.VALUES.core.project.GetOrFail()
 
@@ -102,4 +102,28 @@ class ListBeta(base.ListCommand):
         dns_client.managedZones,
         dns_client.MESSAGES_MODULE.DnsManagedZonesListRequest(
             project=project_id),
-        limit=args.limit, field='managedZones')
+        field='managedZones')
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class ListAlpha(ListBeta):
+  """View the list of all your managed-zones.
+
+  This command displays the list of your managed-zones.
+
+  ## EXAMPLES
+
+  To see the list of all managed-zones, run:
+
+    $ {command}
+
+  To see the list of first 10 managed-zones, run:
+
+    $ {command} --limit=10
+  """
+
+  @staticmethod
+  def Args(parser):
+    parser.display_info.AddFormat('table(name, dnsName, description,'
+                                  ' visibility)')
+    parser.display_info.AddUriFunc(_GetUriFunction('v1alpha2'))

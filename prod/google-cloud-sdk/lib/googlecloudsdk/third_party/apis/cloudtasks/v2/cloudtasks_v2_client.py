@@ -9,6 +9,7 @@ class CloudtasksV2(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://cloudtasks.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'cloudtasks'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform']
@@ -55,8 +56,7 @@ class CloudtasksV2(base_api.BaseApiClient):
 
 Tasks cannot be updated after creation; there is no UpdateTask command.
 
-* For App Engine queues, the maximum task size is
-  100KB.
+* The maximum task size is 100KB.
 
       Args:
         request: (CloudtasksProjectsLocationsQueuesTasksCreateRequest) input message

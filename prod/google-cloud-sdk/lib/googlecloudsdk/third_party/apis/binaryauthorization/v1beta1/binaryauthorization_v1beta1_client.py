@@ -9,6 +9,7 @@ class BinaryauthorizationV1beta1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://binaryauthorization.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'binaryauthorization'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform']
@@ -156,7 +157,7 @@ set.
         method_id=u'binaryauthorization.projects.attestors.getIamPolicy',
         ordered_params=[u'resource'],
         path_params=[u'resource'],
-        query_params=[],
+        query_params=[u'options_requestedPolicyVersion'],
         relative_path=u'v1beta1/{+resource}:getIamPolicy',
         request_field='',
         request_type_name=u'BinaryauthorizationProjectsAttestorsGetIamPolicyRequest',
@@ -195,6 +196,8 @@ Returns INVALID_ARGUMENT if the project does not exist.
     def SetIamPolicy(self, request, global_params=None):
       r"""Sets the access control policy on the specified resource. Replaces any.
 existing policy.
+
+Can return Public Errors: NOT_FOUND, INVALID_ARGUMENT and PERMISSION_DENIED
 
       Args:
         request: (BinaryauthorizationProjectsAttestorsSetIamPolicyRequest) input message
@@ -312,7 +315,7 @@ set.
         method_id=u'binaryauthorization.projects.policy.getIamPolicy',
         ordered_params=[u'resource'],
         path_params=[u'resource'],
-        query_params=[],
+        query_params=[u'options_requestedPolicyVersion'],
         relative_path=u'v1beta1/{+resource}:getIamPolicy',
         request_field='',
         request_type_name=u'BinaryauthorizationProjectsPolicyGetIamPolicyRequest',
@@ -323,6 +326,8 @@ set.
     def SetIamPolicy(self, request, global_params=None):
       r"""Sets the access control policy on the specified resource. Replaces any.
 existing policy.
+
+Can return Public Errors: NOT_FOUND, INVALID_ARGUMENT and PERMISSION_DENIED
 
       Args:
         request: (BinaryauthorizationProjectsPolicySetIamPolicyRequest) input message
@@ -392,7 +397,12 @@ may "fail open" without warning.
           }
 
     def GetPolicy(self, request, global_params=None):
-      r"""Gets the policy for this project. Returns a default.
+      r"""A policy specifies the attestors that must attest to.
+a container image, before the project is allowed to deploy that
+image. There is at most one policy per project. All image admission
+requests are permitted if a project has no policy.
+
+Gets the policy for this project. Returns a default
 policy if the project does not have one.
 
       Args:

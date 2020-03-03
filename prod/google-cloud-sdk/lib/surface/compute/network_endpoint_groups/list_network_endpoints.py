@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2018 Google Inc. All Rights Reserved.
+# Copyright 2018 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""list endpoints command."""
+"""list network endpoints command."""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -25,48 +25,81 @@ from googlecloudsdk.calliope import base
 from googlecloudsdk.command_lib.compute import flags as compute_flags
 from googlecloudsdk.command_lib.compute.network_endpoint_groups import flags
 
+DETAILED_HELP = {
+    'EXAMPLES': """
+To list network endpoints of a network endpoint group named ``my-neg''
+in zone ``us-central1-a'':
 
-class ListEndpoints(base.ListCommand):
-  r"""List network endpoints in a network endpoint group.
+  $ {command} my-neg --zone=us-central1-a
+""",
+}
 
-  ## EXAMPLES
 
-  To list network endpoints of a network endpoint group:
+@base.ReleaseTracks(base.ReleaseTrack.BETA, base.ReleaseTrack.GA)
+class ListNetworkEndpoints(base.ListCommand):
+  """List network endpoints in a network endpoint group."""
 
-    $ {command} my-neg --zone=us-central1-a
-  """
-
-  @staticmethod
-  def Args(parser):
-    parser.display_info.AddFormat("""\
+  detailed_help = DETAILED_HELP
+  display_info_format = """\
         table(
           networkEndpoint.instance,
           networkEndpoint.ipAddress,
           networkEndpoint.port
-        )""")
+        )"""
+  support_global_scope = False
+
+  @classmethod
+  def Args(cls, parser):
+    parser.display_info.AddFormat(cls.display_info_format)
     base.URI_FLAG.RemoveFromParser(parser)
-    flags.MakeNetworkEndpointGroupsArg().AddArgument(parser)
+    flags.MakeNetworkEndpointGroupsArg(
+        support_global_scope=cls.support_global_scope).AddArgument(parser)
 
   def Run(self, args):
     holder = base_classes.ComputeApiHolder(self.ReleaseTrack())
     client = holder.client
     messages = client.messages
 
-    neg_ref = flags.MakeNetworkEndpointGroupsArg().ResolveAsResource(
-        args, holder.resources,
-        scope_lister=compute_flags.GetDefaultScopeLister(client))
+    neg_ref = flags.MakeNetworkEndpointGroupsArg(
+        support_global_scope=self.support_global_scope).ResolveAsResource(
+            args,
+            holder.resources,
+            scope_lister=compute_flags.GetDefaultScopeLister(client))
 
     args.filter, filter_expr = filter_rewrite.Rewriter().Rewrite(args.filter)
-    request = messages.ComputeNetworkEndpointGroupsListNetworkEndpointsRequest(
-        networkEndpointGroup=neg_ref.Name(),
-        project=neg_ref.project,
-        zone=neg_ref.zone,
-        filter=filter_expr)
+
+    if hasattr(neg_ref, 'zone'):
+      request = messages.ComputeNetworkEndpointGroupsListNetworkEndpointsRequest(
+          networkEndpointGroup=neg_ref.Name(),
+          project=neg_ref.project,
+          zone=neg_ref.zone,
+          filter=filter_expr)
+      service = client.apitools_client.networkEndpointGroups
+    else:
+      request = messages.ComputeGlobalNetworkEndpointGroupsListNetworkEndpointsRequest(
+          networkEndpointGroup=neg_ref.Name(),
+          project=neg_ref.project,
+          filter=filter_expr)
+      service = client.apitools_client.globalNetworkEndpointGroups
 
     return list_pager.YieldFromList(
-        client.apitools_client.networkEndpointGroups,
+        service,
         request,
         method='ListNetworkEndpoints',
         field='items',
         limit=args.limit,
         batch_size=None)
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class AlphaListNetworkEndpoints(ListNetworkEndpoints):
+  """List network endpoints in a network endpoint group."""
+
+  display_info_format = """\
+        table(
+          networkEndpoint.instance,
+          networkEndpoint.ipAddress,
+          networkEndpoint.port,
+          networkEndpoint.fqdn
+        )"""
+  support_global_scope = True

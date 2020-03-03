@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -53,7 +53,7 @@ def _verify_tensorflow(version):
   # Check tensorflow with a recent version is installed.
   try:
     # pylint: disable=g-import-not-at-top
-    import tensorflow as tf
+    import tensorflow.compat.v1 as tf
     # pylint: enable=g-import-not-at-top
   except ImportError:
     eprint('Cannot import Tensorflow. Please verify '

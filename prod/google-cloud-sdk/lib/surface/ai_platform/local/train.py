@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -63,6 +63,7 @@ class RunLocal(base.Command):
     flags.PACKAGE_PATH.AddToParser(parser)
     flags.GetModuleNameFlag().AddToParser(parser)
     flags.DISTRIBUTED.AddToParser(parser)
+    flags.EVALUATORS.AddToParser(parser)
     flags.PARAM_SERVERS.AddToParser(parser)
     flags.GetJobDirFlag(upload_help=False, allow_local=True).AddToParser(parser)
     flags.WORKERS.AddToParser(parser)
@@ -91,6 +92,7 @@ class RunLocal(base.Command):
           package_root,
           args.parameter_server_count or 2,
           args.worker_count or 2,
+          args.evaluator_count or 0,
           args.start_port,
           user_args=user_args)
     else:

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2015 Google Inc. All Rights Reserved.
+# Copyright 2015 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 import enum
 
 
-BASE_URL = 'https://www.googleapis.com/compute/beta/'
+BASE_URL = 'https://compute.googleapis.com/compute/beta/'
 DOCS_URL = 'https://developers.google.com/compute/docs/reference/latest/'
 
 
@@ -108,11 +108,25 @@ class Collections(enum.Enum):
       [u'project', u'forwardingRule'],
       True
   )
+  GLOBALNETWORKENDPOINTGROUPS = (
+      'globalNetworkEndpointGroups',
+      'projects/{project}/global/networkEndpointGroups/{networkEndpointGroup}',
+      {},
+      [u'project', u'networkEndpointGroup'],
+      True
+  )
   GLOBALOPERATIONS = (
       'globalOperations',
       'projects/{project}/global/operations/{operation}',
       {},
       [u'project', u'operation'],
+      True
+  )
+  GLOBALORGANIZATIONOPERATIONS = (
+      'globalOrganizationOperations',
+      'projects/locations/global/operations/{operation}',
+      {},
+      [u'operation'],
       True
   )
   HEALTHCHECKS = (
@@ -208,6 +222,13 @@ class Collections(enum.Enum):
       [u'project', u'license'],
       True
   )
+  MACHINEIMAGES = (
+      'machineImages',
+      'projects/{project}/global/machineImages/{machineImage}',
+      {},
+      [u'project', u'machineImage'],
+      True
+  )
   MACHINETYPES = (
       'machineTypes',
       'projects/{project}/zones/{zone}/machineTypes/{machineType}',
@@ -258,6 +279,20 @@ class Collections(enum.Enum):
       [u'project', u'zone', u'nodeType'],
       True
   )
+  ORGANIZATIONSECURITYPOLICIES = (
+      'organizationSecurityPolicies',
+      'projects/locations/global/securityPolicies/{securityPolicy}',
+      {},
+      [u'securityPolicy'],
+      True
+  )
+  PACKETMIRRORINGS = (
+      'packetMirrorings',
+      'projects/{project}/regions/{region}/packetMirrorings/{packetMirroring}',
+      {},
+      [u'project', u'region', u'packetMirroring'],
+      True
+  )
   PROJECTS = (
       'projects',
       'projects/{project}',
@@ -300,6 +335,21 @@ class Collections(enum.Enum):
       [u'project', u'region', u'disk'],
       True
   )
+  REGIONHEALTHCHECKSERVICES = (
+      'regionHealthCheckServices',
+      'projects/{project}/regions/{region}/healthCheckServices/'
+      '{healthCheckService}',
+      {},
+      [u'project', u'region', u'healthCheckService'],
+      True
+  )
+  REGIONHEALTHCHECKS = (
+      'regionHealthChecks',
+      'projects/{project}/regions/{region}/healthChecks/{healthCheck}',
+      {},
+      [u'project', u'region', u'healthCheck'],
+      True
+  )
   REGIONINSTANCEGROUPMANAGERS = (
       'regionInstanceGroupManagers',
       'projects/{project}/regions/{region}/instanceGroupManagers/'
@@ -315,11 +365,49 @@ class Collections(enum.Enum):
       [u'project', u'region', u'instanceGroup'],
       True
   )
+  REGIONNOTIFICATIONENDPOINTS = (
+      'regionNotificationEndpoints',
+      'projects/{project}/regions/{region}/notificationEndpoints/'
+      '{notificationEndpoint}',
+      {},
+      [u'project', u'region', u'notificationEndpoint'],
+      True
+  )
   REGIONOPERATIONS = (
       'regionOperations',
       'projects/{project}/regions/{region}/operations/{operation}',
       {},
       [u'project', u'region', u'operation'],
+      True
+  )
+  REGIONSSLCERTIFICATES = (
+      'regionSslCertificates',
+      'projects/{project}/regions/{region}/sslCertificates/{sslCertificate}',
+      {},
+      [u'project', u'region', u'sslCertificate'],
+      True
+  )
+  REGIONTARGETHTTPPROXIES = (
+      'regionTargetHttpProxies',
+      'projects/{project}/regions/{region}/targetHttpProxies/'
+      '{targetHttpProxy}',
+      {},
+      [u'project', u'region', u'targetHttpProxy'],
+      True
+  )
+  REGIONTARGETHTTPSPROXIES = (
+      'regionTargetHttpsProxies',
+      'projects/{project}/regions/{region}/targetHttpsProxies/'
+      '{targetHttpsProxy}',
+      {},
+      [u'project', u'region', u'targetHttpsProxy'],
+      True
+  )
+  REGIONURLMAPS = (
+      'regionUrlMaps',
+      'projects/{project}/regions/{region}/urlMaps/{urlMap}',
+      {},
+      [u'project', u'region', u'urlMap'],
       True
   )
   REGIONS = (

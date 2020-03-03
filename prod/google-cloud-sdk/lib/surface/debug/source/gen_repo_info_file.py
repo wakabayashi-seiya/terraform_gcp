@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ from googlecloudsdk.third_party.appengine.tools import context_util
 
 
 class GenRepoInfoFile(base.Command):
-  """Generates repository information files for the Stackdriver Debugger.
+  """Generates repository information files for the Cloud Debugger.
 
   The generated file contains opaque information representing which source
   revision the application was built at, and which repository this revision

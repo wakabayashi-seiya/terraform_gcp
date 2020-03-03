@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -195,15 +195,15 @@ class DeprecateImages(base.SilentCommand):
 
 
 DeprecateImages.detailed_help = {
-    'EXAMPLES': """\
-        To deprecate an image called 'IMAGE' immediately, mark it as
-        obsolete in one day, and mark it as deleted in two days, use:
+    'EXAMPLES': """
+To deprecate an image called 'IMAGE' immediately, mark it as
+obsolete in one day, and mark it as deleted in two days, use:
 
-          $ {command} IMAGE --state DEPRECATED --obsolete-in 1d --delete-in 2d
+  $ {command} IMAGE --state=DEPRECATED --obsolete-in=1d --delete-in=2d
 
-        To un-deprecate an image called 'IMAGE' and clear times for deprecated,
-        obsoleted, and deleted, use:
+To un-deprecate an image called 'IMAGE' and clear times for deprecated,
+obsoleted, and deleted, use:
 
-          $ {command} IMAGE --state ACTIVE
-        """,
+  $ {command} IMAGE --state=ACTIVE
+""",
 }

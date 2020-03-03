@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -195,8 +195,7 @@ def _CreateAlias(instance_resource):
 
 def _BuildComputeSection(instances, private_key_file, known_hosts_file):
   """Returns a string representing the Compute section that should be added."""
-  buf = io.StringIO()
-  buf.write(_HEADER)
+  temp_buf = []
 
   for instance in instances:
     external_ip_address = (
@@ -204,7 +203,7 @@ def _BuildComputeSection(instances, private_key_file, known_hosts_file):
     host_key_alias = 'compute.{0}'.format(instance.id)
 
     if external_ip_address:
-      buf.write(textwrap.dedent("""\
+      temp_buf.extend(textwrap.dedent("""\
           Host {alias}
               HostName {external_ip_address}
               IdentityFile {private_key_file}
@@ -219,9 +218,16 @@ def _BuildComputeSection(instances, private_key_file, known_hosts_file):
                      known_hosts_file=known_hosts_file,
                      host_key_alias=host_key_alias)))
 
-  buf.write(_END_MARKER)
-  buf.write('\n')
-  return buf.getvalue()
+  if temp_buf:
+    buf = io.StringIO()
+    buf.write(_HEADER)
+    for i in temp_buf:
+      buf.write(i)
+    buf.write(_END_MARKER)
+    buf.write('\n')
+    return buf.getvalue()
+  else:
+    return ''
 
 
 class ConfigSSH(base.Command):
@@ -257,6 +263,15 @@ class ConfigSSH(base.Command):
   in the project's metadata. If the user does not have a public
   SSH key, one is generated using *ssh-keygen(1)* (if the `--quiet`
   flag is given, the generated key will have an empty passphrase).
+
+  ## EXAMPLES
+  To populate SSH config file with Host entries from each running instance, run:
+
+    $ {command}
+
+  To remove the change to the SSH config file by this command, run:
+
+    $ {command} --remove
   """
 
   category = base.TOOLS_CATEGORY
@@ -289,14 +304,14 @@ class ConfigSSH(base.Command):
         help=('If provided, any changes made to the SSH config file by this '
               'tool are reverted.'))
 
-  def GetInstances(self, client):
-    """Returns a generator of all instances in the project."""
+  def GetRunningInstances(self, client):
+    """Returns a generator of all running instances in the project."""
     errors = []
     instances = lister.GetZonalResources(
         service=client.apitools_client.instances,
         project=properties.VALUES.core.project.GetOrFail(),
         requested_zones=None,
-        filter_expr=None,
+        filter_expr='status eq RUNNING',
         http=client.apitools_client.http,
         batch_url=client.batch_url,
         errors=errors)
@@ -335,8 +350,8 @@ class ConfigSSH(base.Command):
         raise MultipleComputeSectionsError(ssh_config_file)
     else:
       ssh_helper.EnsureSSHKeyIsInProject(
-          client, ssh.GetDefaultSshUsername(warn_on_account_user=True))
-      instances = list(self.GetInstances(client))
+          client, ssh.GetDefaultSshUsername(warn_on_account_user=True), None)
+      instances = list(self.GetRunningInstances(client))
       if instances:
         compute_section = _BuildComputeSection(
             instances, ssh_helper.keys.key_file, ssh.KnownHosts.DEFAULT_PATH)
@@ -385,8 +400,13 @@ class ConfigSSH(base.Command):
 
           """.format(alias=_CreateAlias(instances[0]))))
 
+    elif compute_section == '' and instances:   # pylint: disable=g-explicit-bool-comparison
+      log.warning(
+          'No host aliases were added to your SSH configs because instances'
+          ' have no public IP.')
+
     elif not instances and not args.remove:
       log.warning(
           'No host aliases were added to your SSH configs because you do not '
-          'have any instances. Try running this command again after creating '
-          'some instances.')
+          'have any running instances. Try running this command again after '
+          'running some instances.')

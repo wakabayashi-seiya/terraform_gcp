@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2016 Google Inc. All Rights Reserved.
+# Copyright 2016 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -18,19 +18,23 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import unicode_literals
 
+import re
 from apitools.base.protorpclite import messages as proto_messages
 from apitools.base.py import encoding as apitools_encoding
 from googlecloudsdk.api_lib.util import apis
-from googlecloudsdk.command_lib.util.apis import arg_utils
 from googlecloudsdk.core import exceptions
 from googlecloudsdk.core import yaml
+from googlecloudsdk.core.resource import resource_property
 from googlecloudsdk.core.util import files
 
 import six
 
 _API_NAME = 'cloudbuild'
 _API_VERSION = 'v1'
-_ALPHA_API_VERSION = 'v1alpha1'
+_ALPHA_API_VERSION = 'v1alpha2'
+
+WORKERPOOL_NAME_MATCHER = r'projects/.*/workerPools/.*'
+WORKERPOOL_NAME_SELECTOR = r'projects/.*/workerPools/(.*)'
 
 
 def GetMessagesModule():
@@ -166,6 +170,37 @@ def SnakeToCamel(msg, skip=None):
     return msg
 
 
+def MessageToFieldPaths(msg):
+  """Produce field paths from a message object.
+
+  The result is used to create a FieldMask proto message that contains all field
+  paths presented in the object.
+  https://github.com/protocolbuffers/protobuf/blob/master/src/google/protobuf/field_mask.proto
+
+  Args:
+    msg: An user defined message object that extends the messages.Message class.
+    https://github.com/google/apitools/blob/master/apitools/base/protorpclite/messages.py
+
+  Returns:
+    The list of field paths.
+  """
+  fields = []
+  for field in msg.all_fields():
+    v = msg.get_assigned_value(field.name)
+    if field.repeated and not v:
+      # Repeated field is initialized as an empty list.
+      continue
+    if v is not None:
+      name = resource_property.ConvertToSnakeCase(field.name)
+      if hasattr(v, 'all_fields'):
+        # message has sub-messages, constructing subpaths.
+        for f in MessageToFieldPaths(v):
+          fields.append('{}.{}'.format(name, f))
+      else:
+        fields.append(name)
+  return fields
+
+
 def _UnpackCheckUnused(obj, msg_type):
   """Stuff a dict into a proto message, and fail if there are unused values.
 
@@ -247,6 +282,72 @@ def LoadMessageFromStream(stream,
   if not isinstance(structured_data, dict):
     raise ParserError(path, 'Could not parse as a dictionary.')
 
+  return _YamlToMessage(structured_data, msg_type, msg_friendly_name,
+                        skip_camel_case, path)
+
+
+def LoadMessagesFromStream(stream,
+                           msg_type,
+                           msg_friendly_name,
+                           skip_camel_case=None,
+                           path=None):
+  """Load multiple proto message from a stream of JSON or YAML text.
+
+  Args:
+    stream: file-like object containing the JSON or YAML data to be decoded.
+    msg_type: The protobuf message type to create.
+    msg_friendly_name: A readable name for the message type, for use in error
+      messages.
+    skip_camel_case: Contains proto field names or map keys whose values should
+      not have camel case applied.
+    path: str or None. Optional path to be used in error messages.
+
+  Raises:
+    ParserError: If there was a problem parsing the stream.
+    ParseProtoException: If there was a problem interpreting the stream as the
+    given message type.
+
+  Returns:
+    Proto message list of the messages that got decoded.
+  """
+  if skip_camel_case is None:
+    skip_camel_case = []
+  # Turn the data into a dict
+  try:
+    structured_data = yaml.load_all(stream, file_hint=path)
+  except yaml.Error as e:
+    raise ParserError(path, e.inner_error)
+
+  return [
+      _YamlToMessage(item, msg_type, msg_friendly_name, skip_camel_case, path)
+      for item in structured_data
+  ]
+
+
+def _YamlToMessage(structured_data,
+                   msg_type,
+                   msg_friendly_name,
+                   skip_camel_case=None,
+                   path=None):
+  """Load a proto message from a file containing JSON or YAML text.
+
+  Args:
+    structured_data: Dict containing the decoded YAML data.
+    msg_type: The protobuf message type to create.
+    msg_friendly_name: A readable name for the message type, for use in error
+      messages.
+    skip_camel_case: Contains proto field names or map keys whose values should
+      not have camel case applied.
+    path: str or None. Optional path to be used in error messages.
+
+  Raises:
+    ParseProtoException: If there was a problem interpreting the file as the
+    given message type.
+
+  Returns:
+    Proto message, The message that got decoded.
+  """
+
   # Transform snake_case into camelCase.
   structured_data = SnakeToCamel(structured_data, skip_camel_case)
 
@@ -262,7 +363,9 @@ def LoadMessageFromStream(stream,
   return msg
 
 
-def LoadMessageFromPath(path, msg_type, msg_friendly_name,
+def LoadMessageFromPath(path,
+                        msg_type,
+                        msg_friendly_name,
                         skip_camel_case=None):
   """Load a proto message from a file containing JSON or YAML text.
 
@@ -288,12 +391,49 @@ def LoadMessageFromPath(path, msg_type, msg_friendly_name,
                                  skip_camel_case, path)
 
 
-def GenerateRegionChoiceToEnum():
-  # Return a map of region choice strings (for arguments) to region enum values.
-  msg = GetMessagesModuleAlpha()
-  enums = msg.WorkerPool.RegionsValueListEntryValuesEnum
-  return {
-      arg_utils.EnumNameToChoice(region_val.name): region_val
-      for region_val in enums
-      if region_val != enums.REGION_UNSPECIFIED
-  }
+def LoadMessagesFromPath(path,
+                         msg_type,
+                         msg_friendly_name,
+                         skip_camel_case=None):
+  """Load a proto message from a file containing JSON or YAML text.
+
+  Args:
+    path: The path to a file containing the JSON or YAML data to be decoded.
+    msg_type: The protobuf message type to create.
+    msg_friendly_name: A readable name for the message type, for use in error
+      messages.
+    skip_camel_case: Contains proto field names or map keys whose values should
+      not have camel case applied.
+
+  Raises:
+    files.MissingFileError: If the file does not exist.
+    ParseProtoException: If there was a problem interpreting the file as the
+    given message type.
+
+  Returns:
+    Proto message list of the messages that got decoded.
+  """
+  with files.FileReader(path) as f:  # Returns user-friendly error messages
+    return LoadMessagesFromStream(f, msg_type, msg_friendly_name,
+                                  skip_camel_case, path)
+
+
+def WorkerPoolShortName(resource_name):
+  """Turn a worker pool's full resource name into its short name (the ID).
+
+  For example, this turns "projects/abc/workerPools/def" into "def".
+
+  Args:
+    resource_name: A Worker pool's full resource name.
+
+  Raises:
+    ValueError: If the full resource name was not well-formatted.
+
+  Returns:
+    The worker pool's short name.
+  """
+  match = re.search(WORKERPOOL_NAME_SELECTOR, resource_name)
+  if match:
+    return match.group(1)
+  raise ValueError('The worker pool resource name must match "%s"' %
+                   (WORKERPOOL_NAME_MATCHER,))

@@ -1,4 +1,4 @@
-# Copyright 2019 Google Inc. All Rights Reserved.
+# Copyright 2019 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -27,7 +27,8 @@ starting_urls:
   is_positional: false
   help_text: |
     URLs the scan starts scanning from. These URLs must be 'owned' by the project in some way
-    (resolve to a reserved IP address, or be the default *.appspot.com).
+    (resolve to a reserved IP address, or be the default
+    `https://<PROJECT-ID>.<REGION-ID>.r.appspot.com`).
 
 max_qps:
   arg_name: max-qps
@@ -96,3 +97,17 @@ export_to_security_center:
   help_text: |
     If True, the scanner will export scan results to Cloud Security Command Center. Defaults to
     true.
+
+risk_level:
+  arg_name: risk-level
+  api_field: scanConfig.riskLevel
+  is_positional: false
+  required: false
+  default: normal
+  choices:
+  - arg_value: normal
+    enum_value: NORMAL
+  - arg_value: low
+    enum_value: LOW
+  help_text: |
+    The risk level selected for the scan. Defaults to normal scanning.

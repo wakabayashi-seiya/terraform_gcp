@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ from googlecloudsdk.calliope import actions
 from googlecloudsdk.calliope import arg_parsers
 from googlecloudsdk.calliope import base
 from googlecloudsdk.core import log
+import six
 
 ANDROID_INSTRUMENTATION_TEST = 'ANDROID INSTRUMENTATION TEST'
 ANDROID_ROBO_TEST = 'ANDROID ROBO TEST'
@@ -53,6 +54,7 @@ def AddCommonTestRunArgs(parser):
       '--async',
       action='store_true',
       default=None,
+      dest='async_',
       help='Invoke a test asynchronously without waiting for test results.')
   parser.add_argument(
       '--num-flaky-test-attempts',
@@ -115,13 +117,9 @@ def AddAndroidTestArgs(parser):
       'to be APKs.')
   parser.add_argument(
       '--app-package',
-      action=actions.DeprecationAction(
-          '--app-package',
-          warn=('The `--app-package` flag is deprecated and should no longer '
-                'be used. By default, the correct application package name is '
-                'parsed from the APK manifest.')),
-      help='The Java package of the application under test (default: extracted '
-      'from the APK manifest).')
+      action=actions.DeprecationAction('--app-package', removed=True),
+      help='The Java package of the application under test. By default, the '
+      'application package name is parsed from the APK manifest.')
   parser.add_argument(
       '--auto-google-login',
       action='store_true',
@@ -148,16 +146,9 @@ def AddAndroidTestArgs(parser):
       metavar='KEY=VALUE',
       help="""\
       A comma-separated, key=value map of environment variables and their
-      desired values. This flag is repeatable. The environment variables are
-      mirrored as extra options to the `am instrument -e KEY1 VALUE1 ...`
-      command and passed to your test runner (typically AndroidJUnitRunner).
-      Examples:
-
-      Break test cases into four shards and run only the first shard:
-
-      ```
-      --environment-variables numShards=4,shardIndex=0
-      ```
+      desired values. The environment variables are mirrored as extra options to
+      the `am instrument -e KEY1 VALUE1 ...` command and passed to your test
+      runner (typically AndroidJUnitRunner). Examples:
 
       Enable code coverage and provide a directory to store the coverage
       results when using Android Test Orchestrator (`--use-orchestrator`):
@@ -215,14 +206,10 @@ def AddAndroidTestArgs(parser):
       'using a URL beginning with `gs://`.')
   parser.add_argument(
       '--test-package',
-      action=actions.DeprecationAction(
-          '--test-package',
-          warn=('The `--test-package` flag is deprecated and should no longer '
-                'be used. By default, the correct test package name is '
-                'parsed from the APK manifest.')),
+      action=actions.DeprecationAction('--test-package', removed=True),
       category=ANDROID_INSTRUMENTATION_TEST,
-      help='The Java package name of the instrumentation test (default: '
-      'extracted from the APK manifest).')
+      help='The Java package name of the instrumentation test. By default, the '
+      'test package name is parsed from the APK manifest.')
   parser.add_argument(
       '--test-runner-class',
       category=ANDROID_INSTRUMENTATION_TEST,
@@ -334,8 +321,7 @@ def AddIosTestArgs(parser):
   parser.add_argument(
       '--type',
       category=base.COMMONLY_USED_FLAGS,
-      hidden=True,
-      choices=['xctest'],
+      choices=['xctest', 'game-loop'],
       help='The type of iOS test to run.')
   parser.add_argument(
       '--test',
@@ -396,6 +382,31 @@ def AddIosTestArgs(parser):
       'together in the Firebase console in a time-ordered test history list.')
 
 
+def AddBetaArgs(parser):
+  """Register args which are only available in the beta run commands.
+
+  Args:
+    parser: An argparse parser used to add args that follow a command.
+  """
+  parser.add_argument(
+      '--client-details',
+      type=arg_parsers.ArgDict(),
+      metavar='KEY=VALUE',
+      help="""\
+      Comma-separated, KEY=VALUE map of additional details to attach to the test
+      matrix. Arbitrary KEY=VALUE pairs may be attached to a test matrix to
+      provide additional context about the tests being run. When consuming the
+      test results, such as in Cloud Functions or a CI system, these details can
+      add additional context such as a link to the corresponding pull request.
+
+      Example:
+
+      ```
+      --client-details=buildNumber=1234,pullRequest=https://example.com/link/to/pull-request
+      ```
+      """)
+
+
 def AddGaArgs(parser):
   """Register args which are only available in the GA run command.
 
@@ -406,7 +417,7 @@ def AddGaArgs(parser):
 
 
 def AddAndroidBetaArgs(parser):
-  """Register args which are only available in the beta run command.
+  """Register args which are only available in the Android beta run command.
 
   Args:
     parser: An argparse parser used to add args that follow a command.
@@ -439,23 +450,101 @@ def AddAndroidBetaArgs(parser):
   parser.add_argument(
       '--other-files',
       type=arg_parsers.ArgDict(min_length=1),
-      action='append',
-      metavar='FILE=DEVICE_DIR',
+      metavar='DEVICE_PATH=FILE_PATH',
       help="""\
-      A list of file=device-directory pairs that indicate paths of files to push
-      to the device before starting tests, and the device directory to push them
-      to.\n
-      Source file paths may be in the local filesystem or in Google Cloud
-      Storage (gs://...). Device directories must be absolute, whitelisted paths
-      (${EXTERNAL_STORAGE}, or ${ANDROID_DATA}/local/tmp).\n
+      A list of device-path=file-path pairs that indicate the device paths to
+      push files to the device before starting tests, and the paths of files to
+      push.\n
+      Device paths must be under absolute, whitelisted paths
+      (${EXTERNAL_STORAGE}, or ${ANDROID_DATA}/local/tmp). Source file paths may
+      be in the local filesystem or in Google Cloud Storage (gs://...).\n
       Examples:\n
       ```
-      --other-files local/file1=/sdcard/dir1/
-      --other-files gs://bucket/file2=/sdcard/dir2
+      --other-files /sdcard/dir1/file1.txt=local/file.txt,/sdcard/dir2/file2.jpg=gs://bucket/file.jpg
       ```\n
       This flag only copies files to the device. To install files, like OBB or
       APK files, see --obb-files and --additional-apks.
       """)
+  # Mutually exclusive sharding options group.
+  sharding_options = parser.add_group(mutex=True, help='Sharding options.')
+  sharding_options.add_argument(
+      '--num-uniform-shards',
+      metavar='int',
+      type=arg_validate.POSITIVE_INT_PARSER,
+      help="""\
+      Specifies the number of shards into which you want to evenly distribute
+      test cases. The shards are run in parallel on separate devices. For
+      example, if your test execution contains 20 test cases and you specify
+      four shards, each shard executes five test cases.
+
+      The number of shards should be less than the total number of test
+      cases. The number of shards specified must be >= 1 and <= 50.
+      """)
+  sharding_options.add_argument(
+      '--test-targets-for-shard',
+      metavar='TEST_TARGETS_FOR_SHARD',
+      action='append',
+      help="""\
+      Specifies a group of packages, classes, and/or test cases to run in
+      each shard (a group of test cases). The shards are run in parallel on
+      separate devices. You can repeat this flag up to 50 times to specify
+      multiple shards.
+
+      Note: If you include the flags --environment-variable or --test-targets
+      when running --test-targets-for-shard, the flags are applied to all the
+      shards you create.
+
+      Examples:
+
+      You can also specify multiple packages, classes, or test cases in the
+      same shard by separating each item with a comma. For example:
+
+      ```
+      --test-targets-for-shard
+      "package com.package1.for.shard1,com.package2.for.shard1"
+      ```
+
+      ```
+      --test-targets-for-shard
+      "class com.foo.ClassForShard2#testMethod1,com.foo.ClassForShard2#testMethod2"
+      ```
+
+      To specify both package and class in the same shard, separate
+      package and class with semi-colons:
+
+      ```
+      --test-targets-for-shard
+      "class com.foo.ClassForShard3;package com.package.for.shard3"
+      ```
+      """)
+
+
+def AddIosBetaArgs(parser):
+  """Register args which are only available in the iOS beta run command.
+
+  Args:
+    parser: An argparse parser used to add args that follow a command.
+  """
+
+  # The following args are specific to iOS game-loop tests.
+
+  parser.add_argument(
+      '--scenario-numbers',
+      metavar='int',
+      type=arg_parsers.ArgList(element_type=int, min_length=1, max_length=1024),
+      help='A list of game-loop scenario numbers which will be run as part of '
+           'the test (default: scenario 1). A maximum of 1024 scenarios may be '
+           'specified in one test matrix, but the maximum number may also be '
+           'limited by the overall test *--timeout* setting. This flag is only '
+           'valid when *--type=game-loop* is also set.'
+  )
+  parser.add_argument(
+      '--app',
+      help='The path to the application archive (.ipa file) for game-loop '
+           'testing. The path may be in the local filesystem or in Google '
+           'Cloud Storage using gs:// notation. This flag is only valid when '
+           '*--type=game-loop* is also set.'
+  )
 
 
 def AddMatrixArgs(parser):
@@ -581,7 +670,7 @@ def ApplyLowerPriorityArgs(args, lower_pri_args, issue_cli_warning=False):
   for arg in lower_pri_args:
     if getattr(args, arg, None) is None:
       log.debug('Applying default {0}: {1}'
-                .format(arg, str(lower_pri_args[arg])))
+                .format(arg, six.text_type(lower_pri_args[arg])))
       setattr(args, arg, lower_pri_args[arg])
     elif issue_cli_warning and getattr(args, arg) != lower_pri_args[arg]:
       ext_name = exceptions.ExternalArgNameFrom(arg)
@@ -596,4 +685,4 @@ def _FormatArgValue(value):
   if isinstance(value, list):
     return ' '.join(value)
   else:
-    return str(value)
+    return six.text_type(value)

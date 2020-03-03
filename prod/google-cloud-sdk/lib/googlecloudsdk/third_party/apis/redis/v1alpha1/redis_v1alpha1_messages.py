@@ -22,6 +22,37 @@ class Empty(_messages.Message):
 
 
 
+class ExportInstanceRequest(_messages.Message):
+  r"""Request for Export.
+
+  Fields:
+    outputConfig: Required. Specify data to be exported.
+  """
+
+  outputConfig = _messages.MessageField('OutputConfig', 1)
+
+
+class GcsDestination(_messages.Message):
+  r"""The Cloud Storage location for the output content
+
+  Fields:
+    uri: Required. Data destination URI (e.g. 'gs://my_bucket/my_object').
+      Existing files will be overwritten.
+  """
+
+  uri = _messages.StringField(1)
+
+
+class GcsSource(_messages.Message):
+  r"""The Cloud Storage location for the input content
+
+  Fields:
+    uri: Required. Source data URI. (e.g. 'gs://my_bucket/my_object').
+  """
+
+  uri = _messages.StringField(1)
+
+
 class GoogleCloudCommonOperationMetadata(_messages.Message):
   r"""Represents the metadata of the long-running operation.
 
@@ -49,10 +80,33 @@ class GoogleCloudCommonOperationMetadata(_messages.Message):
   verb = _messages.StringField(7)
 
 
+class ImportInstanceRequest(_messages.Message):
+  r"""Request for Import.
+
+  Fields:
+    inputConfig: Required. Specify data to be imported.
+  """
+
+  inputConfig = _messages.MessageField('InputConfig', 1)
+
+
+class InputConfig(_messages.Message):
+  r"""The input content
+
+  Fields:
+    gcsSource: Google Cloud Storage location where input content is located.
+  """
+
+  gcsSource = _messages.MessageField('GcsSource', 1)
+
+
 class Instance(_messages.Message):
   r"""A Google Cloud Redis instance.
 
   Enums:
+    ConnectModeValueValuesEnum: Optional. The connect mode of Redis instance.
+      If not provided, default one will be used. Current default:
+      DIRECT_PEERING.
     StateValueValuesEnum: Output only. The current state of this instance.
     TierValueValuesEnum: Required. The service tier of the instance.
 
@@ -73,6 +127,8 @@ class Instance(_messages.Message):
       [network](/compute/docs/networks-and-firewalls#networks) to which the
       instance is connected. If left unspecified, the `default` network will
       be used.
+    connectMode: Optional. The connect mode of Redis instance. If not
+      provided, default one will be used. Current default: DIRECT_PEERING.
     createTime: Output only. The time the instance was created.
     currentLocationId: Output only. The current zone where the Redis endpoint
       is placed. In single zone deployments, this will always be the same as
@@ -99,6 +155,11 @@ class Instance(_messages.Message):
       which specific zone (or collection of zones for cross zone instances) an
       instance should be provisioned in. Refer to [location_id] and
       [alternative_location_id] fields for more details.
+    persistenceIamIdentity: Output only. Cloud IAM identity used by import /
+      export operations to transfer data to/from Cloud Storage. Format is
+      "serviceAccount:<service_account_email>". The value may change over time
+      for a given instance so should be checked before each import/export
+      operation.
     port: Output only. The port number of the exposed redis endpoint.
     redisConfigs: Optional. Redis configuration parameters, according to
       http://redis.io/topics/config. Currently, the only supported parameters
@@ -119,6 +180,21 @@ class Instance(_messages.Message):
       status of this instance, if available.
     tier: Required. The service tier of the instance.
   """
+
+  class ConnectModeValueValuesEnum(_messages.Enum):
+    r"""Optional. The connect mode of Redis instance. If not provided, default
+    one will be used. Current default: DIRECT_PEERING.
+
+    Values:
+      CONNECT_MODE_UNSPECIFIED: Not set.
+      DIRECT_PEERING: Connect via directly peering with memorystore redis
+        hosted service.
+      PRIVATE_SERVICE_ACCESS: Connect with google via private service access
+        and share connection across google managed services.
+    """
+    CONNECT_MODE_UNSPECIFIED = 0
+    DIRECT_PEERING = 1
+    PRIVATE_SERVICE_ACCESS = 2
 
   class StateValueValuesEnum(_messages.Enum):
     r"""Output only. The current state of this instance.
@@ -218,21 +294,23 @@ class Instance(_messages.Message):
 
   alternativeLocationId = _messages.StringField(1)
   authorizedNetwork = _messages.StringField(2)
-  createTime = _messages.StringField(3)
-  currentLocationId = _messages.StringField(4)
-  displayName = _messages.StringField(5)
-  host = _messages.StringField(6)
-  labels = _messages.MessageField('LabelsValue', 7)
-  locationId = _messages.StringField(8)
-  memorySizeGb = _messages.IntegerField(9, variant=_messages.Variant.INT32)
-  name = _messages.StringField(10)
-  port = _messages.IntegerField(11, variant=_messages.Variant.INT32)
-  redisConfigs = _messages.MessageField('RedisConfigsValue', 12)
-  redisVersion = _messages.StringField(13)
-  reservedIpRange = _messages.StringField(14)
-  state = _messages.EnumField('StateValueValuesEnum', 15)
-  statusMessage = _messages.StringField(16)
-  tier = _messages.EnumField('TierValueValuesEnum', 17)
+  connectMode = _messages.EnumField('ConnectModeValueValuesEnum', 3)
+  createTime = _messages.StringField(4)
+  currentLocationId = _messages.StringField(5)
+  displayName = _messages.StringField(6)
+  host = _messages.StringField(7)
+  labels = _messages.MessageField('LabelsValue', 8)
+  locationId = _messages.StringField(9)
+  memorySizeGb = _messages.IntegerField(10, variant=_messages.Variant.INT32)
+  name = _messages.StringField(11)
+  persistenceIamIdentity = _messages.StringField(12)
+  port = _messages.IntegerField(13, variant=_messages.Variant.INT32)
+  redisConfigs = _messages.MessageField('RedisConfigsValue', 14)
+  redisVersion = _messages.StringField(15)
+  reservedIpRange = _messages.StringField(16)
+  state = _messages.EnumField('StateValueValuesEnum', 17)
+  statusMessage = _messages.StringField(18)
+  tier = _messages.EnumField('TierValueValuesEnum', 19)
 
 
 class ListInstancesResponse(_messages.Message):
@@ -458,7 +536,8 @@ class Operation(_messages.Message):
       `apiVersion`: API version used to start the operation.  }
     name: The server-assigned name, which is only unique within the same
       service that originally returns it. If you use the default HTTP mapping,
-      the `name` should have the format of `operations/some/unique/name`.
+      the `name` should be a resource name ending with
+      `operations/{unique_id}`.
     response: The normal response of the operation in case of success.  If the
       original method returns no data on success, such as `Delete`, the
       response is `google.protobuf.Empty`.  If the original method is standard
@@ -539,6 +618,16 @@ class Operation(_messages.Message):
   response = _messages.MessageField('ResponseValue', 5)
 
 
+class OutputConfig(_messages.Message):
+  r"""The output content
+
+  Fields:
+    gcsDestination: Google Cloud Storage destination for output content.
+  """
+
+  gcsDestination = _messages.MessageField('GcsDestination', 1)
+
+
 class RedisProjectsLocationsGetRequest(_messages.Message):
   r"""A RedisProjectsLocationsGetRequest object.
 
@@ -581,6 +670,21 @@ class RedisProjectsLocationsInstancesDeleteRequest(_messages.Message):
   name = _messages.StringField(1, required=True)
 
 
+class RedisProjectsLocationsInstancesExportRequest(_messages.Message):
+  r"""A RedisProjectsLocationsInstancesExportRequest object.
+
+  Fields:
+    exportInstanceRequest: A ExportInstanceRequest resource to be passed as
+      the request body.
+    name: Required. Redis instance resource name using the form:
+      `projects/{project_id}/locations/{location_id}/instances/{instance_id}`
+      where `location_id` refers to a GCP region.
+  """
+
+  exportInstanceRequest = _messages.MessageField('ExportInstanceRequest', 1)
+  name = _messages.StringField(2, required=True)
+
+
 class RedisProjectsLocationsInstancesGetRequest(_messages.Message):
   r"""A RedisProjectsLocationsInstancesGetRequest object.
 
@@ -591,6 +695,21 @@ class RedisProjectsLocationsInstancesGetRequest(_messages.Message):
   """
 
   name = _messages.StringField(1, required=True)
+
+
+class RedisProjectsLocationsInstancesImportRequest(_messages.Message):
+  r"""A RedisProjectsLocationsInstancesImportRequest object.
+
+  Fields:
+    importInstanceRequest: A ImportInstanceRequest resource to be passed as
+      the request body.
+    name: Required. Redis instance resource name using the form:
+      `projects/{project_id}/locations/{location_id}/instances/{instance_id}`
+      where `location_id` refers to a GCP region.
+  """
+
+  importInstanceRequest = _messages.MessageField('ImportInstanceRequest', 1)
+  name = _messages.StringField(2, required=True)
 
 
 class RedisProjectsLocationsInstancesListRequest(_messages.Message):
@@ -636,6 +755,21 @@ class RedisProjectsLocationsInstancesPatchRequest(_messages.Message):
   instance = _messages.MessageField('Instance', 1)
   name = _messages.StringField(2, required=True)
   updateMask = _messages.StringField(3)
+
+
+class RedisProjectsLocationsInstancesUpgradeRequest(_messages.Message):
+  r"""A RedisProjectsLocationsInstancesUpgradeRequest object.
+
+  Fields:
+    name: Required. Redis instance resource name using the form:
+      `projects/{project_id}/locations/{location_id}/instances/{instance_id}`
+      where `location_id` refers to a GCP region.
+    upgradeInstanceRequest: A UpgradeInstanceRequest resource to be passed as
+      the request body.
+  """
+
+  name = _messages.StringField(1, required=True)
+  upgradeInstanceRequest = _messages.MessageField('UpgradeInstanceRequest', 2)
 
 
 class RedisProjectsLocationsListRequest(_messages.Message):
@@ -766,37 +900,10 @@ class StandardQueryParameters(_messages.Message):
 class Status(_messages.Message):
   r"""The `Status` type defines a logical error model that is suitable for
   different programming environments, including REST APIs and RPC APIs. It is
-  used by [gRPC](https://github.com/grpc). The error model is designed to be:
-  - Simple to use and understand for most users - Flexible enough to meet
-  unexpected needs  # Overview  The `Status` message contains three pieces of
-  data: error code, error message, and error details. The error code should be
-  an enum value of google.rpc.Code, but it may accept additional error codes
-  if needed.  The error message should be a developer-facing English message
-  that helps developers *understand* and *resolve* the error. If a localized
-  user-facing error message is needed, put the localized message in the error
-  details or localize it in the client. The optional error details may contain
-  arbitrary information about the error. There is a predefined set of error
-  detail types in the package `google.rpc` that can be used for common error
-  conditions.  # Language mapping  The `Status` message is the logical
-  representation of the error model, but it is not necessarily the actual wire
-  format. When the `Status` message is exposed in different client libraries
-  and different wire protocols, it can be mapped differently. For example, it
-  will likely be mapped to some exceptions in Java, but more likely mapped to
-  some error codes in C.  # Other uses  The error model and the `Status`
-  message can be used in a variety of environments, either with or without
-  APIs, to provide a consistent developer experience across different
-  environments.  Example uses of this error model include:  - Partial errors.
-  If a service needs to return partial errors to the client,     it may embed
-  the `Status` in the normal response to indicate the partial     errors.  -
-  Workflow errors. A typical workflow has multiple steps. Each step may
-  have a `Status` message for error reporting.  - Batch operations. If a
-  client uses batch request and batch response, the     `Status` message
-  should be used directly inside batch response, one for     each error sub-
-  response.  - Asynchronous operations. If an API call embeds asynchronous
-  operation     results in its response, the status of those operations should
-  be     represented directly using the `Status` message.  - Logging. If some
-  API errors are stored in logs, the message `Status` could     be used
-  directly after any stripping needed for security/privacy reasons.
+  used by [gRPC](https://github.com/grpc). Each `Status` message contains
+  three pieces of data: error code, error message, and error details.  You can
+  find out more about this error model and how to work with it in the [API
+  Design Guide](https://cloud.google.com/apis/design/errors).
 
   Messages:
     DetailsValueListEntry: A DetailsValueListEntry object.
@@ -839,6 +946,17 @@ class Status(_messages.Message):
   code = _messages.IntegerField(1, variant=_messages.Variant.INT32)
   details = _messages.MessageField('DetailsValueListEntry', 2, repeated=True)
   message = _messages.StringField(3)
+
+
+class UpgradeInstanceRequest(_messages.Message):
+  r"""Request for UpgradeInstance.
+
+  Fields:
+    redisVersion: Required. Specifies the target version of Redis software to
+      upgrade to.
+  """
+
+  redisVersion = _messages.StringField(1)
 
 
 class ZoneMetadata(_messages.Message):

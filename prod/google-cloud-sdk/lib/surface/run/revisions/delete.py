@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2017 Google Inc. All Rights Reserved.
+# Copyright 2017 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -29,6 +29,7 @@ from googlecloudsdk.core import log
 from googlecloudsdk.core.console import console_io
 
 
+@base.ReleaseTracks(base.ReleaseTrack.BETA, base.ReleaseTrack.GA)
 class Delete(base.Command):
   """Delete a revision."""
 
@@ -44,21 +45,23 @@ class Delete(base.Command):
   }
 
   @staticmethod
-  def Args(parser):
-    flags.AddRegionArg(parser)
+  def CommonArgs(parser):
     revision_presentation = presentation_specs.ResourcePresentationSpec(
         'REVISION',
         resource_args.GetRevisionResourceSpec(),
         'Revision to delete.',
         required=True,
         prefixes=False)
-    concept_parsers.ConceptParser([
-        resource_args.CLUSTER_PRESENTATION,
-        revision_presentation]).AddToParser(parser)
+    concept_parsers.ConceptParser([revision_presentation]).AddToParser(parser)
+
+  @staticmethod
+  def Args(parser):
+    Delete.CommonArgs(parser)
 
   def Run(self, args):
     """Delete a revision."""
-    conn_context = connection_context.GetConnectionContext(args)
+    conn_context = connection_context.GetConnectionContext(
+        args, product=flags.Product.RUN)
     revision_ref = args.CONCEPTS.revision.Parse()
 
     console_io.PromptContinue(
@@ -70,3 +73,14 @@ class Delete(base.Command):
     with serverless_operations.Connect(conn_context) as client:
       client.DeleteRevision(revision_ref)
     log.DeletedResource(revision_ref.revisionsId, 'revision')
+
+
+@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
+class AlphaDelete(Delete):
+  """Delete a revision."""
+
+  @staticmethod
+  def Args(parser):
+    Delete.CommonArgs(parser)
+
+AlphaDelete.__doc__ = Delete.__doc__

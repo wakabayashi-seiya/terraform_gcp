@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2015 Google Inc. All Rights Reserved.
+# Copyright 2015 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ class DevSiteRenderer(html_renderer.HTMLRenderer):
     self._out.write(
         '<meta http-equiv="Content-Type" content="text/html; '
         'charset=UTF-8">\n'
-        '<meta name="project_path" value="/sdk/_project.yaml">\n'
+        '<meta name="project_path" value="/sdk/docs/_project.yaml">\n'
         '<meta name="book_path" value="/sdk/_book.yaml">\n')
     for comment, script in devsite_scripts.SCRIPTS:
       self._out.write('<!-- {comment} -->\n{script}\n'.format(comment=comment,

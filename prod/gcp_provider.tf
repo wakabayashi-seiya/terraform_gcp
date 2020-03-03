@@ -1,7 +1,7 @@
 provider "google" {
   project = "${var.project_name}"
   region = "${var.region}"
-  credentials = "${file("proud-command-267623-c03d54a84755")}"
+  credentials = "${file("${var.credential}")}"
 }
 
 resource "google_compute_instance" "apps_gcp_terraform" {

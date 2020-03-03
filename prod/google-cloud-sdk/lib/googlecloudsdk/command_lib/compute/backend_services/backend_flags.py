@@ -1,6 +1,6 @@
 # pylint: disable=E1305
 # -*- coding: utf-8 -*- #
-# Copyright 2014 Google Inc. All Rights Reserved.
+# Copyright 2014 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +32,7 @@ def AddDescription(parser):
 
 
 def AddInstanceGroup(parser, operation_type, with_deprecated_zone=False):
-  """Add arguments to define instance group."""
+  """Adds arguments to define instance group."""
   parser.add_argument(
       '--instance-group',
       required=True,
@@ -75,53 +75,94 @@ def _GetBalancingModes():
   utilization_extra_help = (
       'This is incompatible with --network-endpoint-group.')
   balancing_modes = {
-      'RATE': """\
-          Spreads load based on how many HTTP requests per second (RPS) the
-          backend can handle. This balancing mode is only available to backend
-          services that use HTTP, HTTPS, or HTTP/2 protocols.
-          You must specify exactly one of these additional parameters:
-          `--max-rate`, `--max-rate-per-instance`, or`--max-rate-per-endpoint`.
-          """.format(per_rate_flags),
-      'UTILIZATION': """\
-          Spreads load based on the CPU utilization of instances in a backend
-          instance group. This balancing mode is only available to backend
-          services with --load-balancing-scheme EXTERNAL and
-          instance group backends. There is no restriction on the
-          backend service protocol.
-          The following additional parameters may be specified:
-          `--max-utilization`, `--max-rate`, `--max-rate-per-instance`,
-          `--max-connections`, `--max-connections-per-instance`.
-          For valid combinations, see `--max-utilization` below.
-          """.format(utilization_extra_help),
       'CONNECTION': """\
+          Available if the backend service's load balancing scheme is either
+          `INTERNAL` or `EXTERNAL`.
+          Available if the backend service's protocol is one of `SSL`, `TCP`,
+          or `UDP`.
+
           Spreads load based on how many concurrent connections the backend
-          can handle. This balancing mode is only available to backend
-          services that use SSL, TCP, or UDP protocols.
-          For backend services with --load-balancing-scheme EXTERNAL, you
+          can handle.
+
+          For backend services with --load-balancing-scheme `EXTERNAL`, you
           must specify exactly one of these additional parameters:
           `--max-connections`, `--max-connections-per-instance`, or
           `--max-connections-per-endpoint`.
-          For backend services with --load-balancing-scheme INTERNAL, you
-          must omit all of these parameters.
+
+          For backend services where `--load-balancing-scheme` is `INTERNAL`,
+          you must omit all of these parameters.
+          """.format(per_rate_flags),
+      'RATE': """\
+          Available if the backend service's load balancing scheme is
+          `INTERNAL_MANAGED`, `INTERNAL_SELF_MANAGED`, or `EXTERNAL`. Available
+          if the backend service's protocol is one of HTTP, HTTPS, or HTTP/2.
+
+          Spreads load based on how many HTTP requests per second (RPS) the
+          backend can handle.
+
+          You must specify exactly one of these additional parameters:
+          `--max-rate`, `--max-rate-per-instance`, or `--max-rate-per-endpoint`.
+          """.format(utilization_extra_help),
+      'UTILIZATION': """\
+          Available if the backend service's load balancing scheme is
+          `INTERNAL_MANAGED`, `INTERNAL_SELF_MANAGED`, or `EXTERNAL`. Available only
+          for managed or unmanaged instance group backends.
+
+          Spreads load based on the CPU utilization of instances in a backend
+          instance group.
+
+          The following additional parameters may be specified:
+          `--max-utilization`, `--max-rate`, `--max-rate-per-instance`,
+          `--max-connections`, `--max-connections-per-instance`.
+          For valid combinations, see `--max-utilization`.
           """.format(per_connection_flags),
   }
   return balancing_modes
 
 
-def AddBalancingMode(parser):
-  """Add balancing mode arguments."""
+def AddBalancingMode(parser,
+                     support_global_neg=False,
+                     support_region_neg=False):
+  """Adds balancing mode argument to the argparse."""
+  help_text = """\
+  Defines the strategy for balancing load.
+  """
+  incompatible_types = []
+  if support_global_neg:
+    incompatible_types.extend(['INTERNET_IP_PORT', 'INTERNET_FQDN_PORT'])
+  if support_region_neg:
+    incompatible_types.append('SERVERLESS')
+  if incompatible_types:
+    help_text += """\
+
+  This cannot be used when the endpoint type of an attached network endpoint
+  group is {0}.
+    """.format(' or '.join(incompatible_types))
   parser.add_argument(
       '--balancing-mode',
       choices=_GetBalancingModes(),
       type=lambda x: x.upper(),
-      help="""\
-      Defines the strategy for balancing load.""")
+      help=help_text)
 
 
-def AddCapacityLimits(parser):
-  """Add capacity thresholds arguments."""
+def AddCapacityLimits(parser,
+                      support_global_neg=False,
+                      support_region_neg=False):
+  """Adds capacity thresholds arguments to the argparse."""
   AddMaxUtilization(parser)
   capacity_group = parser.add_group(mutex=True)
+  capacity_incompatible_types = []
+  if support_global_neg:
+    capacity_incompatible_types.extend(
+        ['INTERNET_IP_PORT', 'INTERNET_FQDN_PORT'])
+  if support_region_neg:
+    capacity_incompatible_types.append('SERVERLESS')
+  append_help_text = """\
+
+  This cannot be used when the endpoint type of an attached network endpoint
+  group is {0}.
+  """.format(' or '.join(
+      capacity_incompatible_types)) if capacity_incompatible_types else ''
   capacity_group.add_argument(
       '--max-rate-per-endpoint',
       type=float,
@@ -130,9 +171,9 @@ def AddCapacityLimits(parser):
       number of HTTP requests per second (RPS) per endpoint if all endpoints
       are healthy. When one or more endpoints are unhealthy, an effective
       maximum rate per healthy endpoint is calculated by multiplying
-      MAX_RATE_PER_ENDPOINT by the number of endpoints in the network
+      `MAX_RATE_PER_ENDPOINT` by the number of endpoints in the network
       endpoint group, then dividing by the number of healthy endpoints.
-      """)
+      """ + append_help_text)
   capacity_group.add_argument(
       '--max-connections-per-endpoint',
       type=int,
@@ -141,19 +182,19 @@ def AddCapacityLimits(parser):
       number of connections per endpoint if all endpoints are healthy. When
       one or more endpoints are unhealthy, an effective maximum number of
       connections per healthy endpoint is calculated by multiplying
-      MAX_CONNECTIONS_PER_ENDPOINT by the number of endpoints in the network
+      `MAX_CONNECTIONS_PER_ENDPOINT` by the number of endpoints in the network
       endpoint group, then dividing by the number of healthy endpoints.
-      """)
+      """ + append_help_text)
 
   capacity_group.add_argument(
       '--max-rate',
       type=int,
       help="""\
       Maximum number of HTTP requests per second (RPS) that the backend can
-      handle. Valid for instance group and network endpoint group backends.
-      Must not be defined if the backend is a managed instance group using
-      autoscaling based on load balancing.
-      """)
+      handle. Valid for network endpoint group and instance group backends
+      (except for regional managed instance groups). Must not be defined if the
+      backend is a managed instance group using load balancing-based autoscaling.
+      """ + append_help_text)
   capacity_group.add_argument(
       '--max-rate-per-instance',
       type=float,
@@ -162,7 +203,7 @@ def AddCapacityLimits(parser):
       HTTP requests per second (RPS) per instance if all instances in the
       instance group are healthy. When one or more instances are unhealthy,
       an effective maximum RPS per healthy instance is calculated by
-      multiplying MAX_RATE_PER_INSTANCE by the number of instances in the
+      multiplying `MAX_RATE_PER_INSTANCE` by the number of instances in the
       instance group, then dividing by the number of healthy instances. This
       parameter is compatible with managed instance group backends that use
       autoscaling based on load balancing.
@@ -171,9 +212,10 @@ def AddCapacityLimits(parser):
       '--max-connections',
       type=int,
       help="""\
-      Maximum concurrent connections that the backend can handle.
-      Valid for instance group and network endpoint group backends.
-      """)
+      Maximum concurrent connections that the backend can handle. Valid for
+      network endpoint group and instance group backends (except for regional
+      managed instance groups).
+      """ + append_help_text)
   capacity_group.add_argument(
       '--max-connections-per-instance',
       type=int,
@@ -182,47 +224,48 @@ def AddCapacityLimits(parser):
       of concurrent connections per instance if all instances in the
       instance group are healthy. When one or more instances are
       unhealthy, an effective maximum number of connections per healthy
-      instance is calculated by multiplying MAX_CONNECTIONS_PER_INSTANCE
+      instance is calculated by multiplying `MAX_CONNECTIONS_PER_INSTANCE`
       by the number of instances in the instance group, then dividing by
       the number of healthy instances.
       """)
 
 
 def AddMaxUtilization(parser):
+  """Adds max utilization argument to the argparse."""
   parser.add_argument(
       '--max-utilization',
       type=arg_parsers.BoundedFloat(lower_bound=0.0, upper_bound=1.0),
       help="""\
-      Defines the maximum target for average CPU utilization of the backend
-      instance in the backend instance group. Acceptable values are 0.0 (0%)
-      through 1.0 (100%). Available for all backend service protocols,
-      with --balancing-mode=UTILIZATION.
+      Defines the maximum target for average utilization of the backend instance
+      in the backend instance group. Acceptable values are `0.0` (0%) through
+      `1.0`(100%). Available for all backend service protocols, with
+      `--balancing-mode=UTILIZATION`.
 
-      For backend services that use SSL, TCP, or UDP protocols, you may specify
-      either `--max-connections` or `--max-connections-per-instance`, either by
-      themselves or one in conjunction with `--max-utilization`. In other words,
-      the following configuration options are supported:
+      For backend services that use SSL, TCP, or UDP protocols, the following
+      configuration options are supported:
+
       * no additional parameter
-      * just `--max-utilization`
-      * just `--max-connections`
-      * just `--max-connections-per-instance`
-      * both `--max-utilization` and `--max-connections`
+      * only `--max-utilization`
+      * only `--max-connections` (except for regional managed instance groups)
+      * only `--max-connections-per-instance`
+      * both `--max-utilization` and `--max-connections` (except for regional
+        managed instance groups)
       * both `--max-utilization` and `--max-connections-per-instance`
 
-      The meanings for `--max-connections` and `--max-connections-per-instance`
-      are the same as for --balancing-mode=CONNECTION. If one is used in
-      conjunction with `--max-utilization`, instances are considered at capacity
+      The meanings for `-max-connections` and `--max-connections-per-instance`
+      are the same as for --balancing-mode=CONNECTION. If one is used  with
+      `--max-utilization`, instances are considered at capacity
       when either maximum utilization or maximum connections is reached.
 
-      For backend services that use HTTP, HTTPS, or HTTP/2 protocols, you may
-      specify either `--max-rate` or `--max-rate-per-instance`, either by
-      themselves or one in conjunction with `--max-utilization`. In other words,
-      the following configuration options are supported:
+      For backend services that use HTTP, HTTPS, or HTTP/2 protocols, the
+      following configuration options are supported:
+
       * no additional parameter
-      * just `--max-utilization`
-      * just `--max-rate`
-      * just `--max-rate-per-instance`
-      * both `--max-utilization` and `--max-rate`
+      * only `--max-utilization`
+      * only `--max-rate` (except for regional managed instance groups)
+      * only `--max-rate-per-instance`
+      * both `--max-utilization` and `--max-rate` (except for regional managed
+        instance groups)
       * both `--max-utilization` and `--max-rate-per-instance`
 
       The meanings for `--max-rate` and `--max-rate-per-instance` are the same
@@ -231,18 +274,34 @@ def AddMaxUtilization(parser):
       maximum utilization or the maximum rate is reached.""")
 
 
-def AddCapacityScalar(parser):
-  parser.add_argument(
-      '--capacity-scaler',
-      type=arg_parsers.BoundedFloat(lower_bound=0.0, upper_bound=1.0),
-      help="""\
+def AddCapacityScalar(parser,
+                      support_global_neg=False,
+                      support_region_neg=False):
+  """Adds capacity thresholds argument to the argparse."""
+  help_text = """\
       A setting that applies to all balancing modes. This value is multiplied
       by the balancing mode value to set the current max usage of the instance
       group. Acceptable values are `0.0` (0%) through `1.0` (100%). Setting this
       value to `0.0` (0%) drains the backend service. Note that draining a
       backend service only prevents new connections to instances in the group.
       All existing connections are allowed to continue until they close by
-      normal means. This cannot be used for internal load balancing.""")
+      normal means. This cannot be used for internal load balancing.
+      """
+  incompatible_types = []
+  if support_global_neg:
+    incompatible_types.extend(['INTERNET_IP_PORT', 'INTERNET_FQDN_PORT'])
+  if support_region_neg:
+    incompatible_types.append('SERVERLESS')
+  if incompatible_types:
+    help_text += """\
+
+    This cannot be used when the endpoint type of an attached network endpoint
+    group is {0}.
+    """.format(' or '.join(incompatible_types))
+  parser.add_argument(
+      '--capacity-scaler',
+      type=arg_parsers.BoundedFloat(lower_bound=0.0, upper_bound=1.0),
+      help=help_text)
 
 
 def AddFailover(parser, default):

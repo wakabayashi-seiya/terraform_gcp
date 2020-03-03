@@ -37,13 +37,30 @@ class Binding(_messages.Message):
       with or without a Google account.  * `allAuthenticatedUsers`: A special
       identifier that represents anyone    who is authenticated with a Google
       account or a service account.  * `user:{emailid}`: An email address that
-      represents a specific Google    account. For example, `alice@gmail.com`
-      .   * `serviceAccount:{emailid}`: An email address that represents a
-      service    account. For example, `my-other-
+      represents a specific Google    account. For example,
+      `alice@example.com` .   * `serviceAccount:{emailid}`: An email address
+      that represents a service    account. For example, `my-other-
       app@appspot.gserviceaccount.com`.  * `group:{emailid}`: An email address
-      that represents a Google group.    For example, `admins@example.com`.
-      * `domain:{domain}`: The G Suite domain (primary) that represents all
-      the    users of that domain. For example, `google.com` or `example.com`.
+      that represents a Google group.    For example, `admins@example.com`.  *
+      `deleted:user:{emailid}?uid={uniqueid}`: An email address (plus unique
+      identifier) representing a user that has been recently deleted. For
+      example, `alice@example.com?uid=123456789012345678901`. If the user is
+      recovered, this value reverts to `user:{emailid}` and the recovered user
+      retains the role in the binding.  *
+      `deleted:serviceAccount:{emailid}?uid={uniqueid}`: An email address
+      (plus    unique identifier) representing a service account that has been
+      recently    deleted. For example,    `my-other-
+      app@appspot.gserviceaccount.com?uid=123456789012345678901`.    If the
+      service account is undeleted, this value reverts to
+      `serviceAccount:{emailid}` and the undeleted service account retains the
+      role in the binding.  * `deleted:group:{emailid}?uid={uniqueid}`: An
+      email address (plus unique    identifier) representing a Google group
+      that has been recently    deleted. For example,
+      `admins@example.com?uid=123456789012345678901`. If    the group is
+      recovered, this value reverts to `group:{emailid}` and the    recovered
+      group retains the role in the binding.   * `domain:{domain}`: The G
+      Suite domain (primary) that represents all the    users of that domain.
+      For example, `google.com` or `example.com`.
     role: Role that is assigned to `members`. For example, `roles/viewer`,
       `roles/editor`, or `roles/owner`.
   """
@@ -103,6 +120,35 @@ class CreateSnapshotRequest(_messages.Message):
   subscription = _messages.StringField(2)
 
 
+class DeadLetterPolicy(_messages.Message):
+  r"""Dead lettering is done on a best effort basis. The same message might be
+  dead lettered multiple times.  If validation on any of the fields fails at
+  subscription creation/updation, the create/update subscription request will
+  fail.
+
+  Fields:
+    deadLetterTopic: The name of the topic to which dead letter messages
+      should be published. Format is `projects/{project}/topics/{topic}`.The
+      Cloud Pub/Sub service account associated with the enclosing
+      subscription's parent project (i.e., service-{project_number}@gcp-sa-
+      pubsub.iam.gserviceaccount.com) must have permission to Publish() to
+      this topic.  The operation will fail if the topic does not exist. Users
+      should ensure that there is a subscription attached to this topic since
+      messages published to a topic with no subscriptions are lost.
+    maxDeliveryAttempts: The maximum number of delivery attempts for any
+      message. The value must be between 5 and 100.  The number of delivery
+      attempts is defined as 1 + (the sum of number of NACKs and number of
+      times the acknowledgement deadline has been exceeded for the message).
+      A NACK is any call to ModifyAckDeadline with a 0 deadline. Note that
+      client libraries may automatically extend ack_deadlines.  This field
+      will be honored on a best effort basis.  If this parameter is 0, a
+      default value of 5 is used.
+  """
+
+  deadLetterTopic = _messages.StringField(1)
+  maxDeliveryAttempts = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+
+
 class Empty(_messages.Message):
   r"""A generic empty message that you can re-use to avoid defining duplicated
   empty messages in your APIs. A typical example is to use it as the request
@@ -130,21 +176,33 @@ class ExpirationPolicy(_messages.Message):
 
 
 class Expr(_messages.Message):
-  r"""Represents an expression text. Example:      title: "User account
-  presence"     description: "Determines whether the request has a user
-  account"     expression: "size(request.user) > 0"
+  r"""Represents a textual expression in the Common Expression Language (CEL)
+  syntax. CEL is a C-like expression language. The syntax and semantics of CEL
+  are documented at https://github.com/google/cel-spec.  Example (Comparison):
+  title: "Summary size limit"     description: "Determines if a summary is
+  less than 100 chars"     expression: "document.summary.size() < 100"
+  Example (Equality):      title: "Requestor is owner"     description:
+  "Determines if requestor is the document owner"     expression:
+  "document.owner == request.auth.claims.email"  Example (Logic):      title:
+  "Public documents"     description: "Determine whether the document should
+  be publicly visible"     expression: "document.type != 'private' &&
+  document.type != 'internal'"  Example (Data Manipulation):      title:
+  "Notification string"     description: "Create a notification string with a
+  timestamp."     expression: "'New message received at ' +
+  string(document.create_time)"  The exact variables and functions that may be
+  referenced within an expression are determined by the service that evaluates
+  it. See the service documentation for additional information.
 
   Fields:
-    description: An optional description of the expression. This is a longer
+    description: Optional. Description of the expression. This is a longer
       text which describes the expression, e.g. when hovered over it in a UI.
     expression: Textual representation of an expression in Common Expression
-      Language syntax.  The application context of the containing message
-      determines which well-known feature set of CEL is supported.
-    location: An optional string indicating the location of the expression for
+      Language syntax.
+    location: Optional. String indicating the location of the expression for
       error reporting, e.g. a file name and a position in the file.
-    title: An optional title for the expression, i.e. a short string
-      describing its purpose. This can be used e.g. in UIs which allow to
-      enter the expression.
+    title: Optional. Title for the expression, i.e. a short string describing
+      its purpose. This can be used e.g. in UIs which allow to enter the
+      expression.
   """
 
   description = _messages.StringField(1)
@@ -227,13 +285,12 @@ class MessageStoragePolicy(_messages.Message):
   r"""A MessageStoragePolicy object.
 
   Fields:
-    allowedPersistenceRegions: The list of GCP region IDs where messages that
-      are published to the topic may be persisted in storage. Messages
+    allowedPersistenceRegions: A list of IDs of GCP regions where messages
+      that are published to the topic may be persisted in storage. Messages
       published by publishers running in non-allowed GCP regions (or running
       outside of GCP altogether) will be routed for storage in one of the
-      allowed regions. An empty list indicates a misconfiguration at the
-      project or organization level, which will result in all Publish
-      operations failing.
+      allowed regions. An empty list means that no regions are allowed, and is
+      not a valid configuration.
   """
 
   allowedPersistenceRegions = _messages.StringField(1, repeated=True)
@@ -297,28 +354,41 @@ class OidcToken(_messages.Message):
 
 
 class Policy(_messages.Message):
-  r"""Defines an Identity and Access Management (IAM) policy. It is used to
-  specify access control policies for Cloud Platform resources.   A `Policy`
-  consists of a list of `bindings`. A `binding` binds a list of `members` to a
-  `role`, where the members can be user accounts, Google groups, Google
-  domains, and service accounts. A `role` is a named list of permissions
-  defined by IAM.  **JSON Example**      {       "bindings": [         {
-  "role": "roles/owner",           "members": [
+  r"""An Identity and Access Management (IAM) policy, which specifies access
+  controls for Google Cloud resources.   A `Policy` is a collection of
+  `bindings`. A `binding` binds one or more `members` to a single `role`.
+  Members can be user accounts, service accounts, Google groups, and domains
+  (such as G Suite). A `role` is a named list of permissions; each `role` can
+  be an IAM predefined role or a user-created custom role.  Optionally, a
+  `binding` can specify a `condition`, which is a logical expression that
+  allows access to a resource only if the expression evaluates to `true`. A
+  condition can add constraints based on attributes of the request, the
+  resource, or both.  **JSON example:**      {       "bindings": [         {
+  "role": "roles/resourcemanager.organizationAdmin",           "members": [
   "user:mike@example.com",             "group:admins@example.com",
-  "domain:google.com",             "serviceAccount:my-other-
-  app@appspot.gserviceaccount.com"           ]         },         {
-  "role": "roles/viewer",           "members": ["user:sean@example.com"]
-  }       ]     }  **YAML Example**      bindings:     - members:       -
-  user:mike@example.com       - group:admins@example.com       -
-  domain:google.com       - serviceAccount:my-other-
-  app@appspot.gserviceaccount.com       role: roles/owner     - members:
-  - user:sean@example.com       role: roles/viewer   For a description of IAM
-  and its features, see the [IAM developer's
-  guide](https://cloud.google.com/iam/docs).
+  "domain:google.com",             "serviceAccount:my-project-
+  id@appspot.gserviceaccount.com"           ]         },         {
+  "role": "roles/resourcemanager.organizationViewer",           "members":
+  ["user:eve@example.com"],           "condition": {             "title":
+  "expirable access",             "description": "Does not grant access after
+  Sep 2020",             "expression": "request.time <
+  timestamp('2020-10-01T00:00:00.000Z')",           }         }       ],
+  "etag": "BwWWja0YfJA=",       "version": 3     }  **YAML example:**
+  bindings:     - members:       - user:mike@example.com       -
+  group:admins@example.com       - domain:google.com       - serviceAccount
+  :my-project-id@appspot.gserviceaccount.com       role:
+  roles/resourcemanager.organizationAdmin     - members:       -
+  user:eve@example.com       role: roles/resourcemanager.organizationViewer
+  condition:         title: expirable access         description: Does not
+  grant access after Sep 2020         expression: request.time <
+  timestamp('2020-10-01T00:00:00.000Z')     - etag: BwWWja0YfJA=     -
+  version: 3  For a description of IAM and its features, see the [IAM
+  documentation](https://cloud.google.com/iam/docs/).
 
   Fields:
-    bindings: Associates a list of `members` to a `role`. `bindings` with no
-      members will result in an error.
+    bindings: Associates a list of `members` to a `role`. Optionally, may
+      specify a `condition` that determines how and when the `bindings` are
+      applied. Each of the `bindings` must contain at least one member.
     etag: `etag` is used for optimistic concurrency control as a way to help
       prevent simultaneous updates of a policy from overwriting each other. It
       is strongly suggested that systems make use of the `etag` in the read-
@@ -326,9 +396,24 @@ class Policy(_messages.Message):
       conditions: An `etag` is returned in the response to `getIamPolicy`, and
       systems are expected to put that etag in the request to `setIamPolicy`
       to ensure that their change will be applied to the same version of the
-      policy.  If no `etag` is provided in the call to `setIamPolicy`, then
-      the existing policy is overwritten blindly.
-    version: Deprecated.
+      policy.  **Important:** If you use IAM Conditions, you must include the
+      `etag` field whenever you call `setIamPolicy`. If you omit this field,
+      then IAM allows you to overwrite a version `3` policy with a version `1`
+      policy, and all of the conditions in the version `3` policy are lost.
+    version: Specifies the format of the policy.  Valid values are `0`, `1`,
+      and `3`. Requests that specify an invalid value are rejected.  Any
+      operation that affects conditional role bindings must specify version
+      `3`. This requirement applies to the following operations:  * Getting a
+      policy that includes a conditional role binding * Adding a conditional
+      role binding to a policy * Changing a conditional role binding in a
+      policy * Removing any role binding, with or without a condition, from a
+      policy   that includes conditions  **Important:** If you use IAM
+      Conditions, you must include the `etag` field whenever you call
+      `setIamPolicy`. If you omit this field, then IAM allows you to overwrite
+      a version `3` policy with a version `1` policy, and all of the
+      conditions in the version `3` policy are lost.  If a policy does not
+      include any conditions, operations on that policy may specify any valid
+      version or leave the field unset.
   """
 
   bindings = _messages.MessageField('Binding', 1, repeated=True)
@@ -369,10 +454,12 @@ class PubsubMessage(_messages.Message):
   information about message limits.
 
   Messages:
-    AttributesValue: Optional attributes for this message.
+    AttributesValue: Attributes for this message. If this field is empty, the
+      message must contain non-empty data.
 
   Fields:
-    attributes: Optional attributes for this message.
+    attributes: Attributes for this message. If this field is empty, the
+      message must contain non-empty data.
     data: The message data field. If this field is empty, the message must
       contain at least one attribute.
     messageId: ID of this message, assigned by the server when the message is
@@ -380,14 +467,16 @@ class PubsubMessage(_messages.Message):
       read by a subscriber that receives a `PubsubMessage` via a `Pull` call
       or a push delivery. It must not be populated by the publisher in a
       `Publish` call.
-    orderingKey: Identifies related messages for which publish order should be
-      respected. If a `Subscription` has `enable_message_ordering` set to
-      `true`, messages published with the same `ordering_key` value will be
-      delivered to subscribers in the order in which they are received by the
-      Pub/Sub system. <b>EXPERIMENTAL:</b> This feature is part of a closed
-      alpha release. This API might be changed in backward-incompatible ways
-      and is not recommended for production use. It is not subject to any SLA
-      or deprecation policy.
+    orderingKey: If non-empty, identifies related messages for which publish
+      order should be respected. If a `Subscription` has
+      `enable_message_ordering` set to `true`, messages published with the
+      same non-empty `ordering_key` value will be delivered to subscribers in
+      the order in which they are received by the Pub/Sub system. All
+      `PubsubMessage`s published in a given `PublishRequest` must specify the
+      same `ordering_key` value. <b>EXPERIMENTAL:</b> This feature is part of
+      a closed alpha release. This API might be changed in backward-
+      incompatible ways and is not recommended for production use. It is not
+      subject to any SLA or deprecation policy.
     publishTime: The time at which the message was published, populated by the
       server when it receives the `Publish` call. It must not be populated by
       the publisher in a `Publish` call.
@@ -395,7 +484,8 @@ class PubsubMessage(_messages.Message):
 
   @encoding.MapUnrecognizedFields('additionalProperties')
   class AttributesValue(_messages.Message):
-    r"""Optional attributes for this message.
+    r"""Attributes for this message. If this field is empty, the message must
+    contain non-empty data.
 
     Messages:
       AdditionalProperty: An additional property for a AttributesValue object.
@@ -430,10 +520,10 @@ class PubsubProjectsSnapshotsCreateRequest(_messages.Message):
   Fields:
     createSnapshotRequest: A CreateSnapshotRequest resource to be passed as
       the request body.
-    name: Optional user-provided name for this snapshot. If the name is not
-      provided in the request, the server will assign a random name for this
-      snapshot on the same project as the subscription. Note that for REST API
-      requests, you must specify a name.  See the <a
+    name: User-provided name for this snapshot. If the name is not provided in
+      the request, the server will assign a random name for this snapshot on
+      the same project as the subscription. Note that for REST API requests,
+      you must specify a name.  See the <a
       href="https://cloud.google.com/pubsub/docs/admin#resource_names">
       resource name rules</a>. Format is
       `projects/{project}/snapshots/{snap}`.
@@ -458,12 +548,18 @@ class PubsubProjectsSnapshotsGetIamPolicyRequest(_messages.Message):
   r"""A PubsubProjectsSnapshotsGetIamPolicyRequest object.
 
   Fields:
+    options_requestedPolicyVersion: Optional. The policy format version to be
+      returned.  Valid values are 0, 1, and 3. Requests specifying an invalid
+      value will be rejected.  Requests for policies with any conditional
+      bindings must specify version 3. Policies without any conditional
+      bindings may specify any valid value or leave the field unset.
     resource: REQUIRED: The resource for which the policy is being requested.
       See the operation documentation for the appropriate value for this
       field.
   """
 
-  resource = _messages.StringField(1, required=True)
+  options_requestedPolicyVersion = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+  resource = _messages.StringField(2, required=True)
 
 
 class PubsubProjectsSnapshotsGetRequest(_messages.Message):
@@ -566,12 +662,18 @@ class PubsubProjectsSubscriptionsGetIamPolicyRequest(_messages.Message):
   r"""A PubsubProjectsSubscriptionsGetIamPolicyRequest object.
 
   Fields:
+    options_requestedPolicyVersion: Optional. The policy format version to be
+      returned.  Valid values are 0, 1, and 3. Requests specifying an invalid
+      value will be rejected.  Requests for policies with any conditional
+      bindings must specify version 3. Policies without any conditional
+      bindings may specify any valid value or leave the field unset.
     resource: REQUIRED: The resource for which the policy is being requested.
       See the operation documentation for the appropriate value for this
       field.
   """
 
-  resource = _messages.StringField(1, required=True)
+  options_requestedPolicyVersion = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+  resource = _messages.StringField(2, required=True)
 
 
 class PubsubProjectsSubscriptionsGetRequest(_messages.Message):
@@ -718,12 +820,18 @@ class PubsubProjectsTopicsGetIamPolicyRequest(_messages.Message):
   r"""A PubsubProjectsTopicsGetIamPolicyRequest object.
 
   Fields:
+    options_requestedPolicyVersion: Optional. The policy format version to be
+      returned.  Valid values are 0, 1, and 3. Requests specifying an invalid
+      value will be rejected.  Requests for policies with any conditional
+      bindings must specify version 3. Policies without any conditional
+      bindings may specify any valid value or leave the field unset.
     resource: REQUIRED: The resource for which the policy is being requested.
       See the operation documentation for the appropriate value for this
       field.
   """
 
-  resource = _messages.StringField(1, required=True)
+  options_requestedPolicyVersion = _messages.IntegerField(1, variant=_messages.Variant.INT32)
+  resource = _messages.StringField(2, required=True)
 
 
 class PubsubProjectsTopicsGetRequest(_messages.Message):
@@ -855,8 +963,9 @@ class PullRequest(_messages.Message):
   r"""Request for the `Pull` method.
 
   Fields:
-    maxMessages: The maximum number of messages returned for this request. The
-      Pub/Sub system may return fewer than the number specified.
+    maxMessages: The maximum number of messages to return for this request.
+      Must be a positive integer. The Pub/Sub system may return fewer than the
+      number specified.
     returnImmediately: If this field set to true, the system will respond
       immediately even if it there are no messages available to return in the
       `Pull` response. Otherwise, the system may wait (for a bounded amount of
@@ -886,38 +995,38 @@ class PushConfig(_messages.Message):
   r"""Configuration for a push delivery endpoint.
 
   Messages:
-    AttributesValue: Endpoint configuration attributes.  Every endpoint has a
-      set of API supported attributes that can be used to control different
-      aspects of the message delivery.  The currently supported attribute is
-      `x-goog-version`, which you can use to change the format of the pushed
-      message. This attribute indicates the version of the data expected by
-      the endpoint. This controls the shape of the pushed message (i.e., its
-      fields and metadata). The endpoint version is based on the version of
-      the Pub/Sub API.  If not present during the `CreateSubscription` call,
-      it will default to the version of the API used to make such call. If not
-      present during a `ModifyPushConfig` call, its value will not be changed.
-      `GetSubscription` calls will always return a valid version, even if the
-      subscription was created without this attribute.  The possible values
-      for this attribute are:  * `v1beta1`: uses the push format defined in
-      the v1beta1 Pub/Sub API. * `v1` or `v1beta2`: uses the push format
-      defined in the v1 Pub/Sub API.
+    AttributesValue: Endpoint configuration attributes that can be used to
+      control different aspects of the message delivery.  The only currently
+      supported attribute is `x-goog-version`, which you can use to change the
+      format of the pushed message. This attribute indicates the version of
+      the data expected by the endpoint. This controls the shape of the pushed
+      message (i.e., its fields and metadata).  If not present during the
+      `CreateSubscription` call, it will default to the version of the Pub/Sub
+      API used to make such call. If not present in a `ModifyPushConfig` call,
+      its value will not be changed. `GetSubscription` calls will always
+      return a valid version, even if the subscription was created without
+      this attribute.  The only supported values for the `x-goog-version`
+      attribute are:  * `v1beta1`: uses the push format defined in the v1beta1
+      Pub/Sub API. * `v1` or `v1beta2`: uses the push format defined in the v1
+      Pub/Sub API.  For example: <pre><code>attributes { "x-goog-version":
+      "v1" } </code></pre>
 
   Fields:
-    attributes: Endpoint configuration attributes.  Every endpoint has a set
-      of API supported attributes that can be used to control different
-      aspects of the message delivery.  The currently supported attribute is
-      `x-goog-version`, which you can use to change the format of the pushed
-      message. This attribute indicates the version of the data expected by
-      the endpoint. This controls the shape of the pushed message (i.e., its
-      fields and metadata). The endpoint version is based on the version of
-      the Pub/Sub API.  If not present during the `CreateSubscription` call,
-      it will default to the version of the API used to make such call. If not
-      present during a `ModifyPushConfig` call, its value will not be changed.
-      `GetSubscription` calls will always return a valid version, even if the
-      subscription was created without this attribute.  The possible values
-      for this attribute are:  * `v1beta1`: uses the push format defined in
-      the v1beta1 Pub/Sub API. * `v1` or `v1beta2`: uses the push format
-      defined in the v1 Pub/Sub API.
+    attributes: Endpoint configuration attributes that can be used to control
+      different aspects of the message delivery.  The only currently supported
+      attribute is `x-goog-version`, which you can use to change the format of
+      the pushed message. This attribute indicates the version of the data
+      expected by the endpoint. This controls the shape of the pushed message
+      (i.e., its fields and metadata).  If not present during the
+      `CreateSubscription` call, it will default to the version of the Pub/Sub
+      API used to make such call. If not present in a `ModifyPushConfig` call,
+      its value will not be changed. `GetSubscription` calls will always
+      return a valid version, even if the subscription was created without
+      this attribute.  The only supported values for the `x-goog-version`
+      attribute are:  * `v1beta1`: uses the push format defined in the v1beta1
+      Pub/Sub API. * `v1` or `v1beta2`: uses the push format defined in the v1
+      Pub/Sub API.  For example: <pre><code>attributes { "x-goog-version":
+      "v1" } </code></pre>
     oidcToken: If specified, Pub/Sub will generate and attach an OIDC JWT
       token as an `Authorization` header in the HTTP request for every pushed
       message.
@@ -928,21 +1037,21 @@ class PushConfig(_messages.Message):
 
   @encoding.MapUnrecognizedFields('additionalProperties')
   class AttributesValue(_messages.Message):
-    r"""Endpoint configuration attributes.  Every endpoint has a set of API
-    supported attributes that can be used to control different aspects of the
-    message delivery.  The currently supported attribute is `x-goog-version`,
-    which you can use to change the format of the pushed message. This
-    attribute indicates the version of the data expected by the endpoint. This
-    controls the shape of the pushed message (i.e., its fields and metadata).
-    The endpoint version is based on the version of the Pub/Sub API.  If not
-    present during the `CreateSubscription` call, it will default to the
-    version of the API used to make such call. If not present during a
-    `ModifyPushConfig` call, its value will not be changed. `GetSubscription`
-    calls will always return a valid version, even if the subscription was
-    created without this attribute.  The possible values for this attribute
+    r"""Endpoint configuration attributes that can be used to control
+    different aspects of the message delivery.  The only currently supported
+    attribute is `x-goog-version`, which you can use to change the format of
+    the pushed message. This attribute indicates the version of the data
+    expected by the endpoint. This controls the shape of the pushed message
+    (i.e., its fields and metadata).  If not present during the
+    `CreateSubscription` call, it will default to the version of the Pub/Sub
+    API used to make such call. If not present in a `ModifyPushConfig` call,
+    its value will not be changed. `GetSubscription` calls will always return
+    a valid version, even if the subscription was created without this
+    attribute.  The only supported values for the `x-goog-version` attribute
     are:  * `v1beta1`: uses the push format defined in the v1beta1 Pub/Sub
     API. * `v1` or `v1beta2`: uses the push format defined in the v1 Pub/Sub
-    API.
+    API.  For example: <pre><code>attributes { "x-goog-version": "v1" }
+    </code></pre>
 
     Messages:
       AdditionalProperty: An additional property for a AttributesValue object.
@@ -974,11 +1083,24 @@ class ReceivedMessage(_messages.Message):
 
   Fields:
     ackId: This ID can be used to acknowledge the received message.
+    deliveryAttempt: Delivery attempt counter is 1 + (the sum of number of
+      NACKs and number of ack_deadline exceeds) for this message.  A NACK is
+      any call to ModifyAckDeadline with a 0 deadline. An ack_deadline exceeds
+      event is whenever a message is not acknowledged within ack_deadline.
+      Note that ack_deadline is initially Subscription.ackDeadlineSeconds, but
+      may get extended automatically by the client library.  The first
+      delivery of a given message will have this value as 1. The value is
+      calculated at best effort and is approximate.  If a DeadLetterPolicy is
+      not set on the subscription, this will be 0. <b>EXPERIMENTAL:</b> This
+      feature is part of a closed alpha release. This API might be changed in
+      backward-incompatible ways and is not recommended for production use. It
+      is not subject to any SLA or deprecation policy.
     message: The message.
   """
 
   ackId = _messages.StringField(1)
-  message = _messages.MessageField('PubsubMessage', 2)
+  deliveryAttempt = _messages.IntegerField(2, variant=_messages.Variant.INT32)
+  message = _messages.MessageField('PubsubMessage', 3)
 
 
 class SeekRequest(_messages.Message):
@@ -1169,6 +1291,16 @@ class Subscription(_messages.Message):
       delivery, this value is also used to set the request timeout for the
       call to the push endpoint.  If the subscriber never acknowledges the
       message, the Pub/Sub system will eventually redeliver the message.
+    deadLetterPolicy: A policy that specifies the conditions for dead
+      lettering messages in this subscription. If dead_letter_policy is not
+      set, dead lettering is disabled.  The Cloud Pub/Sub service account
+      associated with this subscriptions's parent project (i.e.,
+      service-{project_number}@gcp-sa-pubsub.iam.gserviceaccount.com) must
+      have permission to Acknowledge() messages on this subscription.
+      <b>EXPERIMENTAL:</b> This feature is part of a closed alpha release.
+      This API might be changed in backward-incompatible ways and is not
+      recommended for production use. It is not subject to any SLA or
+      deprecation policy.
     enableMessageOrdering: If true, messages published with the same
       `ordering_key` in `PubsubMessage` will be delivered to the subscribers
       in the order in which they are received by the Pub/Sub system.
@@ -1183,6 +1315,13 @@ class Subscription(_messages.Message):
       `expiration_policy` is not set, a *default policy* with `ttl` of 31 days
       will be used. The minimum allowed value for `expiration_policy.ttl` is 1
       day.
+    filter: An expression written in the Cloud Pub/Sub filter language. If
+      non-empty, then only `PubsubMessage`s whose `attributes` field matches
+      the filter are delivered on this subscription. If empty, then no
+      messages are filtered out. <b>EXPERIMENTAL:</b> This feature is part of
+      a closed alpha release. This API might be changed in backward-
+      incompatible ways and is not recommended for production use. It is not
+      subject to any SLA or deprecation policy.
     labels: See <a href="https://cloud.google.com/pubsub/docs/labels">
       Creating and managing labels</a>.
     messageRetentionDuration: How long to retain unacknowledged messages in
@@ -1237,14 +1376,16 @@ class Subscription(_messages.Message):
     additionalProperties = _messages.MessageField('AdditionalProperty', 1, repeated=True)
 
   ackDeadlineSeconds = _messages.IntegerField(1, variant=_messages.Variant.INT32)
-  enableMessageOrdering = _messages.BooleanField(2)
-  expirationPolicy = _messages.MessageField('ExpirationPolicy', 3)
-  labels = _messages.MessageField('LabelsValue', 4)
-  messageRetentionDuration = _messages.StringField(5)
-  name = _messages.StringField(6)
-  pushConfig = _messages.MessageField('PushConfig', 7)
-  retainAckedMessages = _messages.BooleanField(8)
-  topic = _messages.StringField(9)
+  deadLetterPolicy = _messages.MessageField('DeadLetterPolicy', 2)
+  enableMessageOrdering = _messages.BooleanField(3)
+  expirationPolicy = _messages.MessageField('ExpirationPolicy', 4)
+  filter = _messages.StringField(5)
+  labels = _messages.MessageField('LabelsValue', 6)
+  messageRetentionDuration = _messages.StringField(7)
+  name = _messages.StringField(8)
+  pushConfig = _messages.MessageField('PushConfig', 9)
+  retainAckedMessages = _messages.BooleanField(10)
+  topic = _messages.StringField(11)
 
 
 class TestIamPermissionsRequest(_messages.Message):
@@ -1284,13 +1425,9 @@ class Topic(_messages.Message):
       is `projects/*/locations/*/keyRings/*/cryptoKeys/*`.
     labels: See <a href="https://cloud.google.com/pubsub/docs/labels">
       Creating and managing labels</a>.
-    messageStoragePolicy: Policy constraining how messages published to the
-      topic may be stored. It is determined when the topic is created based on
-      the policy configured at the project level. It must not be set by the
-      caller in the request to CreateTopic or to UpdateTopic. This field will
-      be populated in the responses for GetTopic, CreateTopic, and
-      UpdateTopic: if not present in the response, then no constraints are in
-      effect.
+    messageStoragePolicy: Policy constraining the set of Google Cloud Platform
+      regions where messages published to the topic may be stored. If not
+      present, then no constraints are in effect.
     name: The name of the topic. It must have the format
       `"projects/{project}/topics/{topic}"`. `{topic}` must start with a
       letter, and contain only letters (`[A-Za-z]`), numbers (`[0-9]`), dashes

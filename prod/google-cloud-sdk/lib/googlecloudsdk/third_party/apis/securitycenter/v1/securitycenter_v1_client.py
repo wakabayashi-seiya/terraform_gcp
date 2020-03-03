@@ -9,6 +9,7 @@ class SecuritycenterV1(base_api.BaseApiClient):
 
   MESSAGES_MODULE = messages
   BASE_URL = u'https://securitycenter.googleapis.com/'
+  MTLS_BASE_URL = u''
 
   _PACKAGE = u'securitycenter'
   _SCOPES = [u'https://www.googleapis.com/auth/cloud-platform']
@@ -349,7 +350,7 @@ to succeed.
 specified properties.
 
 To group across all sources provide a `-` as the source id.
-Example: /v1/organizations/123/sources/-/findings
+Example: /v1/organizations/{organization_id}/sources/-/findings
 
       Args:
         request: (SecuritycenterOrganizationsSourcesFindingsGroupRequest) input message
@@ -379,7 +380,7 @@ Example: /v1/organizations/123/sources/-/findings
       r"""Lists an organization or source's findings.
 
 To list across all sources provide a `-` as the source id.
-Example: /v1/organizations/123/sources/-/findings
+Example: /v1/organizations/{organization_id}/sources/-/findings
 
       Args:
         request: (SecuritycenterOrganizationsSourcesFindingsListRequest) input message

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2013 Google Inc. All Rights Reserved.
+# Copyright 2013 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import subprocess
 import sys
 import textwrap
 
+from googlecloudsdk.core import argv_utils
 from googlecloudsdk.core import config
 from googlecloudsdk.core import exceptions
 from googlecloudsdk.core import execution_utils
@@ -233,6 +234,12 @@ class UpdateManager(object):
       force: bool, True to force a server check for updates, False to check only
         if the update frequency has expired.
     """
+    # Component manager is disabled, never check for updates.
+    if (config.INSTALLATION_CONFIG.disable_updater or
+        properties.VALUES.component_manager.disable_update_check.GetBool()):
+      log.debug('SDK update checks are disabled.')
+      return
+
     platform = platforms.Platform.Current()
     manager = UpdateManager(platform_filter=platform, warn=False)
     # pylint: disable=protected-access
@@ -634,12 +641,6 @@ version [{1}].  To clear your fixed version setting, run:
       force: bool, True to force a server check for updates, False to check only
         if the update frequency has expired.
     """
-    # Component manager is disabled, never check for updates.
-    if (config.INSTALLATION_CONFIG.disable_updater or
-        properties.VALUES.component_manager.disable_update_check.GetBool()):
-      log.debug('SDK update checks are disabled.')
-      return
-
     with update_check.UpdateCheckData() as last_update_check:
       if force or last_update_check.ShouldDoUpdateCheck():
         log.debug('Checking for updates...')
@@ -1422,10 +1423,11 @@ prompt, or run:
            components=' '.join(missing_components)))
     except SystemExit:
       # This happens when updating using bundled Python.
-      self.__Write(log.status,
-                   'Installing component in a new window.\n\n'
-                   'Please re-run this command when installation is complete.\n'
-                   '    $ {0}'.format(' '.join(['gcloud'] + sys.argv[1:])))
+      self.__Write(
+          log.status, 'Installing component in a new window.\n\n'
+          'Please re-run this command when installation is complete.\n'
+          '    $ {0}'.format(' '.join(['gcloud'] +
+                                      argv_utils.GetDecodedArgv()[1:])))
       raise
 
     # Restart the original command.
@@ -1552,7 +1554,7 @@ def RestartCommand(command=None, args=None, python=None, block=True):
       terminate before continuing.
   """
   command = command or config.GcloudPath()
-  command_args = args or sys.argv[1:]
+  command_args = args or argv_utils.GetDecodedArgv()[1:]
   args = execution_utils.ArgsForPythonTool(command, *command_args,
                                            python=python)
   args = [encoding.Encode(a) for a in args]
