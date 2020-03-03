@@ -20,8 +20,4 @@ resource "google_compute_instance" "apps_gcp_terraform" {
   network_interface {
     network = "default"
   }
-
-  service_account {
-    scopes = ["logging-write", "monitoring-write"]
-  }
 }
